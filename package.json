@@ -1,0 +1,24 @@
+{
+  "name": "think-twice-resellers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "next": "^14.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@prisma/client": "^5.16.1",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.2.4"
+  },
+  "devDependencies": {
+    "prisma": "^5.16.1"
+  }
+}
