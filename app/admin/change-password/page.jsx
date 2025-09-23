@@ -31,7 +31,7 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <main className="container" style={{ padding: '24px 0', maxWidth: 520 }}>
+    <main className="container" style={{ padding: '24px 0', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 84px)', maxWidth: 520 }}>
       <h2 style={{ marginTop: 0, marginBottom: 12 }}>Change Password</h2>
       <form onSubmit={onSubmit} className="sell-form" style={{ display: 'grid', gap: 12 }}>
         <div>

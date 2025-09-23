@@ -32,6 +32,32 @@ export async function PATCH(req, { params }) {
       data.imagesJson = JSON.stringify(data.images || [])
       delete data.images
     }
+    // Keep pre-owned items within the pre-owned section even if category is edited
+    try {
+      const current = await prisma.product.findUnique({ where: { id: params.id }, select: { category: true } })
+      const isPreowned = typeof current?.category === 'string' && current.category.toLowerCase().startsWith('preowned')
+      if (isPreowned && 'category' in data) {
+        const incoming = String(data.category || '').trim().toLowerCase()
+        // Normalize: allow either full key like 'preowned-tv' or subcategory like 'tv'
+        data.category = incoming.startsWith('preowned') ? incoming : (incoming ? `preowned-${incoming}` : current.category)
+      }
+      // Keep fashion items within fashion categories when edited from admin pages
+      const fashionSet = new Set(['hoodie','shoes','sneakers'])
+      const isFashion = typeof current?.category === 'string' && fashionSet.has(current.category.toLowerCase())
+      if (isFashion && 'category' in data) {
+        const incoming = String(data.category || '').trim().toLowerCase()
+        // Only allow switching within the fashion set; otherwise keep current category
+        data.category = fashionSet.has(incoming) ? incoming : current.category
+      }
+      // Keep electronics items within the electronics set when edited
+      const electronicsSet = new Set(['tv','radio','phone','fridge','cooler','accessory','laptop','tablet'])
+      const isElectronics = typeof current?.category === 'string' && electronicsSet.has(current.category.toLowerCase())
+      if (isElectronics && 'category' in data) {
+        const incoming = String(data.category || '').trim().toLowerCase()
+        // Only allow switching within the electronics set; otherwise keep current category
+        data.category = electronicsSet.has(incoming) ? incoming : current.category
+      }
+    } catch {}
     const updated = await prisma.product.update({ where: { id: params.id }, data })
     return NextResponse.json(updated)
   } catch (e) {

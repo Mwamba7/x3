@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export default function AdminProductForm({ initial }) {
   const router = useRouter()
+  const isEdit = Boolean(initial?.id)
   const [form, setForm] = useState({
     name: initial?.name || '',
     category: initial?.category || '',
@@ -18,8 +19,14 @@ export default function AdminProductForm({ initial }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [categories, setCategories] = useState([])
+  const [imageList, setImageList] = useState(() => {
+    const arr = Array.isArray(initial?.images) ? initial.images : (initial?.images ? String(initial.images).split(',').map(s=>s.trim()).filter(Boolean) : [])
+    return Array.isArray(arr) ? arr : []
+  })
+  const [newImageUrl, setNewImageUrl] = useState('')
 
   useEffect(() => {
+    if (isEdit) return // do not change categories list on edit; category is locked
     const fallbackFashion = [
       { key: 'hoodie', label: 'Hoodies' },
       { key: 'shoes', label: 'Shoes' },
@@ -46,13 +53,34 @@ export default function AdminProductForm({ initial }) {
         setCategories(filtered.length ? filtered : (isFashion ? fallbackFashion : fallbackElectronics))
       })
       .catch(() => setCategories([]))
-  }, [initial?.category, form.category])
+  }, [initial?.category, form.category, isEdit])
 
   function bind(k) {
     return {
       value: form[k],
       onChange: (e) => setForm((s) => ({ ...s, [k]: e.target.value }))
     }
+  }
+
+  // Keep imageList and form.images in sync
+  useEffect(() => {
+    const csv = imageList.join(', ')
+    setForm(s => ({ ...s, images: csv }))
+  }, [imageList])
+
+  function addImage() {
+    const url = newImageUrl.trim()
+    if (!url) return
+    setImageList(list => Array.from(new Set([...list, url])))
+    setNewImageUrl('')
+  }
+
+  function updateImageAt(i, url) {
+    setImageList(list => list.map((v, idx) => idx === i ? url : v).filter(Boolean))
+  }
+
+  function removeImage(i) {
+    setImageList(list => list.filter((_, idx) => idx !== i))
   }
 
   async function onSubmit(e) {
@@ -69,6 +97,10 @@ export default function AdminProductForm({ initial }) {
         meta: form.meta,
         condition: form.condition,
         status: form.status,
+      }
+      // When editing, keep category unchanged — do not send it in the PATCH body
+      if (isEdit) {
+        delete payload.category
       }
       const res = await fetch(`/api/products/${initial.id}`, {
         method: 'PATCH',
@@ -110,12 +142,16 @@ export default function AdminProductForm({ initial }) {
         </div>
         <div>
           <label className="form-label" htmlFor="category">Category</label>
-          <select className="form-control" id="category" value={form.category} onChange={e => setForm(s => ({ ...s, category: e.target.value }))} required>
-            <option value="">Select category…</option>
-            {categories.map(c => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
+          {isEdit ? (
+            <input className="form-control" id="category" value={form.category} readOnly disabled title="Category cannot be changed when editing" />
+          ) : (
+            <select className="form-control" id="category" value={form.category} onChange={e => setForm(s => ({ ...s, category: e.target.value }))} required>
+              <option value="">Select category…</option>
+              {categories.map(c => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -142,6 +178,36 @@ export default function AdminProductForm({ initial }) {
         <label className="form-label" htmlFor="images">Gallery Images (comma-separated URLs)</label>
         <input className="form-control" id="images" placeholder="https://..., https://..." {...bind('images')} />
       </div>
+
+      {/* Manage Gallery (More Photos) */}
+      <fieldset>
+        <legend>More Photos (Product Gallery)</legend>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input className="form-control" placeholder="Add image URL and click Add" value={newImageUrl} onChange={(e)=>setNewImageUrl(e.target.value)} style={{ flex: 1, minWidth: 240 }} />
+            <button type="button" className="btn" onClick={addImage}>Add Photo</button>
+          </div>
+          {imageList.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+              {imageList.map((src, i) => (
+                <div key={i} style={{ border: '1px solid #253049', borderRadius: 10, overflow: 'hidden', background: 'var(--card)' }}>
+                  <div style={{ position: 'relative', height: 120, background: '#0e1421' }}>
+                    {src ? <img src={src} alt={`Image ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : null}
+                  </div>
+                  <div style={{ padding: 8, display: 'grid', gap: 6 }}>
+                    <input className="form-control" value={src} onChange={(e)=>updateImageAt(i, e.target.value)} placeholder="https://..." />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
+                      <span className="helper">Photo {i+1}</span>
+                      <button type="button" className="btn" onClick={()=>removeImage(i)} style={{ borderColor: '#5a2a2a', color: '#f87171' }}>Remove</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="helper">These photos appear in the product page gallery and the promo "More Photos" section.</p>
+        </div>
+      </fieldset>
 
       <div>
         <label className="form-label" htmlFor="condition">Condition</label>

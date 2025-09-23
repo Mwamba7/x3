@@ -1,3 +1,20 @@
+/* Admin-only typography adjustments */
+.admin-root {
+  font-size: 0.95em; /* slightly smaller base font in admin */
+}
+.admin-root h1 { font-size: 1.35em; }
+.admin-root h2 { font-size: 1.2em; }
+.admin-root h3 { font-size: 1.05em; }
+.admin-root .btn { font-size: 0.92em; }
+.admin-root input,
+.admin-root select,
+.admin-root textarea { font-size: 0.96em; }
+.admin-root .helper,
+.admin-root .meta { font-size: 0.9em; }
+/* Ensure content doesn't get covered by the fixed admin footer; focus on filter/toolbar area */
+.admin-root .products-section:last-child {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+}
 :root {
   --bg: #0e1116;
   --surface: #141922;
@@ -34,21 +51,43 @@ body {
 .site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; background: rgba(14, 17, 22, 0.7); backdrop-filter: blur(8px); border-bottom: 1px solid #223; }
 .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
 .brand { display: flex; align-items: center; gap: 10px; }
-.logo { font-size: 20px; }
-.brand-title { font-size: 16px; margin: 0; letter-spacing: 0.3px; }
+.logo { font-size: 24px; }
+.brand-title { font-size: 18px; margin: 0; letter-spacing: 0.3px; }
 .brand-title a { color: inherit; text-decoration: none; }
 .nav { display: flex; flex-wrap: wrap; gap: 10px 14px; }
-.nav a { color: var(--muted); text-decoration: none; font-size: clamp(12px, 1.2vw, 14px); }
+.nav a {
+  position: relative;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: clamp(12px, 1.2vw, 14px);
+  transition: color .2s ease;
+}
+.nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s ease, opacity .25s ease;
+  opacity: 0.75;
+}
 .nav a:hover { color: var(--text); }
+.nav a:hover::after { transform: scaleX(1); }
+.nav a.active { color: var(--text); }
+.nav a.active::after { transform: scaleX(1); opacity: 1; }
 
 /* Link styles: remove underline for emails and phone numbers, keep color */
 a[href^="mailto:"], a[href^="tel:"] { text-decoration: none; color: inherit; }
 a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: var(--text); }
 
 /* Hero */
-.hero { position: relative; height: 40vh; min-height: 280px; max-height: 520px; overflow: hidden; border-bottom: 1px solid #223; }
+.hero { position: relative; height: 50vh; min-height: 320px; max-height: 760px; overflow: hidden; border-bottom: 1px solid #223; }
 .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6) saturate(1.1); }
-.hero-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(14,17,22,0.7), rgba(14,17,22,0.3)); display: flex; align-items: center; }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(14,17,22,0.5), rgba(14,17,22,0.2)); display: flex; align-items: center; }
 .hero-content { text-align: left; }
 .hero h2 { font-size: clamp(22px, 3vw + 8px, 40px); margin: 0 0 6px; }
 .hero p { color: var(--muted); margin: 0 0 12px; max-width: 640px; }
@@ -62,6 +101,8 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 
 /* Products */
 .products-section { padding: 20px 0 28px; }
+/* Pre-owned (public) section: remove top padding and reduce bottom padding */
+#preowned-products.products-section { padding-top: 0; padding-bottom: 12px; }
 .products-header { display: grid; gap: 12px; margin-bottom: 12px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-btn { background: #111827; color: var(--muted); border: 1px solid #2a3342; padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px; }
@@ -128,10 +169,16 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 
 /* Detail page gallery sizing tweaks for small screens */
 @media (max-width: 639px) {
-  .gallery-box { max-height: 50vh; }
+  .gallery-box { max-height: 70vh; }
   /* Hide scrollbar but keep scroll enabled */
-  .product-grid { scrollbar-width: none; }
-  .product-grid::-webkit-scrollbar { display: none; }
+  .product-grid,
+  .category-grid,
+  .fashion-grid,
+  .thumbs { scrollbar-width: none; }
+  .product-grid::-webkit-scrollbar,
+  .category-grid::-webkit-scrollbar,
+  .fashion-grid::-webkit-scrollbar,
+  .thumbs::-webkit-scrollbar { display: none; }
 }
 
 /* Cards */

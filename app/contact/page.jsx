@@ -89,8 +89,8 @@ export default function ContactPage() {
       </section>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-        <a className="btn btn-primary" href="mailto:sales@thinktwiceresellers.com?subject=Inquiry">Email Us</a>
-        <a className="btn" target="_blank" rel="noopener noreferrer" href="https://wa.me/254718176584">WhatsApp</a>
+        <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href="https://wa.me/254718176584">WhatsApp</a>
+        <a className="btn" href="mailto:sales@thinktwiceresellers.com?subject=Inquiry">Email Us</a>
       </div>
     </main>
   )

@@ -40,9 +40,9 @@ export default function FashionClient({ products }) {
   }, [products, active, query, sort])
 
   return (
-    <section className="products-section" aria-label="Hoodies, Shoes & Sneakers">
+    <section className="products-section" aria-label="Fashion, Hoodies, Shoes & Sneakers" style={{ paddingTop: 0, paddingBottom: 0 }}>
       <header className="products-header">
-        <h3>Hoodies, Shoes & Sneakers</h3>
+        <h3>Fashion, Hoodies, Shoes & Sneakers</h3>
         <div className="filters" role="tablist" aria-label="Fashion categories">
           {CATEGORIES.map(cat => (
             <button

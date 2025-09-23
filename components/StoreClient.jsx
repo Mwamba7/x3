@@ -44,9 +44,9 @@ export default function StoreClient({ products }) {
   }, [products, active, query, sort])
 
   return (
-    <section id="all-products" className="products-section">
+    <section id="collection" className="products-section" style={{ paddingTop: 0, paddingBottom: 3 }}>
       <header className="products-header">
-        <h3>All Products</h3>
+        <h3>Collection</h3>
         <div className="filters" role="tablist" aria-label="Product categories">
           {CATEGORIES.map(cat => (
             <button

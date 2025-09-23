@@ -89,8 +89,8 @@ export default async function FashionPage({ params }) {
           <p className="price" style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>{priceKsh}</p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            <a className="btn btn-primary" href={`mailto:sales@thinktwiceresellers.com?subject=Interested in ${encodeURIComponent(prod.name)}&body=Hi,%0D%0AI'm interested in ${encodeURIComponent(prod.name)} priced at ${encodeURIComponent(priceKsh)}.`}>Email to Buy</a>
-            <a className="btn" target="_blank" rel="noopener noreferrer" href={`https://wa.me/254718176584?text=${encodeURIComponent('Hi, I am interested in ' + prod.name + ' (' + priceKsh + ')')}`}>WhatsApp</a>
+            <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={`https://wa.me/254718176584?text=${encodeURIComponent('Hi, I am interested in ' + prod.name + ' (' + priceKsh + ')')}`}>WhatsApp to Buy</a>
+            <a className="btn" href={`mailto:sales@thinktwiceresellers.com?subject=Interested in ${encodeURIComponent(prod.name)}&body=Hi,%0D%0AI'm interested in ${encodeURIComponent(prod.name)} priced at ${encodeURIComponent(priceKsh)}.`}>Email</a>
             <a className="btn" href="/contact">Contact Details</a>
           </div>
 

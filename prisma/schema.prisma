@@ -38,3 +38,22 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Slides shown in the hero background carousel
+model HeroSlide {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  // popupType controls which badge/popup to render e.g. 'flash_sale', 'shop_now', 'price_drop', or 'custom'
+  popupType String   @default("flash_sale")
+  title     String?  // optional headline for the popup
+  subtitle  String?  // optional supporting text
+  price     Int?     // price in Ksh to display on the popup
+  ctaLabel  String?  // e.g. "Shop Now"
+  ctaHref   String?  // link for the CTA button
+  productId String?  // optional product to deep-link to /product/[id]
+  galleryJson String? // optional additional images for this slide
+  sortOrder Int       @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
