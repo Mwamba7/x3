@@ -90,12 +90,12 @@ export default async function FashionPage({ params }) {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={`https://wa.me/254718176584?text=${encodeURIComponent('Hi, I am interested in ' + prod.name + ' (' + priceKsh + ')')}`}>WhatsApp to Buy</a>
-            <a className="btn" href="tel:+254718176584">Contact Details</a>
+            <a className="btn" href="/contact">Contact Details</a>
           </div>
 
           <section style={{ marginTop: 10, marginBottom: 8 }}>
             <h3 style={{ margin: '6px 0' }}>Details</h3>
-            <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 12 }}>
+            <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 14 }}>
               {String(prod.meta || '')
                 .split(/[|,]/)
                 .map(s => s.trim())

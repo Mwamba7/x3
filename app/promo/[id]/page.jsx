@@ -81,13 +81,13 @@ export default async function PromoPage({ params }) {
   // Fallback products for static params
   // This page is dynamic, but we can still provide ProductGallery component
   return (
-    <main className="container" style={{ padding: '24px 0' }}>
+    <main className="container promo-page" style={{ padding: '14px 0' }}>
       <nav style={{ marginBottom: 12 }}>
         <Link className="btn" href="/">← Back to home</Link>
         {product?.id ? <Link className="btn" style={{ marginLeft: 8 }} href={`/product/${product.id}`}>View Product Page</Link> : null}
       </nav>
 
-      <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+      <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
         <ProductGallery images={gallery} name={name} />
         <div className="info" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 14, padding: 16 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
@@ -102,15 +102,15 @@ export default async function PromoPage({ params }) {
           {metaText ? <p className="meta" style={{ marginTop: 6, fontSize: 13 }}>{metaText}</p> : null}
           {priceKsh ? <p className="price" style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>{priceKsh}</p> : null}
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={whatsappHref}>WhatsApp to Buy</a>
-            <a className="btn" href="tel:+254718176584">Contact Details</a>
+            <a className="btn" href="#contact">Contact Details</a>
           </div>
 
           {metaText ? (
-            <section style={{ marginTop: 10, marginBottom: 8 }}>
+            <section style={{ marginTop: 8, marginBottom: 6 }}>
               <h3 style={{ margin: '6px 0' }}>Specs</h3>
-              <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 12 }}>
+              <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 13 }}>
                 {String(metaText)
                   .split(/[|,]/)
                   .map(s => s.trim())
@@ -125,7 +125,7 @@ export default async function PromoPage({ params }) {
       </article>
 
       {/* More Photos & Specifications (bottom section) */}
-      <section style={{ marginTop: 24 }}>
+      <section style={{ marginTop: 16 }}>
         {gallery?.length > 0 && (
           <div style={{ marginBottom: 18 }}>
             <h3 style={{ margin: '0 0 8px' }}>More Photos</h3>
@@ -142,7 +142,7 @@ export default async function PromoPage({ params }) {
         {metaText ? (
           <div>
             <h3 style={{ margin: '0 0 8px' }}>Specifications</h3>
-            <ul style={{ color: 'var(--muted)', paddingLeft: 18, margin: 0, fontSize: 12 }}>
+            <ul style={{ color: 'var(--muted)', paddingLeft: 18, margin: 0, fontSize: 13 }}>
               {String(metaText)
                 .split(/[|,]/)
                 .map(s => s.trim())
