@@ -150,7 +150,7 @@ export default function SellForm() {
         {/* Actions */}
         <div className="form-row" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn btn-primary" type="submit">Send via WhatsApp</button>
-          <a className="btn" href={`mailto:sales@thinktwiceresellers.com?subject=Sell Product: ${encodeURIComponent(name)}&body=${encodeURIComponent(`Seller: ${fullName}\nPhone: ${phone}\n\nCategory: ${category}\nPrice: ${price}\nSpecs: ${specs}`)}`}>Email Instead</a>
+          <a className="btn" href={`mailto:sales@supertwiceresellers.com?subject=Sell Product: ${encodeURIComponent(name)}&body=${encodeURIComponent(`Seller: ${fullName}\nPhone: ${phone}\n\nCategory: ${category}\nPrice: ${price}\nSpecs: ${specs}`)}`}>Email Instead</a>
         </div>
 
         {status && <p className="status">{status}</p>}

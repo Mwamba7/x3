@@ -1,7 +1,7 @@
 import SellForm from '../../components/SellForm'
 
 export const metadata = {
-  title: 'Sell Your Product — Think Twice Resellers',
+  title: 'Sell Your Product — Super Twice Resellers',
   description: 'Upload images and describe your product. We will receive your details via WhatsApp or email.',
 }
 

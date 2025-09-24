@@ -53,7 +53,7 @@ export default function ContactPage() {
   return (
     <main className="container" style={{ padding: '24px 0' }}>
       <h2 style={{ marginTop: 0, marginBottom: 8 }}>Contact Us</h2>
-      <p>Email: <a href="mailto:sales@thinktwiceresellers.com">sales@thinktwiceresellers.com</a></p>
+      <p>Email: <a href="mailto:sales@supertwiceresellers.com">sales@supertwiceresellers.com</a></p>
       <p>Phone: <a href="tel:+254718176584">+254718176584</a></p>
 
       <div className="status" style={{ marginTop: 8, fontWeight: 600 }}>
@@ -90,7 +90,7 @@ export default function ContactPage() {
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
         <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href="https://wa.me/254718176584">WhatsApp</a>
-        <a className="btn" href="mailto:sales@thinktwiceresellers.com?subject=Inquiry">Email Us</a>
+        <a className="btn" href="mailto:sales@supertwiceresellers.com?subject=Inquiry">Email Us</a>
       </div>
     </main>
   )

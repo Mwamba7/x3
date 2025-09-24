@@ -6,7 +6,7 @@ import Nav from '../components/Nav'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Think Twice Resellers — Quality Pre‑Owned Electronics & Appliances',
+  title: 'Super Twice Resellers — Quality Pre‑Owned Electronics & Appliances',
   description: 'Resale of quality used electronics and appliances: TVs, radios, phones, gas coolers, fridges and more.',
 }
 
@@ -18,7 +18,7 @@ export default function RootLayout({ children }) {
           <div className="container header-inner">
             <div className="brand">
               <span className="logo" aria-hidden="true">♻️</span>
-              <h1 className="brand-title"><Link href="/">Think Twice Resellers</Link></h1>
+              <h1 className="brand-title"><Link href="/">Super Twice Resellers</Link></h1>
             </div>
             <Nav />
           </div>
@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
         </main>
         <footer className="site-footer">
           <div className="container footer-inner">
-            <p style={{ margin: 0, paddingTop: 6, width: '100%', textAlign: 'center' }}>© <span id="year">{new Date().getFullYear()}</span> Think Twice Resellers. All rights reserved.</p>
+            <p style={{ margin: 0, paddingTop: 6, width: '100%', textAlign: 'center' }}>© <span id="year">{new Date().getFullYear()}</span> Super Twice Resellers. All rights reserved.</p>
             <div className="footer-links">
               
             </div>

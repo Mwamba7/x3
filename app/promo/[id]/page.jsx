@@ -6,9 +6,9 @@ import { getProducts } from '../../../lib/products'
 export async function generateMetadata({ params }) {
   try {
     const slide = await prisma.heroSlide.findUnique({ where: { id: params.id } })
-    if (!slide) return { title: 'Promotion not found — Think Twice Resellers' }
+    if (!slide) return { title: 'Promotion not found — Super Twice Resellers' }
     return {
-      title: `${slide.title || 'Promotion'} — Think Twice Resellers`,
+      title: `${slide.title || 'Promotion'} — Super Twice Resellers`,
       description: slide.subtitle || 'Promotion details',
       openGraph: {
         title: slide.title || 'Promotion',
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }) {
       },
     }
   } catch {
-    return { title: 'Promotion — Think Twice Resellers' }
+    return { title: 'Promotion — Super Twice Resellers' }
   }
 }
 
@@ -76,7 +76,7 @@ export default async function PromoPage({ params }) {
   const status = product ? (product.status === 'sold' ? 'Sold' : 'Available') : null
 
   const whatsappHref = `https://wa.me/254718176584?text=${encodeURIComponent('Hi, I am interested in ' + name + (priceKsh ? ' (' + priceKsh + ')' : ''))}`
-  const emailHref = `mailto:sales@thinktwiceresellers.com?subject=${encodeURIComponent('Interested in ' + name)}&body=${encodeURIComponent('Hi,%0D%0AI\'m interested in ' + name + (priceKsh ? ' priced at ' + priceKsh : '') + '.')}`
+  const emailHref = `mailto:sales@supertwiceresellers.com?subject=${encodeURIComponent('Interested in ' + name)}&body=${encodeURIComponent('Hi,%0D%0AI\'m interested in ' + name + (priceKsh ? ' priced at ' + priceKsh : '') + '.')}`
 
   // Fallback products for static params
   // This page is dynamic, but we can still provide ProductGallery component
@@ -104,14 +104,13 @@ export default async function PromoPage({ params }) {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={whatsappHref}>WhatsApp to Buy</a>
-            <a className="btn" href={emailHref}>Email</a>
-            <a className="btn" href="#contact">Contact Details</a>
+            <a className="btn" href="tel:+254718176584">Contact Details</a>
           </div>
 
           {metaText ? (
             <section style={{ marginTop: 10, marginBottom: 8 }}>
               <h3 style={{ margin: '6px 0' }}>Specs</h3>
-              <ul style={{ color: 'var(--muted)', paddingLeft: 18 }}>
+              <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 12 }}>
                 {String(metaText)
                   .split(/[|,]/)
                   .map(s => s.trim())
@@ -143,7 +142,7 @@ export default async function PromoPage({ params }) {
         {metaText ? (
           <div>
             <h3 style={{ margin: '0 0 8px' }}>Specifications</h3>
-            <ul style={{ color: 'var(--muted)', paddingLeft: 18, margin: 0 }}>
+            <ul style={{ color: 'var(--muted)', paddingLeft: 18, margin: 0, fontSize: 12 }}>
               {String(metaText)
                 .split(/[|,]/)
                 .map(s => s.trim())

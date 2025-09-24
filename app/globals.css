@@ -93,7 +93,7 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 .hero p { color: var(--muted); margin: 0 0 12px; max-width: 640px; }
 
 /* Buttons */
-.btn { display: inline-block; padding: 10px 14px; border-radius: 10px; border: 1px solid #2a3342; background: #121723; color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; }
+.btn { display: inline-block; padding: 5px 9px; border-radius: 7px; border: 1px solid #2a3342; background: #121723; color: var(--text); text-decoration: none; font-weight: 600; font-size: 11px; }
 .btn:hover { border-color: #3a465c; }
 .btn-primary { background: var(--primary); color: #0a101a; border: 1px solid var(--primary-700); box-shadow: 0 0 0 0px var(--ring); }
 .btn-primary:hover { background: var(--primary-700); }

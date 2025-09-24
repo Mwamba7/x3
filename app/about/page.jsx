@@ -1,12 +1,12 @@
 export const metadata = {
-  title: 'About — Think Twice Resellers',
-  description: 'Learn about Think Twice Resellers and our commitment to quality pre-owned products and sustainability.'
+  title: 'About — Super Twice Resellers',
+  description: 'Learn about Super Twice Resellers and our commitment to quality pre-owned products and sustainability.'
 }
 
 export default function AboutPage() {
   return (
     <main className="container" style={{ padding: '20px 0' }}>
-      <h2 style={{ marginTop: 0, marginBottom: 8 }}>About Think Twice Resellers</h2>
+      <h2 style={{ marginTop: 0, marginBottom: 8 }}>About Super Twice Resellers</h2>
       <p className="meta" style={{ fontSize: 16 }}>We source, test, and refurbish quality pre‑owned electronics and appliances. Every item is thoroughly inspected and comes with a 30‑day limited warranty.</p>
 
       <section className="info-section" style={{ borderTop: '1px solid #223', paddingTop: 16 }}>
@@ -24,7 +24,7 @@ export default function AboutPage() {
         <h3 style={{ margin: '0 0 8px' }}>Map & Directions</h3>
         <div style={{ border: '1px solid #253049', borderRadius: 12, overflow: 'hidden', background: 'var(--card)' }}>
           <iframe
-            title="Think Twice Resellers — Naivasha Road"
+            title="Super Twice Resellers — Naivasha Road"
             width="100%"
             height="360"
             style={{ border: 0, display: 'block' }}

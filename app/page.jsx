@@ -80,24 +80,10 @@ export default async function Page() {
         {/* Background: auto-rotating products from All Products + Fashion */}
         <HeroRotator products={[...products, ...fashionProducts]} intervalMs={10000} />
         <div className="hero-overlay">
-          <div className="container hero-content" style={{ paddingTop: 58 }}>
-            {/* Animated wave text for the heading */}
+          <div className="container hero-content" style={{ paddingTop: 30 }}>
             <h2 style={{ fontSize: 'clamp(14.6px, 2vw, 28px)', marginBottom: 6 }} aria-label="Quality Pre‑Owned + New Electronics & Appliances">
-              {'Quality Pre‑Owned + New Electronics & Appliances'.split('').map((ch, i) => (
-                <span
-                  key={i}
-                  style={{
-                    display: 'inline-block',
-                    animation: 'wave 1.8s ease-in-out infinite',
-                    animationDelay: `${i * 0.05}s`,
-                    willChange: 'transform',
-                  }}
-                >
-                  {ch === ' ' ? '\u00A0' : ch}
-                </span>
-              ))}
+              Quality Pre‑Owned + New Electronics & Appliances
             </h2>
-            <style>{`@keyframes wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }`}</style>
             <h2 style={{ fontSize: 'clamp(14px, 2.4vw, 28px)', marginBottom: 26 }}>Outfits + Fasion, Hoodies, Shoes & Sneakers.</h2>
             <p>Save money. Reduce waste. Buy dependable, refurbished items with warranty.</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -116,7 +102,7 @@ export default async function Page() {
         <ReusedClient products={reusedProducts} />
 
         <section id="about" className="info-section">
-          <h3>About Think Twice Resellers</h3>
+          <h3>About Super Twice Resellers</h3>
           <p>We source, test, and refurbish pre‑owned electronics and appliances. Every item is thoroughly inspected and comes with a 30‑day limited warranty.</p>
           <ul>
             <li>Environmentally responsible reuse</li>
@@ -127,7 +113,7 @@ export default async function Page() {
 
         <section id="contact" className="info-section">
           <h3>Contact Us</h3>
-          <p>Email: <a href="mailto:sales@thinktwiceresellers.com">sales@thinktwiceresellers.com</a></p> 
+          <p>Email: <a href="mailto:sales@supertwiceresellers.com">sales@supertwiceresellers.com</a></p> 
           <p>Phone: <a href="tel:+254718176584">+254718176584</a></p>
         </section>
       </main>

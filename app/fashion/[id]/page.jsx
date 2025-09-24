@@ -18,10 +18,10 @@ export async function generateMetadata({ params }) {
     const row = await prisma.product.findUnique({ where: { id: params.id } })
     if (row) {
       return {
-        title: `${row.name} — Think Twice Resellers`,
+        title: `${row.name} — Super Twice Resellers`,
         description: row.meta || '',
         openGraph: {
-          title: `${row.name} — Think Twice Resellers`,
+          title: `${row.name} — Super Twice Resellers`,
           description: row.meta || '',
           images: [row.img],
         },
@@ -30,12 +30,12 @@ export async function generateMetadata({ params }) {
   } catch {}
   const products = getFashionProducts()
   const prod = products.find(p => p.id === params.id)
-  if (!prod) return { title: 'Item not found — Think Twice Resellers' }
+  if (!prod) return { title: 'Item not found — Super Twice Resellers' }
   return {
-    title: `${prod.name} — Think Twice Resellers`,
+    title: `${prod.name} — Super Twice Resellers`,
     description: prod.meta,
     openGraph: {
-      title: `${prod.name} — Think Twice Resellers`,
+      title: `${prod.name} — Super Twice Resellers`,
       description: prod.meta,
       images: [prod.img],
     },
@@ -90,13 +90,12 @@ export default async function FashionPage({ params }) {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={`https://wa.me/254718176584?text=${encodeURIComponent('Hi, I am interested in ' + prod.name + ' (' + priceKsh + ')')}`}>WhatsApp to Buy</a>
-            <a className="btn" href={`mailto:sales@thinktwiceresellers.com?subject=Interested in ${encodeURIComponent(prod.name)}&body=Hi,%0D%0AI'm interested in ${encodeURIComponent(prod.name)} priced at ${encodeURIComponent(priceKsh)}.`}>Email</a>
-            <a className="btn" href="/contact">Contact Details</a>
+            <a className="btn" href="tel:+254718176584">Contact Details</a>
           </div>
 
           <section style={{ marginTop: 10, marginBottom: 8 }}>
             <h3 style={{ margin: '6px 0' }}>Details</h3>
-            <ul style={{ color: 'var(--muted)', paddingLeft: 18 }}>
+            <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 12 }}>
               {String(prod.meta || '')
                 .split(/[|,]/)
                 .map(s => s.trim())

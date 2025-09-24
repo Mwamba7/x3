@@ -5,7 +5,7 @@ import { useState } from 'react'
 // Approximate coordinates for Naivasha Road, Nairobi (near Junction Mall area)
 const DEST_LAT = -1.3006
 const DEST_LNG = 36.7532
-const DEST_LABEL = 'Think Twice Resellers (Naivasha Road)'
+const DEST_LABEL = 'Super Twice Resellers (Naivasha Road)'
 
 export default function MapDirections() {
   const [busy, setBusy] = useState(false)
