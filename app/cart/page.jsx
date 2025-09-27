@@ -27,24 +27,22 @@ export default function CartPage() {
               const max = maxQtyForCondition(it.condition)
               const lineTotal = (it.qty || 0) * (it.price || 0)
               return (
-                <div key={it.id} style={{ display: 'flex', gap: 16, padding: 16, border: '1px solid #253049', borderRadius: 12 }}>
-                  <img src={it.img} alt={it.name} width={96} height={96} style={{ objectFit: 'cover', borderRadius: 8 }} />
+                <div key={it.id} style={{ display: 'flex', gap: 12, padding: 12, border: '1px solid #253049', borderRadius: 12 }}>
+                  <img src={it.img} alt={it.name} width={68} height={56} style={{ objectFit: 'cover', borderRadius: 8 }} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 16 }}>{it.name}</div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>{it.condition || '—'}</div>
                       </div>
-                      <button className="btn btn-small" onClick={() => removeItem(it.id)} aria-label={`Remove ${it.name}`}>Remove</button>
+                      <button className="btn btn-small" onClick={() => removeItem(it.id)} aria-label={`Remove ${it.name}`} style={{ fontSize: 11, padding: '2px 6px' }}>Remove</button>
                     </div>
                     <div style={{ flex: 1 }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid #2a3342', padding: '4px 8px', borderRadius: 999 }}>
-                        <button className="btn btn-small" onClick={() => setQty(it.id, (it.qty || 0) - 1)} disabled={it.qty <= 1}>-</button>
-                        <span style={{ minWidth: 24, textAlign: 'center' }}>{it.qty}</span>
-                        <button className="btn btn-small" onClick={() => setQty(it.id, (it.qty || 0) + 1)} disabled={(it.qty || 0) >= max}>+</button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>
+                        Qty: {it.qty}
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: 16 }}>Ksh {Number(lineTotal).toLocaleString('en-KE')}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'green' }}>Ksh {Number(lineTotal).toLocaleString('en-KE')}</div>
                     </div>
                   </div>
                 </div>

@@ -38,7 +38,7 @@ export default function HeroCartButton() {
         <circle cx="17" cy="20" r="1.5" fill="currentColor"/>
       </svg>
       {mounted && totalCount > 0 && (
-        <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', color: 'blue', borderRadius: 999, padding: '0 6px', fontSize: 12, fontWeight: 800, lineHeight: '18px', height: 18, minWidth: 18, textAlign: 'center' }}>
+        <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', color: '#0a101a', borderRadius: 999, padding: '0 6px', fontSize: 12, fontWeight: 800, lineHeight: '18px', height: 18, minWidth: 18, textAlign: 'center' }}>
           {totalCount}
         </span>
       )}

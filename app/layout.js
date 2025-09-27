@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import Link from 'next/link'
 import Nav from '../components/Nav'
 import { CartProvider } from '../components/CartContext'
+import CartDrawer from '../components/CartDrawer'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
               </a>
             </div>
           </footer>
+          <CartDrawer />
         </CartProvider>
       </body>
     </html>

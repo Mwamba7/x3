@@ -40,7 +40,7 @@ export function CartProvider({ children }) {
       const existing = prev[product.id] || { id: product.id, name: product.name, price: product.price, img: product.img, condition: product.condition, qty: 0 }
       const max = maxQtyForCondition(existing.condition ?? product.condition)
       const newQty = Math.min(max, (existing.qty || 0) + (qty || 1))
-            return { ...prev, [product.id]: { ...existing, ...product, qty: newQty } }
+      return { ...prev, [product.id]: { ...existing, ...product, qty: newQty } }
     })
   }, [])
 

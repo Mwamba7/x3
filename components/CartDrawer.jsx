@@ -85,19 +85,15 @@ export default function CartDrawer() {
                       return (
                         <div key={it.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,2fr) 120px 120px 120px 64px', gap: 8, alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid #253049', background: rowBg }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                            <img src={it.img} alt={it.name} width={48} height={48} style={{ objectFit: 'cover', borderRadius: 8, flex: '0 0 auto' }} />
+                            <img src={it.img} alt={it.name} width={60} height={50} style={{ objectFit: 'cover', borderRadius: 8, flex: '0 0 auto' }} />
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 700, fontSize: 13, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{it.name}</div>
                               <div style={{ fontSize: 11, color: 'var(--muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{it.condition || '—'}</div>
                             </div>
                           </div>
                           <div style={{ textAlign: 'right', fontSize: 13, whiteSpace: 'nowrap' }}>Ksh {Number(it.price).toLocaleString('en-KE')}</div>
-                          <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #2a3342', padding: '2px 6px', borderRadius: 999 }}>
-                              <button className="btn btn-small" onClick={() => setQty(it.id, (it.qty || 0) - 1)} aria-label={`Decrease ${it.name} quantity`} disabled={it.qty <= 1}>-</button>
-                              <span style={{ minWidth: 22, textAlign: 'center' }}>{it.qty}</span>
-                              <button className="btn btn-small" onClick={() => setQty(it.id, (it.qty || 0) + 1)} aria-label={`Increase ${it.name} quantity`} disabled={(it.qty || 0) >= max}>+</button>
-                            </div>
+                          <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700 }}>
+                            Qty: {it.qty}
                           </div>
                           <div style={{ textAlign: 'right', fontWeight: 700, color: 'var(--primary)' }}>Ksh {Number(lineTotal).toLocaleString('en-KE')}</div>
                           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -152,17 +148,15 @@ export default function CartDrawer() {
                       const max = maxQtyForCondition(it.condition)
                       const lineTotal = (it.qty || 0) * (it.price || 0)
                       return (
-                        <div key={it.id} style={{ border: '1px solid #253049', borderRadius: 10, padding: 8, display: 'grid', gridTemplateColumns: '48px 1fr', gap: 8 }}>
-                          <img src={it.img} alt={it.name} width={48} height={48} style={{ objectFit: 'cover', borderRadius: 8 }} />
+                        <div key={it.id} style={{ border: '1px solid #253049', borderRadius: 10, padding: 8, display: 'grid', gridTemplateColumns: '60px 1fr', gap: 8 }}>
+                          <img src={it.img} alt={it.name} width={60} height={50} style={{ objectFit: 'cover', borderRadius: 8 }} />
                           <div>
                             <div style={{ fontWeight: 700, fontSize: 13, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{it.name}</div>
                             <div style={{ fontSize: 11, color: 'var(--muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{it.condition || '—'}</div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, gap: 8, flexWrap: 'nowrap' }}>
                               <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' }}>Ksh {Number(it.price).toLocaleString('en-KE')}</div>
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #2a3342', padding: '2px 6px', borderRadius: 999, flexShrink: 0 }}>
-                                <button className="btn btn-small" onClick={() => setQty(it.id, (it.qty || 0) - 1)} aria-label={`Decrease ${it.name} quantity`} disabled={it.qty <= 1}>-</button>
-                                <span style={{ minWidth: 22, textAlign: 'center' }}>{it.qty}</span>
-                                <button className="btn btn-small" onClick={() => setQty(it.id, (it.qty || 0) + 1)} aria-label={`Increase ${it.name} quantity`} disabled={(it.qty || 0) >= max}>+</button>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>
+                                Qty: {it.qty}
                               </div>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>

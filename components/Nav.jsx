@@ -2,11 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCart } from './CartContext'
 
 export default function Nav() {
   const pathname = usePathname() || '/'
-  const { totalCount } = useCart()
 
   const links = [
     { href: '/#collection', label: 'Products' },
@@ -28,6 +26,6 @@ export default function Nav() {
           {l.label}
         </Link>
       ))}
-          </nav>
+    </nav>
   )
 }

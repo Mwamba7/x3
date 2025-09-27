@@ -141,8 +141,11 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
   padding: 20px 0 28px; 
   scroll-margin-top: 80px; /* ensure smooth scrolling accounts for fixed header */
 }
-/* Pre-owned (public) section: remove top padding and reduce bottom padding */
-#preowned-products.products-section { padding-top: 0; padding-bottom: 12px; }
+/* Pre-owned (public) section: consistent with other sections */
+#preowned-products.products-section { 
+  padding-top: 0; 
+  padding-bottom: 12px; 
+}
 .products-header { display: grid; gap: 12px; margin-bottom: 12px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-btn { background: #111827; color: var(--muted); border: 1px solid #2a3342; padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px; }
@@ -358,16 +361,16 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 }
 
 .cart-item-card img {
-  width: 80px;
-  height: 80px;
+  width: 36px;
+  height: 26px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 @media (min-width: 768px) {
   .cart-item-card img {
-    width: 96px;
-    height: 96px;
+    width: 42px;
+    height: 30px;
   }
 }
 
@@ -533,19 +536,6 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
   min-width: 120px;
   text-align: center;
   white-space: nowrap;
-}
-
-/* Detail page back button positioning */
-.product-detail nav,
-.fashion-detail nav {
-  margin-top: 16px; /* move back button slightly down */
-  margin-bottom: 0px;
-}
-
-/* Alternative selector for all detail pages */
-main.container nav:first-child {
-  margin-top: 16px; /* move back button slightly down */
-  margin-bottom: 8px;
 }
 
 /* Product Features/Highlights Section */
