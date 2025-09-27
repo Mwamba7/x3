@@ -15,9 +15,9 @@ export default function ProductActions({ product }) {
   const isInCart = mounted ? !!items[product.id] : false
 
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+    <div className="product-actions-container">
       <button
-        className={`btn btn-small ${isInCart ? 'in-cart-btn' : 'btn-primary'}`}
+        className={`btn btn-small product-action-btn ${isInCart ? 'in-cart-btn' : 'btn-primary'}`}
         disabled={disabled}
         style={isInCart ? { backgroundColor: 'blue', color: 'white' } : {}}
         onClick={() => {

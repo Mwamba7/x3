@@ -42,20 +42,44 @@ body {
 
 .page-content { 
   flex: 1 0 auto; 
-  padding-top: 50px; /* offset for fixed header */
+  padding-top: 70px; /* increased offset for fixed header to prevent overlap */
+  min-height: calc(100vh - 70px); /* ensure content takes full height minus header */
 }
 
 .container { width: min(1440px, 92%); margin: 0 auto; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 /* Header */
-.site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; background: rgba(14, 17, 22, 0.7); backdrop-filter: blur(8px); border-bottom: 1px solid #223; }
-.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+.site-header { 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  z-index: 50; 
+  background: rgba(14, 17, 22, 0.9); /* increased opacity for better visibility */
+  backdrop-filter: blur(12px); /* increased blur for better separation */
+  border-bottom: 1px solid #223; 
+  min-height: 60px; /* ensure consistent header height */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* subtle shadow for depth */
+}
+.header-inner { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  padding: 12px 0; 
+  min-height: 48px; /* ensure minimum height for content */
+}
 .brand { display: flex; align-items: center; gap: 10px; }
 .logo { font-size: 24px; }
 .brand-title { font-size: 18px; margin: 0; letter-spacing: 0.3px; }
 .brand-title a { color: inherit; text-decoration: none; }
-.nav { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.nav { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 10px 14px; 
+  align-items: center; /* ensure proper vertical alignment */
+  padding: 4px 0; /* add padding to prevent content from touching edges */
+}
 .nav a {
   position: relative;
   color: var(--muted);
@@ -68,13 +92,14 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -6px;
+  bottom: -4px; /* reduced from -6px to prevent overlap */
   height: 2px;
   background: var(--primary);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform .25s ease, opacity .25s ease;
   opacity: 0.75;
+  z-index: 1; /* ensure underline stays within header bounds */
 }
 .nav a:hover { color: var(--text); }
 .nav a:hover::after { transform: scaleX(1); }
@@ -86,7 +111,15 @@ a[href^="mailto:"], a[href^="tel:"] { text-decoration: none; color: inherit; }
 a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: var(--text); }
 
 /* Hero */
-.hero { position: relative; height: 50vh; min-height: 320px; max-height: 760px; overflow: hidden; border-bottom: 1px solid #223; }
+.hero { 
+  position: relative; 
+  height: 50vh; 
+  min-height: 320px; 
+  max-height: 760px; 
+  overflow: hidden; 
+  border-bottom: 1px solid #223; 
+  margin-top: 0; /* ensure no additional margin that could cause overlap */
+}
 .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6) saturate(1.1); }
 .hero-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(14,17,22,0.5), rgba(14,17,22,0.2)); display: flex; align-items: center; }
 .hero-content { text-align: left; }
@@ -104,7 +137,10 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 .hero .btn-primary { padding: 10px 14px; font-size: 14px; border-radius: 10px; }
 
 /* Products */
-.products-section { padding: 20px 0 28px; }
+.products-section { 
+  padding: 20px 0 28px; 
+  scroll-margin-top: 80px; /* ensure smooth scrolling accounts for fixed header */
+}
 /* Pre-owned (public) section: remove top padding and reduce bottom padding */
 #preowned-products.products-section { padding-top: 0; padding-bottom: 12px; }
 .products-header { display: grid; gap: 12px; margin-bottom: 12px; }
@@ -171,6 +207,43 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
   .product-grid { gap: 20px; }
 }
 
+/* Mobile-specific header and navigation adjustments */
+@media (max-width: 767px) {
+  .site-header {
+    min-height: 56px; /* slightly smaller on mobile */
+  }
+  
+  .header-inner {
+    padding: 10px 0;
+    min-height: 44px;
+  }
+  
+  .page-content {
+    padding-top: 66px; /* adjusted for mobile header height */
+  }
+  
+  .nav {
+    gap: 8px 12px; /* tighter spacing on mobile */
+  }
+  
+  .nav a {
+    font-size: 13px; /* ensure readability on small screens */
+    padding: 2px 0; /* add some touch target padding */
+  }
+  
+  .nav a::after {
+    bottom: -3px; /* even tighter on mobile to prevent overlap */
+  }
+  
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-content {
+    padding-top: 68px; /* intermediate spacing for tablets */
+  }
+}
+
 /* Detail page gallery sizing tweaks for small screens */
 @media (max-width: 639px) {
   .gallery-box { max-height: 70vh; }
@@ -199,7 +272,10 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 .price { font-weight: 700; color: var(--primary); font-size: 13px; }
 
 /* Fashion showcase (Hoodies, Shoes & Sneakers) */
-.fashion-section { padding: 16px 0 24px; }
+.fashion-section { 
+  padding: 16px 0 24px; 
+  scroll-margin-top: 80px; /* ensure smooth scrolling accounts for fixed header */
+}
 .fashion-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-auto-flow: column; grid-auto-columns: calc((100% - 2 * 10px) / 3); overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
 .fashion-grid > .product-card { scroll-snap-align: start; }
 @media (min-width: 640px) { .fashion-grid { overflow: visible; grid-auto-flow: initial; grid-auto-columns: initial; grid-template-columns: repeat(8, 1fr); } }
@@ -207,7 +283,11 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 @media (min-width: 1024px) { .fashion-grid { gap: 16px; grid-template-columns: repeat(12, 1fr); } }
 
 /* Info sections */
-.info-section { border-top: 1px solid #223; padding: 24px 0; }
+.info-section { 
+  border-top: 1px solid #223; 
+  padding: 24px 0; 
+  scroll-margin-top: 80px; /* ensure smooth scrolling accounts for fixed header */
+}
 .info-section h3 { margin: 0 0 8px; }
 .info-section p, .info-section li { color: var(--muted); }
 
@@ -427,8 +507,32 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 .product-info-grid .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 16px; /* increased gap between buttons */
+  align-items: center;
+  margin-top: 12px;
   /* margin: 4px 0; */ /* Removed to tighten layout */
+}
+
+/* Product Actions Container - Fixed positioning to prevent movement */
+.product-actions-container {
+  display: inline-flex;
+  align-items: center;
+  min-width: 120px; /* ensure consistent width */
+}
+
+.product-action-btn {
+  width: 120px; /* fixed width to prevent text-based resizing */
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Ensure Contact Details button has consistent sizing */
+.actions .btn {
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* Product Features/Highlights Section */
