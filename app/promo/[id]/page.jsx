@@ -2,6 +2,7 @@ import Link from 'next/link'
 import prisma from '../../../lib/prisma'
 import ProductGallery from '../../../components/ProductGallery'
 import { getProducts } from '../../../lib/products'
+import ProductActions from '../../../components/ProductActions'
 
 export async function generateMetadata({ params }) {
   try {
@@ -106,6 +107,12 @@ export default async function PromoPage({ params }) {
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={whatsappHref}>WhatsApp to Buy</a>
             <a className="btn" href="#contact">Contact Details</a>
           </div>
+
+          {product ? (
+            <div style={{ marginTop: 8 }}>
+              <ProductActions product={product} />
+            </div>
+          ) : null}
 
           {metaText ? (
             <section style={{ marginTop: 8, marginBottom: 6 }}>

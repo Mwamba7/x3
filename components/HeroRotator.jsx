@@ -101,7 +101,7 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
           style={{
             alignSelf: 'end',
             width: 100,
-            height: 9.5,
+            height: '8px',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',

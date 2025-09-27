@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getFashionProducts } from '../../../lib/fashion'
 import prisma from '../../../lib/prisma'
 import ProductGallery from '../../../components/ProductGallery'
+import ProductActions from '../../../components/ProductActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,40 +73,53 @@ export default async function FashionPage({ params }) {
   const status = isSold ? 'Sold' : 'Available'
 
   return (
-    <main className="container" style={{ padding: '24px 0' }}>
-      <nav style={{ marginBottom: 12 }}>
+    <main className="container" style={{ paddingTop: '12px' }}>
+      <nav>
         <Link className="btn" href="/">← Back to products</Link>
       </nav>
 
-      <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+      <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginTop: '12px' }}>
         <ProductGallery images={images} name={prod.name} />
-        <div className="info" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 14, padding: 16 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-            <span className="badge condition" style={{ position: 'static', display: 'inline-block' }}>{prod.condition}</span>
-            <span className="badge" style={{ background: 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', color: 'var(--text)', fontSize: 12, padding: '6px 8px', borderRadius: 999 }}>{status}</span>
-          </div>
-          <h1 style={{ marginTop: 0, fontSize: 20 }}>{prod.name}</h1>
-          <p className="meta" style={{ marginTop: 6, fontSize: 13 }}>{prod.meta}</p>
-          <p className="price" style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>{priceKsh}</p>
+        <div className="info product-info-grid" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 14, padding: 16, marginBottom: 24 }}>
+            
+            {/* Title */}
+            <div style={{ marginBottom: '8px' }}>
+              <h1 className="product-title">{prod.name}</h1>
+            </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={`https://wa.me/254718176584?text=${encodeURIComponent('Hi, I am interested in ' + prod.name + ' (' + priceKsh + ')')}`}>WhatsApp to Buy</a>
-            <a className="btn" href="/contact">Contact Details</a>
-          </div>
-
-          <section style={{ marginTop: 10, marginBottom: 8 }}>
-            <h3 style={{ margin: '6px 0' }}>Details</h3>
-            <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 14 }}>
-              {String(prod.meta || '')
-                .split(/[|,]/)
-                .map(s => s.trim())
-                .filter(Boolean)
-                .map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
+            {/* Subtitle/Meta */}
+            <ul className="detail-meta-grid">
+              {String(prod.meta || '').split(/[|,]/).map(s => s.trim()).filter(Boolean).map((spec, i) => (
+                <li key={i} className="detail-meta-item">
+                  <svg className="icon" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                  <span>{spec}</span>
+                </li>
+              ))}
             </ul>
-          </section>
-        </div>
+
+            {/* Price */}
+            <div className="price">{priceKsh}</div>
+
+            {/* Action Buttons */}
+            <div className="actions">
+              <ProductActions product={prod} />
+              <a className="btn btn-small" href="/contact">Contact Details</a>
+            </div>
+
+            {/* Features/Highlights Section */}
+            <div className="product-features">
+              <ul className="product-features-list">
+                {String(prod.details || '').split(/[\n•-]/).map(s => s.trim()).filter(Boolean).map((feature, i) => (
+                  <li key={i}>
+                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            
+                      </div>
       </article>
     </main>
   )

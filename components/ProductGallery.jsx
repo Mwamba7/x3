@@ -19,7 +19,6 @@ export default function ProductGallery({ images = [], name }) {
           maxHeight: '90vh',
           borderRadius: 5,
           overflow: 'hidden',
-          background: '#0e1421',
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',

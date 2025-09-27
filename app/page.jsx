@@ -6,6 +6,7 @@ import { getFashionProducts } from '../lib/fashion'
 import Link from 'next/link'
 import prisma from '../lib/prisma'
 import HeroRotator from '../components/HeroRotator'
+import HeroCartButton from '../components/HeroCartButton'
 
 export default async function Page() {
   let products = []
@@ -76,7 +77,8 @@ export default async function Page() {
   }
   return (
     <>
-      <section className="hero" aria-label="Featured promotions">
+      <section className="hero" aria-label="Featured promotions" style={{ position: 'relative' }}>
+        <HeroCartButton />
         {/* Background: auto-rotating products from All Products + Fashion */}
         <HeroRotator products={[...products, ...fashionProducts]} intervalMs={10000} />
         <div className="hero-overlay">
