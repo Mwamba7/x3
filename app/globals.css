@@ -535,6 +535,19 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
   white-space: nowrap;
 }
 
+/* Detail page back button positioning */
+.product-detail nav,
+.fashion-detail nav {
+  margin-top: 16px; /* move back button slightly down */
+  margin-bottom: 0px;
+}
+
+/* Alternative selector for all detail pages */
+main.container nav:first-child {
+  margin-top: 16px; /* move back button slightly down */
+  margin-bottom: 8px;
+}
+
 /* Product Features/Highlights Section */
 .product-features {
   border-top: 1px solid var(--border);
