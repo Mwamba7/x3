@@ -77,14 +77,10 @@ export default async function ProductPage({ params }) {
   const mergedMeta = [slide?.subtitle || '', prod.meta || ''].filter(Boolean).join(' | ')
 
   return (
-    <main className="container" style={{ paddingTop: '12px' }}>
-      <nav>
-        <Link className="btn" href="/">← Back to products</Link>
-      </nav>
-
-      <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginTop: '12px' }}>
+    <main className="container" style={{ paddingTop: '0' }}>
+      <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginTop: '0' }}>
         <ProductGallery images={images} name={prod.name} />
-        <div className="info product-info-grid" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 14, padding: 16, marginBottom: 24 }}>
+        <div className="info product-info-grid" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 8, padding: 8, marginBottom: 12 }}>
             
             {/* Title */}
             <div style={{ marginBottom: '8px' }}>
@@ -105,9 +101,10 @@ export default async function ProductPage({ params }) {
             <div className="price">{priceKsh}</div>
 
             {/* Action Buttons */}
-            <div className="actions">
+            <div className="actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <ProductActions product={prod} />
               <a className="btn btn-small" href="#contact">Contact Details</a>
+              <Link className="btn btn-small" href="/" style={{ marginLeft: 'auto', fontSize: '12px', padding: '8px 10px' }}>← Back to products</Link>
             </div>
 
             {/* Features/Highlights Section */}

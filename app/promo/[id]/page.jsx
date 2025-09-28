@@ -28,11 +28,11 @@ export default async function PromoPage({ params }) {
   if (!slide) {
     return (
       <main className="container" style={{ padding: '24px 0' }}>
-        <nav style={{ marginBottom: 12 }}>
-          <Link className="btn" href="/">← Back to home</Link>
-        </nav>
         <h2>Promotion not found</h2>
         <p className="meta">The promotion you are looking for does not exist or has been removed.</p>
+        <div style={{ marginTop: 16 }}>
+          <Link className="btn" href="/" style={{ fontSize: '12px', padding: '8px 10px' }}>← Back to products</Link>
+        </div>
       </main>
     )
   }
@@ -82,15 +82,11 @@ export default async function PromoPage({ params }) {
   // Fallback products for static params
   // This page is dynamic, but we can still provide ProductGallery component
   return (
-    <main className="container promo-page" style={{ padding: '14px 0' }}>
-      <nav style={{ marginBottom: 12 }}>
-        <Link className="btn" href="/">← Back to home</Link>
-        {product?.id ? <Link className="btn" style={{ marginLeft: 8 }} href={`/product/${product.id}`}>View Product Page</Link> : null}
-      </nav>
+    <main className="container promo-page" style={{ padding: '0' }}>
 
       <article className="product-detail" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
         <ProductGallery images={gallery} name={name} />
-        <div className="info" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 14, padding: 16 }}>
+        <div className="info" style={{ background: 'var(--card)', border: '1px solid #253049', borderRadius: 8, padding: 8 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
             {product?.condition ? (
               <span className="badge condition" style={{ position: 'static', display: 'inline-block' }}>{product.condition}</span>
@@ -99,13 +95,15 @@ export default async function PromoPage({ params }) {
               <span className="badge" style={{ background: 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', color: 'var(--text)', fontSize: 12, padding: '6px 8px', borderRadius: 999 }}>{status}</span>
             ) : null}
           </div>
-          <h1 style={{ marginTop: 0, fontSize: 20 }}>{name}</h1>
+          <h1 style={{ marginTop: 0, fontSize: 20, textAlign: 'left' }}>{name}</h1>
           {metaText ? <p className="meta" style={{ marginTop: 6, fontSize: 13 }}>{metaText}</p> : null}
-          {priceKsh ? <p className="price" style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>{priceKsh}</p> : null}
+          {priceKsh ? <p className="price" style={{ fontSize: 15, fontWeight: 800, color: 'var(--primary)' }}>{priceKsh}</p> : null}
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={whatsappHref}>WhatsApp to Buy</a>
             <a className="btn" href="#contact">Contact Details</a>
+            {product?.id ? <Link className="btn" href={`/product/${product.id}`}>View Product Page</Link> : null}
+            <Link className="btn" href="/" style={{ marginLeft: 'auto', fontSize: '12px', padding: '8px 10px' }}>← Back to products</Link>
           </div>
 
           {product ? (
@@ -117,13 +115,16 @@ export default async function PromoPage({ params }) {
           {metaText ? (
             <section style={{ marginTop: 8, marginBottom: 6 }}>
               <h3 style={{ margin: '6px 0' }}>Specs</h3>
-              <ul style={{ color: 'var(--muted)', paddingLeft: 18, fontSize: 13 }}>
+              <ul className="detail-meta-grid">
                 {String(metaText)
                   .split(/[|,]/)
                   .map(s => s.trim())
                   .filter(Boolean)
                   .map((s, i) => (
-                    <li key={i}>{s}</li>
+                    <li key={i} className="detail-meta-item">
+                      <svg className="icon" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      <span>{s}</span>
+                    </li>
                   ))}
               </ul>
             </section>
@@ -149,13 +150,16 @@ export default async function PromoPage({ params }) {
         {metaText ? (
           <div>
             <h3 style={{ margin: '0 0 8px' }}>Specifications</h3>
-            <ul style={{ color: 'var(--muted)', paddingLeft: 18, margin: 0, fontSize: 13 }}>
+            <ul className="detail-meta-grid">
               {String(metaText)
                 .split(/[|,]/)
                 .map(s => s.trim())
                 .filter(Boolean)
                 .map((s, i) => (
-                  <li key={i}>{s}</li>
+                  <li key={i} className="detail-meta-item">
+                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    <span>{s}</span>
+                  </li>
                 ))}
             </ul>
           </div>

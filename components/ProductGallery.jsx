@@ -8,7 +8,7 @@ export default function ProductGallery({ images = [], name }) {
   const main = list[active] || list[0]
 
   return (
-    <div style={{ display: 'grid', gap: 12, justifyItems: 'center' }}>
+    <div style={{ display: 'grid', gap: 6, justifyItems: 'center' }}>
       {/* Main image */}
       <div
         className="gallery-box"
@@ -44,7 +44,7 @@ export default function ProductGallery({ images = [], name }) {
 
       {/* Horizontal thumbnails with snap scroll */}
       {list.length > 1 && (
-        <div className="thumbs" style={{ width: '100%', maxWidth: '100%', display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(72px, 88px)', gap: 8, overflowX: 'auto', paddingBottom: 6, scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', margin: '0 auto' }}>
+        <div className="thumbs" style={{ width: '100%', maxWidth: '100%', display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(72px, 88px)', gap: 8, overflowX: 'auto', paddingBottom: 3, scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', margin: '0 auto' }}>
           {list.map((src, i) => (
             <button
               key={i}

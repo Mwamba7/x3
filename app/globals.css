@@ -498,11 +498,11 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
   font-size: 17px; /* Further reduced font size */
   margin: 0;
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
 }
 
 .product-info-grid .price {
-  font-size: 17px; /* Further reduced font size */
+  font-size: 15px; /* Slightly reduced font size */
   font-weight: 800;
   color: var(--primary);
 }
@@ -570,7 +570,7 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 /* Meta/Specs Grid on Detail Page */
 .detail-meta-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px 16px;
   list-style: none;
   padding: 0;
