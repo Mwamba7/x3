@@ -6,9 +6,12 @@ import { useCart } from './CartContext'
 
 const CATEGORIES = [
   { key: 'all', label: 'All' },
+  { key: 'outfits', label: 'Outfits' },
   { key: 'hoodie', label: 'Hoodies' },
   { key: 'shoes', label: 'Shoes' },
   { key: 'sneakers', label: 'Sneakers' },
+  { key: 'ladies', label: 'Ladies' },
+  { key: 'men', label: 'Men' },
 ]
 
 export default function FashionClient({ products }) {
@@ -49,9 +52,9 @@ export default function FashionClient({ products }) {
   }, [products, active, query, sort])
 
   return (
-    <section className="products-section" aria-label="Fashion, Hoodies, Shoes & Sneakers" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <section className="products-section" aria-label="Outfits, Fashion & Sneakers" style={{ paddingTop: 0, paddingBottom: 0 }}>
       <header className="products-header">
-        <h3>Fashion, Hoodies, Shoes & Sneakers</h3>
+        <h3>Outfits, Fashion & Sneakers</h3>
         <div className="filters" role="tablist" aria-label="Fashion categories">
           {CATEGORIES.map(cat => (
             <button

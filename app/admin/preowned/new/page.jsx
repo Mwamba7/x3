@@ -8,7 +8,7 @@ export default function NewPreownedProductPage() {
   const [form, setForm] = useState({
     name: '',
     // store subcategory only here; transform to 'preowned-<subcategory>' on submit
-    subcategory: '', // tv, radio, phone, fridge, cooler, accessory, other
+    subcategory: '', // tv, radio, phone, electronics, accessory, appliances, other
     price: '',
     img: '',
     images: '', // comma-separated
@@ -24,13 +24,11 @@ export default function NewPreownedProductPage() {
     // Pre-owned subcategories; you can adjust this list
     const fallback = [
       { key: 'tv', label: 'Televisions' },
-      { key: 'radio', label: 'Radios' },
-      { key: 'phone', label: 'Mobile Phones' },
-      { key: 'laptop', label: 'Laptops' },
-      { key: 'tablet', label: 'Tablets' },
-      { key: 'fridge', label: 'Fridges' },
-      { key: 'cooler', label: 'Gas Coolers' },
+      { key: 'radio', label: 'Sound systems' },
+      { key: 'phone', label: 'Mobile phones' },
+      { key: 'electronics', label: 'Electronics' },
       { key: 'accessory', label: 'Accessories' },
+      { key: 'appliances', label: 'Appliances' },
       { key: 'other', label: 'Other' },
     ]
     setCategories(fallback)

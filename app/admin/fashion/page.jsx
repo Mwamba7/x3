@@ -9,13 +9,13 @@ export default async function AdminFashionPage() {
   const user = await requireAdmin()
   if (!user) redirect('/admin/login')
   const products = await prisma.product.findMany({
-    where: { category: { in: ['hoodie', 'shoes', 'sneakers'] } },
+    where: { category: { in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] } },
     orderBy: { createdAt: 'desc' },
   })
 
   return (
     <main className="container" style={{ padding: '24px 0' }}>
-      <h2 style={{ marginTop: 0, marginBottom: 10 }}>Products — Fashion, Hoodies, Shoes & Sneakers</h2>
+      <h2 style={{ marginTop: 0, marginBottom: 10 }}>Products — Outfits, Hoodies, Shoes, Sneakers, Ladies, Men</h2>
       <Controls current="fashion" />
       <AdminProductsClient initial={products} />
     </main>

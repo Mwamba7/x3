@@ -104,7 +104,7 @@ export default async function ProductPage({ params }) {
             <div className="actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <ProductActions product={prod} />
               <a className="btn btn-small" href="#contact">Contact Details</a>
-              <Link className="btn btn-small" href="/" style={{ marginLeft: 'auto', fontSize: '12px', padding: '8px 10px' }}>← Back to products</Link>
+              <Link href="/" className="back-arrow-btn">←</Link>
             </div>
 
             {/* Features/Highlights Section */}

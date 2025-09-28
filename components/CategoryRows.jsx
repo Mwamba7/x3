@@ -1,12 +1,12 @@
 import Link from 'next/link'
 
 const CATEGORY_META = [
-  { key: 'phone', title: 'Mobile Phones' },
+  { key: 'phone', title: 'Mobile phones' },
   { key: 'tv', title: 'Televisions' },
   { key: 'accessory', title: 'Accessories' },
-  { key: 'fridge', title: 'Fridges' },
-  { key: 'cooler', title: 'Gas Coolers' },
-  { key: 'radio', title: 'Radios' },
+  { key: 'electronics', title: 'Electronics' },
+  { key: 'appliances', title: 'Appliances' },
+  { key: 'radio', title: 'Sound systems' },
 ]
 
 export default function CategoryRows({ products }) {

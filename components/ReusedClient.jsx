@@ -4,9 +4,21 @@ import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCart } from './CartContext'
 
+// Category label mapping for consistent display
+const CATEGORY_LABELS = {
+  'tv': 'Televisions',
+  'radio': 'Sound systems', 
+  'phone': 'Mobile phones',
+  'electronics': 'Electronics',
+  'accessory': 'Accessories',
+  'appliances': 'Appliances',
+  'fridge': 'Appliances', // Map old fridge to appliances
+  'cooler': 'Appliances', // Map old cooler to appliances
+}
+
 // Title-case helper for dynamic category labels
 function titleCase(s = '') {
-  return s.replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
+  return CATEGORY_LABELS[s] || s.replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
 }
 
 export default function ReusedClient({ products = [] }) {
@@ -35,14 +47,16 @@ export default function ReusedClient({ products = [] }) {
     })
   }, [products])
 
-  // Build dynamic categories from incoming products; always include 'all'
-  const dynamicCategories = useMemo(() => {
-    const set = new Set(viewProducts.map(p => p._catKey).filter(Boolean))
-    const list = Array.from(set)
-      .sort()
-      .map(key => ({ key, label: titleCase(key) }))
-    return [{ key: 'all', label: 'All' }, ...list]
-  }, [viewProducts])
+  // Use same fixed categories as Collection section
+  const dynamicCategories = [
+    { key: 'all', label: 'All' },
+    { key: 'tv', label: 'Televisions' },
+    { key: 'radio', label: 'Sound systems' },
+    { key: 'phone', label: 'Mobile phones' },
+    { key: 'electronics', label: 'Electronics' },
+    { key: 'accessory', label: 'Accessories' },
+    { key: 'appliances', label: 'Appliances' },
+  ]
 
   const [active, setActive] = useState('all')
   const [query, setQuery] = useState('')
@@ -67,7 +81,13 @@ export default function ReusedClient({ products = [] }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    let res = viewProducts.filter(p => (active === 'all' || p._catKey === active) && (!q || p._name.toLowerCase().includes(q)))
+    let res = viewProducts.filter(p => {
+      if (active === 'all') return true
+      // Map old categories to new ones for filtering
+      const productCategory = p._catKey
+      if (active === 'appliances' && (productCategory === 'fridge' || productCategory === 'cooler' || productCategory === 'appliances')) return true
+      return productCategory === active
+    }).filter(p => !q || p._name.toLowerCase().includes(q))
     switch (sort) {
       case 'price-asc': res = res.sort((a, b) => a._price - b._price); break
       case 'price-desc': res = res.sort((a, b) => b._price - a._price); break

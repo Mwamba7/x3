@@ -28,27 +28,30 @@ export default function AdminProductForm({ initial }) {
   useEffect(() => {
     if (isEdit) return // do not change categories list on edit; category is locked
     const fallbackFashion = [
+      { key: 'outfits', label: 'Outfits' },
       { key: 'hoodie', label: 'Hoodies' },
       { key: 'shoes', label: 'Shoes' },
       { key: 'sneakers', label: 'Sneakers' },
+      { key: 'ladies', label: 'Ladies' },
+      { key: 'men', label: 'Men' },
     ]
     const fallbackElectronics = [
       { key: 'tv', label: 'Televisions' },
-      { key: 'radio', label: 'Radios' },
-      { key: 'phone', label: 'Mobile Phones' },
-      { key: 'fridge', label: 'Fridges' },
-      { key: 'cooler', label: 'Gas Coolers' },
+      { key: 'radio', label: 'Sound systems' },
+      { key: 'phone', label: 'Mobile phones' },
+      { key: 'electronics', label: 'Electronics' },
       { key: 'accessory', label: 'Accessories' },
+      { key: 'appliances', label: 'Appliances' },
     ]
     fetch('/api/categories')
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const arr = Array.isArray(data) ? data : []
-        const fashion = new Set(['hoodie','shoes','sneakers'])
+        const fashion = new Set(['outfits','hoodie','shoes','sneakers','ladies','men'])
         const isFashion = fashion.has((initial?.category || form.category || '').toLowerCase())
         const allow = isFashion
           ? fashion
-          : new Set(['tv','radio','phone','fridge','cooler','accessory'])
+          : new Set(['tv','radio','phone','electronics','accessory','appliances'])
         const filtered = arr.filter(c => allow.has(c.key))
         setCategories(filtered.length ? filtered : (isFashion ? fallbackFashion : fallbackElectronics))
       })

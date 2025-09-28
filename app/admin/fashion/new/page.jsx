@@ -7,7 +7,7 @@ export default function NewFashionProductPage() {
   const router = useRouter()
   const [form, setForm] = useState({
     name: '',
-    category: '', // hoodie, shoes, sneakers
+    category: '', // outfits, hoodie, shoes, sneakers, ladies, men
     price: '',
     img: '',
     images: '', // comma-separated
@@ -20,11 +20,14 @@ export default function NewFashionProductPage() {
   const [categories, setCategories] = useState([])
 
   useEffect(() => {
-    const allow = new Set(['hoodie','shoes','sneakers'])
+    const allow = new Set(['outfits','hoodie','shoes','sneakers','ladies','men'])
     const fallback = [
+      { key: 'outfits', label: 'Outfits' },
       { key: 'hoodie', label: 'Hoodies' },
       { key: 'shoes', label: 'Shoes' },
       { key: 'sneakers', label: 'Sneakers' },
+      { key: 'ladies', label: 'Ladies' },
+      { key: 'men', label: 'Men' },
     ]
     fetch('/api/categories')
       .then(r => r.ok ? r.json() : [])
@@ -58,7 +61,7 @@ export default function NewFashionProductPage() {
         condition: form.condition,
         status: form.status,
       }
-      if (!payload.category || !['hoodie','shoes','sneakers'].includes(payload.category)) {
+      if (!payload.category || !['outfits','hoodie','shoes','sneakers','ladies','men'].includes(payload.category)) {
         throw new Error('Please select a valid fashion category')
       }
       const res = await fetch('/api/products', {

@@ -20,14 +20,14 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState([])
 
   useEffect(() => {
-    const allow = new Set(['tv','radio','phone','fridge','cooler','accessory'])
+    const allow = new Set(['tv','radio','phone','electronics','accessory','appliances'])
     const fallback = [
       { key: 'tv', label: 'Televisions' },
-      { key: 'radio', label: 'Radios' },
-      { key: 'phone', label: 'Mobile Phones' },
-      { key: 'fridge', label: 'Fridges' },
-      { key: 'cooler', label: 'Gas Coolers' },
+      { key: 'radio', label: 'Sound systems' },
+      { key: 'phone', label: 'Mobile phones' },
+      { key: 'electronics', label: 'Electronics' },
       { key: 'accessory', label: 'Accessories' },
+      { key: 'appliances', label: 'Appliances' },
     ]
     fetch('/api/categories')
       .then(r => r.ok ? r.json() : [])

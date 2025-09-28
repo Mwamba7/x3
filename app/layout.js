@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'Super Twice Resellers — Quality Pre‑Owned Electronics & Appliances',
-  description: 'Resale of quality used electronics and appliances: TVs, radios, phones, gas coolers, fridges and more.',
+  description: 'Resale of quality used electronics and appliances: Televisions, Sound systems, Mobile phones, Electronics, Accessories, Appliances and more.',
 }
 
 export default function RootLayout({ children }) {

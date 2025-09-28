@@ -9,7 +9,7 @@ export default async function AdminProductsPage() {
   const user = await requireAdmin()
   if (!user) redirect('/admin/login')
   const products = await prisma.product.findMany({
-    where: { category: { in: ['tv','radio','phone','fridge','cooler','accessory'] } },
+    where: { category: { in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] } },
     orderBy: { createdAt: 'desc' },
   })
 

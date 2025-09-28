@@ -3,6 +3,22 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 
+// Category label mapping for consistent display
+const CATEGORY_LABELS = {
+  'tv': 'Televisions',
+  'radio': 'Sound systems', 
+  'phone': 'Mobile phones',
+  'electronics': 'Electronics',
+  'accessory': 'Accessories',
+  'appliances': 'Appliances',
+  'fridge': 'Appliances', // Map old fridge to appliances
+  'cooler': 'Appliances', // Map old cooler to appliances
+}
+
+function getCategoryLabel(key) {
+  return CATEGORY_LABELS[key] || (key || '').replace(/[-_]/g,' ').replace(/\b\w/g, m=>m.toUpperCase())
+}
+
 export default function AdminPreownedClient({ items = [] }) {
   const [rows, setRows] = useState(items.map(it => ({ ...it, _saving: false, _dirty: false, _editing: false })))
   const [msg, setMsg] = useState('')
@@ -10,12 +26,16 @@ export default function AdminPreownedClient({ items = [] }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
 
-  // Build dynamic categories like other sections
-  const categories = useMemo(() => {
-    const set = new Set(rows.map(r => r.category).filter(Boolean))
-    const rest = Array.from(set).sort().map(k => ({ key: k, label: (k || '').replace(/[-_]/g,' ').replace(/\b\w/g, m=>m.toUpperCase()) }))
-    return [{ key: 'all', label: 'All' }, ...rest]
-  }, [rows])
+  // Use same fixed categories as Collection section
+  const categories = [
+    { key: 'all', label: 'All' },
+    { key: 'tv', label: 'Televisions' },
+    { key: 'radio', label: 'Sound systems' },
+    { key: 'phone', label: 'Mobile phones' },
+    { key: 'electronics', label: 'Electronics' },
+    { key: 'accessory', label: 'Accessories' },
+    { key: 'appliances', label: 'Appliances' },
+  ]
 
   async function saveRow(idx) {
     const row = rows[idx]
@@ -59,7 +79,13 @@ export default function AdminPreownedClient({ items = [] }) {
   // Filter/search/sort like other sections (on the client state rows)
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    let res = rows.filter(p => (active === 'all' || p.category === active) && (!q || p.name.toLowerCase().includes(q)))
+    let res = rows.filter(p => {
+      if (active === 'all') return true
+      // Map old categories to new ones for filtering
+      const productCategory = p.category
+      if (active === 'appliances' && (productCategory === 'fridge' || productCategory === 'cooler' || productCategory === 'appliances')) return true
+      return productCategory === active
+    }).filter(p => !q || p.name.toLowerCase().includes(q))
     switch (sort) {
       case 'price-asc': res = res.slice().sort((a, b) => a.price - b.price); break
       case 'price-desc': res = res.slice().sort((a, b) => b.price - a.price); break

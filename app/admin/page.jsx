@@ -11,7 +11,7 @@ export default async function AdminHubPage() {
   // Basic counts to make navigation useful
   const [allCount, fashionCount, preownedCount] = await Promise.all([
     prisma.product.count(),
-    prisma.product.count({ where: { category: { in: ['hoodie', 'shoes', 'sneakers'] } } }),
+    prisma.product.count({ where: { category: { in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] } } }),
     prisma.product.count({ where: { category: { startsWith: 'preowned' } } }),
   ])
 
@@ -26,7 +26,7 @@ export default async function AdminHubPage() {
         </header>
         <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
           <Tile title="Collection" count={allCount} href="/admin/products" primary />
-          <Tile title="Fashion, Hoodies, Shoes & Sneakers" count={fashionCount} href="/admin/fashion" />
+          <Tile title="Outfits, Hoodies, Shoes, Sneakers, Ladies, Men" count={fashionCount} href="/admin/fashion" />
           <Tile title="Pre-owned Products" count={preownedCount} href="/admin/preowned" />
         </div>
       </section>

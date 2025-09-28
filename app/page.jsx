@@ -12,7 +12,7 @@ export default async function Page() {
   let products = []
   try {
     const rows = await prisma.product.findMany({
-      where: { category: { in: ['tv','radio','phone','fridge','cooler','accessory'] } },
+      where: { category: { in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] } },
       orderBy: { createdAt: 'desc' },
     })
     products = rows.map(r => ({
@@ -28,12 +28,12 @@ export default async function Page() {
     }))
   } catch (e) {
     // Fallback to local static data (filter to electronics)
-    products = getLocalProducts().filter(p => ['tv','radio','phone','fridge','cooler','accessory'].includes(p.category))
+    products = getLocalProducts().filter(p => ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'].includes(p.category))
   }
   let fashionProducts = []
   try {
     const frows = await prisma.product.findMany({
-      where: { category: { in: ['hoodie', 'shoes', 'sneakers'] } },
+      where: { category: { in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] } },
       orderBy: { createdAt: 'desc' },
     })
     fashionProducts = frows.map(r => ({
@@ -81,17 +81,32 @@ export default async function Page() {
         <HeroCartButton />
         {/* Background: auto-rotating products from All Products + Fashion */}
         <HeroRotator products={[...products, ...fashionProducts]} intervalMs={10000} />
-        <div className="hero-overlay">
-          <div className="container hero-content" style={{ paddingTop: 30 }}>
-            <h2 style={{ fontSize: 'clamp(14.6px, 2vw, 28px)', marginBottom: 6 }} aria-label="Quality Pre‑Owned + New Electronics & Appliances">
-              Quality Pre‑Owned + New Electronics & Appliances
-            </h2>
-            <h2 style={{ fontSize: 'clamp(14px, 2.4vw, 28px)', marginBottom: 26 }}>Outfits + Fasion, Hoodies, Shoes & Sneakers.</h2>
-            <p>Save money. Reduce waste. Buy dependable, refurbished items with warranty.</p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link href="/#collection" className="btn btn-primary">Browse Products</Link>
-              <Link href="/sell" className="btn">Want to Sell Product</Link>
-            </div>
+      </section>
+
+      {/* Hero Content Section - Only visible on large screens */}
+      <section className="hero-content-section" style={{ 
+        background: 'linear-gradient(135deg, var(--bg) 0%, #0e1421 100%)', 
+        borderBottom: '1px solid #223',
+        padding: '40px 0',
+        display: 'none'
+      }}>
+        <div className="container" style={{ textAlign: 'left' }}>
+          <h2 style={{ fontSize: 'clamp(18px, 3vw, 32px)', marginBottom: 8, fontWeight: '700' }}>
+            Quality Pre‑Owned + New Electronics & Appliances
+          </h2>
+          <h2 style={{ fontSize: 'clamp(16px, 2.5vw, 28px)', marginBottom: 24, color: 'var(--primary)', fontWeight: '600' }}>
+            Outfits, Fashion & Sneakers.
+          </h2>
+          <p style={{ fontSize: 'clamp(14px, 1.5vw, 18px)', color: 'var(--muted)', marginBottom: 32, maxWidth: '600px', margin: '0 0 32px 0' }}>
+            Save money. Reduce waste. Buy dependable, refurbished items with warranty.
+          </p>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+            <Link href="/#collection" className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '16px' }}>
+              Browse Products
+            </Link>
+            <Link href="/sell" className="btn" style={{ padding: '12px 24px', fontSize: '16px' }}>
+              Want to Sell Product
+            </Link>
           </div>
         </div>
       </section>

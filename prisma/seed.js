@@ -19,14 +19,17 @@ async function main() {
   // Seed default categories
   const defaultCategories = [
     { key: 'tv', label: 'Televisions' },
-    { key: 'radio', label: 'Radios' },
-    { key: 'phone', label: 'Mobile Phones' },
-    { key: 'fridge', label: 'Fridges' },
-    { key: 'cooler', label: 'Gas Coolers' },
+    { key: 'radio', label: 'Sound systems' },
+    { key: 'phone', label: 'Mobile phones' },
+    { key: 'electronics', label: 'Electronics' },
     { key: 'accessory', label: 'Accessories' },
+    { key: 'appliances', label: 'Appliances' },
+    { key: 'outfits', label: 'Outfits' },
     { key: 'hoodie', label: 'Hoodies' },
     { key: 'shoes', label: 'Shoes' },
     { key: 'sneakers', label: 'Sneakers' },
+    { key: 'ladies', label: 'Ladies' },
+    { key: 'men', label: 'Men' },
   ]
   for (const c of defaultCategories) {
     await prisma.category.upsert({

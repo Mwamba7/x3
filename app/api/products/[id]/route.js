@@ -42,7 +42,7 @@ export async function PATCH(req, { params }) {
         data.category = incoming.startsWith('preowned') ? incoming : (incoming ? `preowned-${incoming}` : current.category)
       }
       // Keep fashion items within fashion categories when edited from admin pages
-      const fashionSet = new Set(['hoodie','shoes','sneakers'])
+      const fashionSet = new Set(['outfits','hoodie','shoes','sneakers','ladies','men'])
       const isFashion = typeof current?.category === 'string' && fashionSet.has(current.category.toLowerCase())
       if (isFashion && 'category' in data) {
         const incoming = String(data.category || '').trim().toLowerCase()
@@ -50,7 +50,7 @@ export async function PATCH(req, { params }) {
         data.category = fashionSet.has(incoming) ? incoming : current.category
       }
       // Keep electronics items within the electronics set when edited
-      const electronicsSet = new Set(['tv','radio','phone','fridge','cooler','accessory','laptop','tablet'])
+      const electronicsSet = new Set(['tv','radio','phone','electronics','accessory','appliances','fridge','cooler','laptop','tablet'])
       const isElectronics = typeof current?.category === 'string' && electronicsSet.has(current.category.toLowerCase())
       if (isElectronics && 'category' in data) {
         const incoming = String(data.category || '').trim().toLowerCase()

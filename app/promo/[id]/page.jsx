@@ -31,7 +31,7 @@ export default async function PromoPage({ params }) {
         <h2>Promotion not found</h2>
         <p className="meta">The promotion you are looking for does not exist or has been removed.</p>
         <div style={{ marginTop: 16 }}>
-          <Link className="btn" href="/" style={{ fontSize: '12px', padding: '8px 10px' }}>← Back to products</Link>
+          <Link href="/" className="back-arrow-btn">←</Link>
         </div>
       </main>
     )
@@ -103,7 +103,7 @@ export default async function PromoPage({ params }) {
             <a className="btn btn-primary" target="_blank" rel="noopener noreferrer" href={whatsappHref}>WhatsApp to Buy</a>
             <a className="btn" href="#contact">Contact Details</a>
             {product?.id ? <Link className="btn" href={`/product/${product.id}`}>View Product Page</Link> : null}
-            <Link className="btn" href="/" style={{ marginLeft: 'auto', fontSize: '12px', padding: '8px 10px' }}>← Back to products</Link>
+            <Link href="/" className="back-arrow-btn">←</Link>
           </div>
 
           {product ? (

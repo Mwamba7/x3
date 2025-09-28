@@ -7,11 +7,11 @@ import { useCart } from './CartContext'
 const CATEGORIES = [
   { key: 'all', label: 'All' },
   { key: 'tv', label: 'Televisions' },
-  { key: 'radio', label: 'Radios' },
-  { key: 'phone', label: 'Mobile Phones' },
-  { key: 'fridge', label: 'Fridges' },
-  { key: 'cooler', label: 'Gas Coolers' },
+  { key: 'radio', label: 'Sound systems' },
+  { key: 'phone', label: 'Mobile phones' },
+  { key: 'electronics', label: 'Electronics' },
   { key: 'accessory', label: 'Accessories' },
+  { key: 'appliances', label: 'Appliances' },
 ]
 
 export default function StoreClient({ products }) {
