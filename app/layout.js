@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Nav from '../components/Nav'
 import { CartProvider } from '../components/CartContext'
 import CartDrawer from '../components/CartDrawer'
+import CurrentYear from '../components/CurrentYear'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,7 +32,7 @@ export default function RootLayout({ children }) {
           </main>
           <footer className="site-footer">
             <div className="container footer-inner">
-              <p style={{ margin: 0, paddingTop: 6, width: '100%', textAlign: 'center' }}>© <span id="year">{new Date().getFullYear()}</span> Super Twice Resellers. All rights reserved.</p>
+              <p style={{ margin: 0, paddingTop: 6, width: '100%', textAlign: 'center' }}>© <CurrentYear /> Super Twice Resellers. All rights reserved.</p>
               <div className="footer-links">
 
               </div>

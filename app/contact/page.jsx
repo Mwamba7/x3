@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 
 export default function ContactPage() {
-  const [now, setNow] = useState(new Date())
+  const [now, setNow] = useState(null)
 
   useEffect(() => {
+    setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 60 * 1000)
     return () => clearInterval(id)
   }, [])
@@ -40,8 +41,8 @@ export default function ContactPage() {
     return hour >= start && hour < end
   }
 
-  const open = isOpen(now)
-  const dayIdx = now.getDay()
+  const open = now ? isOpen(now) : false
+  const dayIdx = now ? now.getDay() : 0
   const today = schedule[(dayIdx + 6) % 7]
 
   function formatTime(h) {

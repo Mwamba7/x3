@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '../../components/CartContext'
 import QuantitySelector from '../../components/QuantitySelector'
 import Link from 'next/link'
@@ -10,6 +10,7 @@ export default function CartPage() {
   const [clickedRemoveItems, setClickedRemoveItems] = useState(new Set())
   const [deliveryDetails, setDeliveryDetails] = useState({
     fulfillmentType: 'pickup', // 'pickup' or 'delivery'
+    customerName: '',
     address: '',
     phone: '',
     altPhone: '',
@@ -17,7 +18,44 @@ export default function CartPage() {
     instructions: ''
   })
   const [showValidationPopup, setShowValidationPopup] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const list = Object.values(items)
+
+  // Ensure we're on the client side before accessing localStorage
+  useEffect(() => {
+    setIsClient(true)
+    const savedDetails = localStorage.getItem('fulfillmentDetails')
+    if (savedDetails) {
+      try {
+        const parsedDetails = JSON.parse(savedDetails)
+        setDeliveryDetails(parsedDetails)
+      } catch (error) {
+        console.error('Error loading saved fulfillment details:', error)
+      }
+    }
+  }, [])
+
+  // Save fulfillment details to localStorage whenever they change (only on client)
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('fulfillmentDetails', JSON.stringify(deliveryDetails))
+    }
+  }, [deliveryDetails, isClient])
+
+  // Don't render dynamic content until after hydration to prevent mismatch
+  if (!isClient) {
+    return (
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, padding: '24px 16px 0' }}>
+          <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Your Cart</h1>
+          <Link href="/#collection" className="btn">Continue Shopping</Link>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', color: 'var(--muted)', padding: '48px 16px' }}>
+          <p style={{ margin: 0, fontSize: 16 }}>Loading cart...</p>
+        </div>
+      </div>
+    )
+  }
 
   const validateFulfillmentDetails = () => {
     if (deliveryDetails.fulfillmentType === 'pickup') {
@@ -26,7 +64,10 @@ export default function CartPage() {
         return { isValid: false, message: 'Please provide your phone number to proceed with pickup.' }
       }
     } else if (deliveryDetails.fulfillmentType === 'delivery') {
-      // For delivery, phone and address are required
+      // For delivery, customer name, phone and address are required
+      if (!deliveryDetails.customerName.trim()) {
+        return { isValid: false, message: 'Please provide your Address details to proceed with delivery.' }
+      }
       if (!deliveryDetails.phone.trim()) {
         return { isValid: false, message: 'Please provide your Address details to proceed with delivery.' }
       }
@@ -77,6 +118,7 @@ export default function CartPage() {
       message += `Note: Please bring this order confirmation when picking up\n`
     } else {
       message += `📍 *DELIVERY DETAILS*\n`
+      message += `Name: ${deliveryDetails.customerName || 'Not provided'}\n`
       message += `Address: ${deliveryDetails.address || 'Not provided'}\n`
       message += `Phone: ${deliveryDetails.phone || 'Not provided'}\n`
       if (deliveryDetails.altPhone) {
@@ -253,7 +295,7 @@ export default function CartPage() {
               <div style={{ display: 'grid', gap: 20, width: '100%', boxSizing: 'border-box' }}>
               {/* Delivery Address */}
               <div style={{ width: '100%', position: 'relative' }}>
-                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--text)' }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>
                   Delivery Address *
                 </label>
                 <textarea 
@@ -262,15 +304,38 @@ export default function CartPage() {
                   placeholder="Enter your full delivery address including building name, floor, and any landmarks"
                   style={{ 
                     width: '100%', 
-                    minHeight: 80, 
-                    padding: '12px', 
-                    borderRadius: 8, 
+                    minHeight: 60, 
+                    padding: '8px 10px', 
+                    borderRadius: 6, 
                     border: '1px solid #2a3342', 
                     background: 'transparent', 
                     color: 'var(--text)', 
-                    fontSize: 14,
+                    fontSize: 13,
                     resize: 'vertical',
                     fontFamily: 'inherit',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Customer Name */}
+              <div style={{ width: '100%', position: 'relative' }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>
+                  Customer Name *
+                </label>
+                <input 
+                  type="text" 
+                  value={deliveryDetails.customerName}
+                  onChange={(e) => setDeliveryDetails(prev => ({ ...prev, customerName: e.target.value }))}
+                  placeholder="Enter your full name"
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px 10px', 
+                    borderRadius: 6, 
+                    border: '1px solid #2a3342', 
+                    background: 'transparent', 
+                    color: 'var(--text)', 
+                    fontSize: 13,
                     boxSizing: 'border-box'
                   }}
                 />
@@ -420,7 +485,7 @@ export default function CartPage() {
             <div style={{ height: 1, background: '#253049', margin: '12px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
               <span>Total</span>
-              <strong>Ksh {Number(totalAmount + (deliveryDetails.fulfillmentType === 'pickup' ? 0 : (deliveryDetails.deliveryOption === 'express' ? 300 : 0))).toLocaleString('en-KE')}</strong>
+              <strong style={{ color: 'green' }}>Ksh {Number(totalAmount + (deliveryDetails.fulfillmentType === 'pickup' ? 0 : (deliveryDetails.deliveryOption === 'express' ? 300 : 0))).toLocaleString('en-KE')}</strong>
             </div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
               <input type="text" placeholder="Promo Code" style={{ flex: 1, borderRadius: 6, border: '1px solid #2a3342', background: 'transparent', color: 'var(--text)', padding: '6px 8px', fontSize: 13 }} />
