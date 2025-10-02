@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useCart } from './CartContext'
 
 export default function HeroRotator({ products = [], intervalMs = 7000 }) {
-  const list = useMemo(() => (Array.isArray(products) ? products.filter(p => p?.id && p?.img) : []), [products])
+  const list = useMemo(() => (Array.isArray(products) ? products.filter(p => p?.id && p?.img && p?.status !== 'sold') : []), [products])
   const [idx, setIdx] = useState(0)
   const [mounted, setMounted] = useState(false)
   const [isLargeScreen, setIsLargeScreen] = useState(false)
@@ -62,15 +62,18 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
     return <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0a101a 0%, #0e1421 100%)' }} />
   }
   
-  // On large screens, show multiple products in a grid
+  // On large screens, show horizontal sliding containers
   if (isLargeScreen) {
-    const isXLarge = window.innerWidth >= 1024
-    const columns = isXLarge ? 3 : 2
-    const rows = 2
-    const maxProducts = (columns * rows) - 1 // Remove one container
-    // First container gets rotating image, others get fixed images
+    const screenWidth = window.innerWidth
+    const isXLarge = screenWidth >= 1024
+    
+    // Calculate container width based on screen size
+    const containerWidth = isXLarge ? '320px' : '280px'
+    const containerHeight = isXLarge ? '240px' : '200px'
+    
+    // First container gets rotating image, others get static images
     const rotatingProduct = list[idx] // Rotating product for first container
-    const staticProducts = currentProducts.slice(0, maxProducts - 1) // Fixed products for other containers
+    const staticProducts = list.slice(1) // Static products for other containers
     const displayProducts = [rotatingProduct, ...staticProducts].filter(Boolean)
     
     return (
@@ -82,22 +85,27 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
         justifyContent: 'center',
         zIndex: 0
       }}>
-        <div style={{
-          width: 'min(1480px, 92%)',
-          maxWidth: '1480px',
-          display: 'grid', 
-          gridTemplateColumns: isXLarge ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', 
-          gridTemplateRows: 'repeat(2, 1fr)',
-          gap: '12px',
-          padding: '12px',
-          height: 'calc(100% - 24px)',
-          margin: '12px 0'
-        }}>
+        <div 
+          className="hero-horizontal-scroll"
+          style={{
+            width: 'min(1320px, 92%)',
+            maxWidth: '1320px',
+            height: '100%',
+            display: 'flex',
+            overflowX: 'scroll',
+            overflowY: 'hidden',
+            gap: '16px',
+            padding: '20px',
+            alignItems: 'center',
+            scrollBehavior: 'smooth',
+            WebkitOverflowScrolling: 'touch',
+            margin: '0 auto'
+          }}>
         {displayProducts.map((product, index) => {
           if (!product) return null;
           return (
           <div 
-            key={index === 0 ? `rotating-${idx}` : `${product.id}-${shuffleTrigger}`} 
+            key={index === 0 ? `rotating-${idx}` : `${product.id}-static`} 
             className={`hero-grid-item ${product.status === 'sold' ? 'sold' : ''}`}
             onClick={() => {
               if (product.status === 'sold') {
@@ -110,9 +118,10 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
               overflow: 'hidden',
               borderRadius: '12px',
               background: '#0e1421',
-              minHeight: '150px',
-              width: '100%',
-              height: '100%',
+              width: containerWidth,
+              height: containerHeight,
+              minWidth: containerWidth,
+              flexShrink: 0,
               cursor: product.status === 'sold' ? 'not-allowed' : 'default',
               transition: 'all 0.3s ease'
             }}>
@@ -168,7 +177,7 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
             </div>
 
             <img
-              key={index === 0 ? idx : product.id}
+              key={index === 0 ? `img-${idx}` : product.id}
               src={product.img}
               alt={product.name}
               style={{ 
@@ -319,34 +328,75 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
         </div>
       </div>
       
-      {/* Product name overlay - top left */}
+      {/* Product name and status overlay - top left */}
       <div style={{
         position: 'absolute',
         top: '12px',
         left: '16px',
         zIndex: 2,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        backdropFilter: 'blur(4px)',
-        width: '140px',
-        height: '18px',
         display: 'flex',
-        alignItems: 'center'
+        flexDirection: 'column',
+        gap: '6px'
       }}>
-        <p style={{
-          margin: 0,
-          fontSize: '12px',
-          color: '#22c55e',
-          fontWeight: '500',
-          textShadow: '0 1px 2px rgba(0,0,0,0.8)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          width: '100%'
+        {/* Product name */}
+        <div style={{
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          backdropFilter: 'blur(4px)',
+          width: '140px',
+          height: '18px',
+          display: 'flex',
+          alignItems: 'center'
         }}>
-          {currentProduct.name}
-        </p>
+          <p style={{
+            margin: 0,
+            fontSize: '12px',
+            color: '#22c55e',
+            fontWeight: '500',
+            textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            width: '100%'
+          }}>
+            {currentProduct.name}
+          </p>
+        </div>
+        
+      </div>
+
+      {/* Status indicator and price - bottom left */}
+      <div style={{
+        position: 'absolute',
+        bottom: '16px',
+        left: '16px',
+        zIndex: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px'
+      }}>
+        {/* Status text */}
+        <span style={{
+          fontSize: '12px',
+          color: currentProduct.status === 'sold' ? '#ef4444' : '#22c55e',
+          fontWeight: '700',
+          textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          {currentProduct.status === 'sold' ? 'SOLD' : 'AVAILABLE'}
+        </span>
+        
+        {/* Price */}
+        <span style={{
+          fontSize: '14px',
+          color: 'white',
+          fontWeight: '600',
+          textShadow: '0 2px 4px rgba(0,0,0,0.9)'
+        }}>
+          Ksh {Number(currentProduct.price || 0).toLocaleString('en-KE')}
+        </span>
       </div>
 
       {/* Buy Now button - bottom right */}
@@ -363,15 +413,18 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
             padding: '8px 16px',
             fontSize: '13px',
             fontWeight: '600',
-            backgroundColor: 'var(--primary)',
+            backgroundColor: currentProduct.status === 'sold' ? '#9ca3af' : 'var(--primary)',
             color: 'white',
             textDecoration: 'none',
             borderRadius: '6px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            border: 'none'
+            border: 'none',
+            opacity: currentProduct.status === 'sold' ? 0.6 : 1,
+            pointerEvents: currentProduct.status === 'sold' ? 'none' : 'auto',
+            cursor: currentProduct.status === 'sold' ? 'not-allowed' : 'pointer'
           }}
         >
-          Buy Now
+          {currentProduct.status === 'sold' ? 'Sold Out' : 'Buy Now'}
         </Link>
       </div>
 
@@ -486,6 +539,40 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
         .hero-grid-item.sold:hover {
           transform: scale(0.98);
           box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Custom scrollbar for horizontal scroll */
+        .hero-horizontal-scroll {
+          scrollbar-width: auto; /* Firefox */
+          scrollbar-color: rgba(255,255,255,0.6) rgba(0,0,0,0.2); /* Firefox */
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar {
+          height: 12px;
+          -webkit-appearance: none;
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar:horizontal {
+          height: 12px;
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.2);
+          border-radius: 6px;
+          margin: 0 10px;
+          -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.6);
+          border-radius: 6px;
+          border: 1px solid rgba(0,0,0,0.1);
+          -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255,255,255,0.8);
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar-thumb:active {
+          background: rgba(255,255,255,0.9);
+        }
+        .hero-horizontal-scroll::-webkit-scrollbar-corner {
+          background: rgba(0,0,0,0.2);
         }
       `}</style>
     </>
