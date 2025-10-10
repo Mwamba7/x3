@@ -16,6 +16,12 @@ const CartContext = createContext(null)
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => {
     if (typeof window === "undefined") return {}
+    
+    // Force empty cart for development/reset (uncomment to clear cart)
+    window.localStorage.removeItem("cart:v1")
+    window.localStorage.removeItem("fulfillmentDetails")
+    return {}
+    
     try {
       const raw = window.localStorage.getItem("cart:v1")
       return raw ? JSON.parse(raw) : {}

@@ -22,24 +22,41 @@ export default function CartPage() {
   const [mpesaPayment, setMpesaPayment] = useState({
     phoneNumber: '',
     isProcessing: false,
-    paymentStatus: null, // null, 'pending', 'success', 'failed'
+    paymentStatus: null, // null, 'pending', 'processing', 'success', 'failed', 'cancelled', 'timeout'
     checkoutRequestId: null,
-    depositPaid: false
+    depositPaid: false,
+    errorMessage: null
   })
   const list = Object.values(items)
 
   // Ensure we're on the client side before accessing localStorage
   useEffect(() => {
     setIsClient(true)
-    const savedDetails = localStorage.getItem('fulfillmentDetails')
-    if (savedDetails) {
-      try {
-        const parsedDetails = JSON.parse(savedDetails)
-        setDeliveryDetails(parsedDetails)
-      } catch (error) {
-        console.error('Error loading saved fulfillment details:', error)
-      }
-    }
+    
+    // Clear any saved data to start fresh (temporary for reset)
+    localStorage.removeItem('fulfillmentDetails')
+    localStorage.removeItem('mpesaPayment')
+    
+    // Reset delivery details to default
+    setDeliveryDetails({
+      fulfillmentType: 'pickup',
+      customerName: '',
+      address: '',
+      phone: '',
+      altPhone: '',
+      deliveryOption: 'standard',
+      instructions: ''
+    })
+    
+    // Reset M-Pesa payment state
+    setMpesaPayment({
+      phoneNumber: '',
+      isProcessing: false,
+      paymentStatus: null,
+      checkoutRequestId: null,
+      depositPaid: false,
+      errorMessage: null
+    })
   }, [])
 
   // Save fulfillment details to localStorage whenever they change (only on client)
@@ -109,48 +126,104 @@ export default function CartPage() {
 
   // Handle M-Pesa payment
   const handleMpesaPayment = async () => {
-    if (!mpesaPayment.phoneNumber.trim()) {
-      alert('Please enter your M-Pesa phone number')
+    const depositAmount = calculatePaymentAmounts().depositAmount
+    
+    // Validate phone number format
+    const phoneRegex = /^(254[710]\d{8}|0[710]\d{8}|[710]\d{8})$/
+    const cleanedPhone = mpesaPayment.phoneNumber.replace(/\s+/g, '')
+    
+    if (!phoneRegex.test(cleanedPhone)) {
+      setMpesaPayment(prev => ({ 
+        ...prev, 
+        paymentStatus: 'failed',
+        errorMessage: 'Invalid phone number format. Please use a valid Kenyan mobile number (e.g., 0708374149 or 254708374149).'
+      }))
       return
     }
-
-    const { depositAmount } = calculatePaymentAmounts()
+    
+    console.log('🚀 Starting M-Pesa payment:', {
+      phoneNumber: cleanedPhone,
+      amount: depositAmount
+    })
     
     setMpesaPayment(prev => ({ ...prev, isProcessing: true, paymentStatus: 'pending' }))
 
     try {
+      const requestData = {
+        phoneNumber: cleanedPhone,
+        amount: depositAmount,
+        accountReference: `ORDER-${Date.now()}`,
+        transactionDesc: `20% Deposit Payment - Order Total: Ksh ${calculatePaymentAmounts().finalTotal}`
+      }
+      
+      console.log('📤 Sending request:', requestData)
+      
       const response = await fetch('/api/mpesa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          phoneNumber: mpesaPayment.phoneNumber,
-          amount: depositAmount,
-          accountReference: `ORDER-${Date.now()}`,
-          transactionDesc: `20% Deposit Payment - Order Total: Ksh ${calculatePaymentAmounts().finalTotal}`
-        }),
+        body: JSON.stringify(requestData),
       })
 
+      console.log('📥 Response status:', response.status)
       const data = await response.json()
+      console.log('📋 Response data:', data)
 
       if (data.success) {
         setMpesaPayment(prev => ({
           ...prev,
           checkoutRequestId: data.checkoutRequestId,
-          paymentStatus: 'pending'
+          paymentStatus: 'processing',
+          errorMessage: null
         }))
         
-        // Start polling for payment status
-        pollPaymentStatus(data.checkoutRequestId)
+        // Show success notification for STK push sent
+        console.log('✅ STK Push sent successfully!')
+        
+        // Start polling for payment status after a short delay to show success message
+        setTimeout(() => {
+          pollPaymentStatus(data.checkoutRequestId)
+        }, 2000) // 2 second delay
       } else {
-        setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
-        alert(data.message || 'Payment failed. Please try again.')
+        console.log('❌ Payment failed - API returned success: false')
+        
+        // Get specific error message from M-Pesa response
+        let errorMessage = 'Payment failed. Please try again.'
+        if (data.message) {
+          if (data.message.includes('Invalid Access Token')) {
+            errorMessage = 'M-Pesa service temporarily unavailable. Please try again in a few minutes.'
+          } else if (data.message.includes('Invalid phone number')) {
+            errorMessage = 'Invalid phone number format. Please use format: 0700000000 or 254700000000'
+          } else if (data.message.includes('Insufficient funds')) {
+            errorMessage = 'Insufficient M-Pesa balance. Please top up and try again.'
+          } else if (data.message.includes('Request cancelled')) {
+            errorMessage = 'Payment request was cancelled. Please try again.'
+          } else if (data.message.includes('timeout')) {
+            errorMessage = 'Payment request timed out. Please check your network and try again.'
+          } else {
+            errorMessage = data.message
+          }
+        }
+        
+        setMpesaPayment(prev => ({ 
+          ...prev, 
+          isProcessing: false, 
+          paymentStatus: 'failed',
+          errorMessage: errorMessage,
+          depositPaid: false
+        }))
+        console.error('M-Pesa STK Push failed:', data)
       }
     } catch (error) {
-      console.error('Payment error:', error)
-      setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
-      alert('Payment failed. Please check your connection and try again.')
+      console.error('❌ Payment error (catch block):', error)
+      setMpesaPayment(prev => ({ 
+        ...prev, 
+        isProcessing: false, 
+        paymentStatus: 'failed',
+        errorMessage: 'Network error. Please check your connection and try again.',
+        depositPaid: false
+      }))
     }
   }
 
@@ -159,6 +232,9 @@ export default function CartPage() {
     let attempts = 0
     const maxAttempts = 30 // Poll for 2.5 minutes (5s intervals)
 
+    // Update status to pending when we start polling
+    setMpesaPayment(prev => ({ ...prev, paymentStatus: 'pending' }))
+
     const poll = async () => {
       try {
         const response = await fetch(`/api/mpesa?checkoutRequestId=${checkoutRequestId}`)
@@ -166,21 +242,149 @@ export default function CartPage() {
 
         if (data.success && data.data) {
           const { ResultCode, ResultDesc } = data.data
+          console.log('Payment status check:', { ResultCode, ResultDesc })
 
-          if (ResultCode === '0') {
+          // Handle undefined or null ResultCode
+          if (ResultCode === undefined || ResultCode === null) {
+            console.log('ResultCode is undefined, continuing to poll...')
+            // Continue polling if no result code yet
+            attempts++
+            if (attempts < maxAttempts) {
+              setTimeout(poll, 5000)
+            } else {
+              setMpesaPayment(prev => ({ 
+                ...prev, 
+                isProcessing: false, 
+                paymentStatus: 'timeout',
+                errorMessage: 'Payment verification timed out. Please check your M-Pesa messages or try again.'
+              }))
+            }
+            return
+          }
+
+          // Convert ResultCode to string for comparison
+          const resultCode = String(ResultCode)
+
+          if (resultCode === '0') {
             // Payment successful
+            console.log('🎉 Payment successful! Enabling WhatsApp button...')
+            setMpesaPayment(prev => {
+              const newState = { 
+                ...prev, 
+                isProcessing: false, 
+                paymentStatus: 'success',
+                depositPaid: true,
+                errorMessage: null
+              }
+              console.log('🔄 Updated payment state:', newState)
+              return newState
+            })
+            return
+          } else if (resultCode && resultCode !== '1032') {
+            // Payment failed (1032 is still pending)
+            console.log('Payment failed with code:', resultCode, 'Description:', ResultDesc)
+            
+            // Get user-friendly error message based on result code
+            let errorMessage = ResultDesc || 'Payment failed. Please try again.'
+            
+            // Determine payment status based on result code
+            let paymentStatus = 'failed'
+            
+            // Common M-Pesa result codes and user-friendly messages
+            switch (resultCode) {
+              case '1':
+                errorMessage = 'Insufficient M-Pesa balance. Please top up your account and try again.'
+                break
+              case '2':
+                errorMessage = 'Invalid amount. Please check the payment amount.'
+                break
+              case '4':
+                errorMessage = 'Invalid phone number. Please check your M-Pesa number.'
+                break
+              case '8':
+                errorMessage = 'Account not found. Please check your M-Pesa number.'
+                break
+              case '17':
+                errorMessage = 'Payment was cancelled by user.'
+                paymentStatus = 'cancelled'
+                break
+              case '26':
+                errorMessage = 'System busy. Please try again in a few minutes.'
+                break
+              case '1001':
+                errorMessage = 'Unable to lock subscriber. Please try again.'
+                break
+              case '1019':
+                errorMessage = 'Transaction expired. Please try again.'
+                break
+              case '1025':
+                errorMessage = 'Payment was cancelled by user.'
+                paymentStatus = 'cancelled'
+                break
+              case '1032':
+                // This should not happen here since we check for 1032 above, but just in case
+                errorMessage = 'Payment is still being processed. Please wait...'
+                paymentStatus = 'processing'
+                break
+              case '1037':
+                errorMessage = 'Payment timeout. Please try again.'
+                break
+              default:
+                // Check if the description indicates cancellation
+                if (ResultDesc && (
+                  ResultDesc.toLowerCase().includes('cancel') || 
+                  ResultDesc.toLowerCase().includes('abort') ||
+                  ResultDesc.toLowerCase().includes('reject')
+                )) {
+                  errorMessage = 'Payment was cancelled. Please try again.'
+                  paymentStatus = 'cancelled'
+                } else if (ResultDesc) {
+                  // Use the original ResultDesc if available
+                  errorMessage = ResultDesc
+                } else {
+                  // Generic message without showing undefined code
+                  errorMessage = 'Payment failed. Please try again.'
+                }
+            }
+            
+            // If payment is still processing, don't stop polling yet
+            if (paymentStatus === 'processing') {
+              setMpesaPayment(prev => ({ 
+                ...prev, 
+                paymentStatus: 'processing',
+                errorMessage: errorMessage
+              }))
+              // Continue polling for processing payments
+              return
+            } else {
+              // For failed or cancelled payments, stop polling
+              setMpesaPayment(prev => ({ 
+                ...prev, 
+                isProcessing: false, 
+                paymentStatus: paymentStatus,
+                errorMessage: errorMessage,
+                depositPaid: false 
+              }))
+              return
+            }
+          }
+          // If ResultCode is 1032, continue polling (still pending)
+        } else {
+          // No data received or API returned success: false
+          console.log('No payment data received, continuing to poll...')
+          // Continue polling if no data yet
+          attempts++
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 5000)
+          } else {
             setMpesaPayment(prev => ({ 
               ...prev, 
               isProcessing: false, 
-              paymentStatus: 'success',
-              depositPaid: true 
+              paymentStatus: 'timeout',
+              errorMessage: 'Payment verification timed out. Please check your M-Pesa messages or try again.'
             }))
-            return
-          } else if (ResultCode && ResultCode !== '1032') {
-            // Payment failed (1032 is still pending)
-            setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
-            return
           }
+          return
         }
 
         // Continue polling if still pending
@@ -189,7 +393,12 @@ export default function CartPage() {
           setTimeout(poll, 5000) // Poll every 5 seconds
         } else {
           // Timeout
-          setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'timeout' }))
+          setMpesaPayment(prev => ({ 
+            ...prev, 
+            isProcessing: false, 
+            paymentStatus: 'timeout',
+            errorMessage: 'Payment verification timed out after 2.5 minutes. Your payment may still be processing. Please check your M-Pesa messages or try again.'
+          }))
         }
       } catch (error) {
         console.error('Polling error:', error)
@@ -197,7 +406,12 @@ export default function CartPage() {
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000)
         } else {
-          setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
+          setMpesaPayment(prev => ({ 
+            ...prev, 
+            isProcessing: false, 
+            paymentStatus: 'timeout',
+            errorMessage: 'Unable to verify payment status. Please check your M-Pesa messages or contact support if money was deducted.'
+          }))
         }
       }
     }
@@ -636,19 +850,25 @@ export default function CartPage() {
                       backgroundColor: 
                         mpesaPayment.paymentStatus === 'success' ? 'rgba(40, 167, 69, 0.1)' :
                         mpesaPayment.paymentStatus === 'failed' ? 'rgba(220, 53, 69, 0.1)' :
+                        mpesaPayment.paymentStatus === 'cancelled' ? 'rgba(255, 193, 7, 0.1)' :
                         mpesaPayment.paymentStatus === 'timeout' ? 'rgba(255, 193, 7, 0.1)' :
+                        mpesaPayment.paymentStatus === 'processing' ? 'rgba(40, 167, 69, 0.1)' :
                         'rgba(0, 123, 255, 0.1)',
                       border: `1px solid ${
                         mpesaPayment.paymentStatus === 'success' ? 'rgba(40, 167, 69, 0.3)' :
                         mpesaPayment.paymentStatus === 'failed' ? 'rgba(220, 53, 69, 0.3)' :
+                        mpesaPayment.paymentStatus === 'cancelled' ? 'rgba(255, 193, 7, 0.3)' :
                         mpesaPayment.paymentStatus === 'timeout' ? 'rgba(255, 193, 7, 0.3)' :
+                        mpesaPayment.paymentStatus === 'processing' ? 'rgba(40, 167, 69, 0.3)' :
                         'rgba(0, 123, 255, 0.3)'
                       }`
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
                         {mpesaPayment.paymentStatus === 'success' && '✅ Payment Successful!'}
                         {mpesaPayment.paymentStatus === 'failed' && '❌ Payment Failed'}
+                        {mpesaPayment.paymentStatus === 'cancelled' && '🚫 Payment Cancelled'}
                         {mpesaPayment.paymentStatus === 'timeout' && '⏱️ Payment Timeout'}
+                        {mpesaPayment.paymentStatus === 'processing' && '✅ Transaction Made Successfully'}
                         {mpesaPayment.paymentStatus === 'pending' && '⏳ Processing Payment...'}
                       </div>
                       {mpesaPayment.paymentStatus === 'success' && (
@@ -656,15 +876,119 @@ export default function CartPage() {
                           Your 20% deposit has been received. You can now proceed with your order.
                         </p>
                       )}
-                      {mpesaPayment.paymentStatus === 'failed' && (
+                      {mpesaPayment.paymentStatus === 'processing' && (
                         <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                          Payment was cancelled or failed. Please try again.
+                          The transaction is still under processing. Please check your phone and enter your M-Pesa PIN to complete the payment.
                         </p>
                       )}
+                      {mpesaPayment.paymentStatus === 'cancelled' && (
+                        <div>
+                          <p style={{ margin: '4px 0 8px', fontSize: 12, color: 'var(--muted)' }}>
+                            {mpesaPayment.errorMessage || 'Payment was cancelled. Please try again.'}
+                          </p>
+                          <button 
+                            onClick={() => setMpesaPayment(prev => ({ 
+                              ...prev, 
+                              paymentStatus: null, 
+                              isProcessing: false,
+                              // Keep depositPaid if it was successful before
+                              depositPaid: false,
+                              errorMessage: null
+                            }))}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 4,
+                              border: '1px solid #ffc107',
+                              background: 'transparent',
+                              color: '#ffc107',
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => {
+                              e.target.style.background = '#ffc107'
+                              e.target.style.color = 'black'
+                            }}
+                            onMouseOut={(e) => {
+                              e.target.style.background = 'transparent'
+                              e.target.style.color = '#ffc107'
+                            }}
+                          >
+                            🔄 Try Again
+                          </button>
+                        </div>
+                      )}
+                      {mpesaPayment.paymentStatus === 'failed' && (
+                        <div>
+                          <p style={{ margin: '4px 0 8px', fontSize: 12, color: 'var(--muted)' }}>
+                            {mpesaPayment.errorMessage || 'Payment was cancelled or failed. Please try again.'}
+                          </p>
+                          <button 
+                            onClick={() => setMpesaPayment(prev => ({ 
+                              ...prev, 
+                              paymentStatus: null, 
+                              isProcessing: false,
+                              depositPaid: false,
+                              errorMessage: null
+                            }))}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 4,
+                              border: '1px solid #dc3545',
+                              background: 'transparent',
+                              color: '#dc3545',
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => {
+                              e.target.style.background = '#dc3545'
+                              e.target.style.color = 'white'
+                            }}
+                            onMouseOut={(e) => {
+                              e.target.style.background = 'transparent'
+                              e.target.style.color = '#dc3545'
+                            }}
+                          >
+                            🔄 Try Again
+                          </button>
+                        </div>
+                      )}
                       {mpesaPayment.paymentStatus === 'timeout' && (
-                        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                          Payment request timed out. Please try again.
-                        </p>
+                        <div>
+                          <p style={{ margin: '4px 0 8px', fontSize: 12, color: 'var(--muted)' }}>
+                            {mpesaPayment.errorMessage || 'Payment request timed out. Please try again.'}
+                          </p>
+                          <button 
+                            onClick={() => setMpesaPayment(prev => ({ 
+                              ...prev, 
+                              paymentStatus: null, 
+                              isProcessing: false,
+                              depositPaid: false,
+                              errorMessage: null
+                            }))}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 4,
+                              border: '1px solid #ffc107',
+                              background: 'transparent',
+                              color: '#ffc107',
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => {
+                              e.target.style.background = '#ffc107'
+                              e.target.style.color = 'black'
+                            }}
+                            onMouseOut={(e) => {
+                              e.target.style.background = 'transparent'
+                              e.target.style.color = '#ffc107'
+                            }}
+                          >
+                            🔄 Try Again
+                          </button>
+                        </div>
                       )}
                       {mpesaPayment.paymentStatus === 'pending' && (
                         <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
@@ -675,7 +999,7 @@ export default function CartPage() {
                   )}
 
                   {/* Payment Form */}
-                  {!mpesaPayment.depositPaid && (
+                  {!mpesaPayment.depositPaid && mpesaPayment.paymentStatus !== 'success' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <div>
                         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>
@@ -743,8 +1067,8 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  {/* Payment Success Message */}
-                  {mpesaPayment.depositPaid && (
+                  {/* Success Message */}
+                  {mpesaPayment.depositPaid && mpesaPayment.paymentStatus === 'success' && (
                     <div style={{ 
                       background: 'rgba(40, 167, 69, 0.1)', 
                       border: '1px solid rgba(40, 167, 69, 0.3)', 
@@ -819,7 +1143,7 @@ export default function CartPage() {
               <button className="btn btn-small" style={{ fontSize: 12, padding: '6px 8px' }}>Apply</button>
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              {mpesaPayment.depositPaid ? (
+              {mpesaPayment.depositPaid && mpesaPayment.paymentStatus === 'success' ? (
                 <a 
                   className="btn btn-primary"
                   href={`https://wa.me/254718176584?text=${encodeURIComponent(generateWhatsAppMessage())}`}

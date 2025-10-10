@@ -75,33 +75,65 @@ function generatePassword() {
 
 // Format phone number to required format
 function formatPhoneNumber(phone) {
+  if (!phone) return ''
+  
   // Remove any non-digit characters
   let cleaned = phone.replace(/\D/g, '')
   
   // Handle different formats
   if (cleaned.startsWith('254')) {
-    return cleaned
-  } else if (cleaned.startsWith('0')) {
+    return cleaned.length === 12 ? cleaned : ''
+  } else if (cleaned.startsWith('0') && cleaned.length === 10) {
     return '254' + cleaned.slice(1)
-  } else if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
+  } else if ((cleaned.startsWith('7') || cleaned.startsWith('1')) && cleaned.length === 9) {
     return '254' + cleaned
   }
   
-  return cleaned
+  // Return empty string if format doesn't match (will fail validation)
+  return ''
 }
 
 // STK Push endpoint
 export async function POST(request) {
   try {
+    console.log('🚀 M-Pesa STK Push request received')
+    
     // Validate environment configuration
     if (!CALLBACK_URL) {
+      console.error('❌ CALLBACK_URL not configured')
       return NextResponse.json(
         { success: false, message: 'M-Pesa configuration incomplete. Please set NEXT_PUBLIC_BASE_URL in your environment variables.' },
         { status: 500 }
       )
     }
 
-    const { phoneNumber, amount, accountReference, transactionDesc } = await request.json()
+    // Validate required environment variables
+    if (!CONSUMER_KEY || !CONSUMER_SECRET || !BUSINESS_SHORT_CODE || !PASSKEY) {
+      console.error('❌ Missing M-Pesa credentials:', {
+        hasConsumerKey: !!CONSUMER_KEY,
+        hasConsumerSecret: !!CONSUMER_SECRET,
+        hasBusinessShortCode: !!BUSINESS_SHORT_CODE,
+        hasPasskey: !!PASSKEY
+      })
+      return NextResponse.json(
+        { success: false, message: 'M-Pesa credentials not configured. Please check your environment variables.' },
+        { status: 500 }
+      )
+    }
+
+    let requestBody
+    try {
+      requestBody = await request.json()
+    } catch (jsonError) {
+      console.error('❌ Invalid JSON in request body:', jsonError)
+      return NextResponse.json(
+        { success: false, message: 'Invalid request format. Please check your request data.' },
+        { status: 400 }
+      )
+    }
+
+    const { phoneNumber, amount, accountReference, transactionDesc } = requestBody
+    console.log('📋 Request data:', { phoneNumber, amount, accountReference, transactionDesc })
 
     if (!phoneNumber || !amount) {
       return NextResponse.json(
@@ -119,18 +151,23 @@ export async function POST(request) {
     }
 
     // Get access token
+    console.log('🔑 Generating access token...')
     const accessToken = await generateAccessToken()
+    console.log('✅ Access token generated successfully')
     
     // Generate password and timestamp
     const { password, timestamp } = generatePassword()
     
     // Format phone number
     const formattedPhone = formatPhoneNumber(phoneNumber)
+    console.log('📱 Formatted phone number:', formattedPhone)
     
-    // Validate phone number format
-    if (!formattedPhone.match(/^254[0-9]{9}$/)) {
+    // Validate phone number format (must be Kenyan mobile number)
+    // Valid formats: 254[7,1,0][0-9]{8} (Safaricom, Airtel, Telkom)
+    if (!formattedPhone || formattedPhone.length !== 12 || !formattedPhone.match(/^254[710][0-9]{8}$/)) {
+      console.log('❌ Invalid phone number format:', { original: phoneNumber, formatted: formattedPhone })
       return NextResponse.json(
-        { success: false, message: 'Invalid phone number format. Please use a valid Kenyan phone number.' },
+        { success: false, message: 'Invalid phone number format. Please use a valid Kenyan mobile number (e.g., 0708374149 or 254708374149).' },
         { status: 400 }
       )
     }
@@ -162,14 +199,30 @@ export async function POST(request) {
     })
 
     const data = await response.json()
+    console.log('📋 M-Pesa API Response:', data)
     
     if (!response.ok) {
-      console.error('STK Push failed:', data)
+      console.error('❌ STK Push failed:', data)
+      
+      // Handle specific M-Pesa error messages
+      let errorMessage = 'Payment request failed. Please try again.'
+      
+      if (data.errorMessage) {
+        if (data.errorMessage.includes('Invalid Access Token')) {
+          errorMessage = 'M-Pesa service temporarily unavailable. Please try again in a few minutes.'
+        } else if (data.errorMessage.includes('Bad Request')) {
+          errorMessage = 'Invalid payment request. Please check your phone number and try again.'
+        } else {
+          errorMessage = data.errorMessage
+        }
+      } else if (data.ResponseDescription) {
+        errorMessage = data.ResponseDescription
+      }
+      
       return NextResponse.json({
         success: false,
-        message: data.errorMessage || data.ResponseDescription || 'STK push request failed',
-        error: data
-      }, { status: response.status })
+        message: errorMessage
+      }, { status: 400 }) // Always return 400 for client errors, not 500
     }
     
     if (data.ResponseCode === '0') {
@@ -181,18 +234,47 @@ export async function POST(request) {
         merchantRequestId: data.MerchantRequestID
       })
     } else {
-      console.error('STK Push rejected:', data)
+      console.error('❌ STK Push rejected:', data)
+      
+      // Handle specific M-Pesa response codes
+      let errorMessage = 'Payment request failed. Please try again.'
+      
+      if (data.ResponseDescription) {
+        if (data.ResponseDescription.includes('invalid phone number')) {
+          errorMessage = 'Invalid phone number. Please check your M-Pesa number and try again.'
+        } else if (data.ResponseDescription.includes('system busy')) {
+          errorMessage = 'M-Pesa system is busy. Please try again in a few minutes.'
+        } else if (data.ResponseDescription.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again.'
+        } else {
+          errorMessage = data.ResponseDescription
+        }
+      }
+      
       return NextResponse.json({
         success: false,
-        message: data.ResponseDescription || 'STK push failed',
-        error: data
+        message: errorMessage
       }, { status: 400 })
     }
 
   } catch (error) {
     console.error('STK Push error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Payment request failed. Please try again.'
+    
+    if (error.message.includes('Failed to generate access token')) {
+      errorMessage = 'M-Pesa service temporarily unavailable. Please try again in a few minutes.'
+    } else if (error.message.includes('credentials not configured')) {
+      errorMessage = 'Payment service configuration error. Please contact support.'
+    } else if (error.message.includes('fetch')) {
+      errorMessage = 'Network error. Please check your connection and try again.'
+    } else if (error.message.includes('JSON')) {
+      errorMessage = 'Invalid request format. Please try again.'
+    }
+    
     return NextResponse.json(
-      { success: false, message: 'Internal server error', error: error.message },
+      { success: false, message: errorMessage },
       { status: 500 }
     )
   }
@@ -242,8 +324,20 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('STK Push query error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Unable to check payment status. Please try again.'
+    
+    if (error.message.includes('Failed to generate access token')) {
+      errorMessage = 'M-Pesa service temporarily unavailable. Please try again in a few minutes.'
+    } else if (error.message.includes('credentials not configured')) {
+      errorMessage = 'Payment service configuration error. Please contact support.'
+    } else if (error.message.includes('fetch')) {
+      errorMessage = 'Network error. Please check your connection and try again.'
+    }
+    
     return NextResponse.json(
-      { success: false, message: 'Internal server error', error: error.message },
+      { success: false, message: errorMessage },
       { status: 500 }
     )
   }
