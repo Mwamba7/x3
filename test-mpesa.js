@@ -6,10 +6,41 @@
  */
 
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+// Load environment variables from .env file
+function loadEnvFile() {
+  try {
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const lines = envContent.split('\n');
+      
+      lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine && !trimmedLine.startsWith('#') && trimmedLine.includes('=')) {
+          const [key, ...valueParts] = trimmedLine.split('=');
+          const value = valueParts.join('=').replace(/^["']|["']$/g, ''); // Remove quotes
+          process.env[key.trim()] = value.trim();
+        }
+      });
+      
+      console.log('✅ Loaded environment variables from .env file');
+    } else {
+      console.log('❌ .env file not found');
+    }
+  } catch (error) {
+    console.log('❌ Error loading .env file:', error.message);
+  }
+}
+
+// Load environment variables
+loadEnvFile();
 
 // Test configuration
 const TEST_CONFIG = {
-  baseUrl: 'http://localhost:3000', // Change this to your app URL
+  baseUrl: 'http://localhost:3001', // Change this to your app URL (using 3001 since 3000 is in use)
   testPhone: '254708374149', // Safaricom test number
   testAmount: 100 // Test amount in KES
 };
