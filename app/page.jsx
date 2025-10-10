@@ -79,37 +79,10 @@ export default async function Page() {
     <>
       <section className="hero" aria-label="Featured promotions" style={{ position: 'relative' }}>
         <HeroCartButton />
-        {/* Background: auto-rotating products from All Products + Fashion */}
-        <HeroRotator products={[...products, ...fashionProducts]} intervalMs={10000} />
+        {/* Background: auto-rotating products from All Products + Fashion + Pre-owned */}
+        <HeroRotator products={[...products, ...fashionProducts, ...reusedProducts]} intervalMs={10000} />
       </section>
 
-      {/* Hero Content Section - Only visible on large screens */}
-      <section className="hero-content-section" style={{ 
-        background: 'linear-gradient(135deg, var(--bg) 0%, #0e1421 100%)', 
-        borderBottom: '1px solid #223',
-        padding: '40px 0',
-        display: 'none'
-      }}>
-        <div className="container" style={{ textAlign: 'left' }}>
-          <h2 style={{ fontSize: 'clamp(18px, 3vw, 32px)', marginBottom: 8, fontWeight: '700' }}>
-            Quality Pre‑Owned + New Electronics & Appliances
-          </h2>
-          <h2 style={{ fontSize: 'clamp(16px, 2.5vw, 28px)', marginBottom: 24, color: 'var(--primary)', fontWeight: '600' }}>
-            Outfits, Fashion & Sneakers.
-          </h2>
-          <p style={{ fontSize: 'clamp(14px, 1.5vw, 18px)', color: 'var(--muted)', marginBottom: 32, maxWidth: '600px', margin: '0 0 32px 0' }}>
-            Save money. Reduce waste. Buy dependable, refurbished items with warranty.
-          </p>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-            <Link href="/#collection" className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '16px' }}>
-              Browse Products
-            </Link>
-            <Link href="/sell" className="btn" style={{ padding: '12px 24px', fontSize: '16px' }}>
-              Want to Sell Product
-            </Link>
-          </div>
-        </div>
-      </section>
 
       <main className="container">
         <StoreClient products={products} />

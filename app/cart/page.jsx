@@ -19,6 +19,13 @@ export default function CartPage() {
   })
   const [showValidationPopup, setShowValidationPopup] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [mpesaPayment, setMpesaPayment] = useState({
+    phoneNumber: '',
+    isProcessing: false,
+    paymentStatus: null, // null, 'pending', 'success', 'failed'
+    checkoutRequestId: null,
+    depositPaid: false
+  })
   const list = Object.values(items)
 
   // Ensure we're on the client side before accessing localStorage
@@ -90,26 +97,137 @@ export default function CartPage() {
     return true
   }
 
+  // Calculate deposit and remaining amounts
+  const calculatePaymentAmounts = () => {
+    const deliveryCost = deliveryDetails.fulfillmentType === 'pickup' ? 0 : (deliveryDetails.deliveryOption === 'express' ? 300 : 0)
+    const finalTotal = totalAmount + deliveryCost
+    const depositAmount = Math.round(finalTotal * 0.2) // 20% deposit
+    const remainingAmount = finalTotal - depositAmount
+    
+    return { finalTotal, depositAmount, remainingAmount, deliveryCost }
+  }
+
+  // Handle M-Pesa payment
+  const handleMpesaPayment = async () => {
+    if (!mpesaPayment.phoneNumber.trim()) {
+      alert('Please enter your M-Pesa phone number')
+      return
+    }
+
+    const { depositAmount } = calculatePaymentAmounts()
+    
+    setMpesaPayment(prev => ({ ...prev, isProcessing: true, paymentStatus: 'pending' }))
+
+    try {
+      const response = await fetch('/api/mpesa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: mpesaPayment.phoneNumber,
+          amount: depositAmount,
+          accountReference: `ORDER-${Date.now()}`,
+          transactionDesc: `20% Deposit Payment - Order Total: Ksh ${calculatePaymentAmounts().finalTotal}`
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setMpesaPayment(prev => ({
+          ...prev,
+          checkoutRequestId: data.checkoutRequestId,
+          paymentStatus: 'pending'
+        }))
+        
+        // Start polling for payment status
+        pollPaymentStatus(data.checkoutRequestId)
+      } else {
+        setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
+        alert(data.message || 'Payment failed. Please try again.')
+      }
+    } catch (error) {
+      console.error('Payment error:', error)
+      setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
+      alert('Payment failed. Please check your connection and try again.')
+    }
+  }
+
+  // Poll payment status
+  const pollPaymentStatus = async (checkoutRequestId) => {
+    let attempts = 0
+    const maxAttempts = 30 // Poll for 2.5 minutes (5s intervals)
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/mpesa?checkoutRequestId=${checkoutRequestId}`)
+        const data = await response.json()
+
+        if (data.success && data.data) {
+          const { ResultCode, ResultDesc } = data.data
+
+          if (ResultCode === '0') {
+            // Payment successful
+            setMpesaPayment(prev => ({ 
+              ...prev, 
+              isProcessing: false, 
+              paymentStatus: 'success',
+              depositPaid: true 
+            }))
+            return
+          } else if (ResultCode && ResultCode !== '1032') {
+            // Payment failed (1032 is still pending)
+            setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
+            return
+          }
+        }
+
+        // Continue polling if still pending
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000) // Poll every 5 seconds
+        } else {
+          // Timeout
+          setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'timeout' }))
+        }
+      } catch (error) {
+        console.error('Polling error:', error)
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000)
+        } else {
+          setMpesaPayment(prev => ({ ...prev, isProcessing: false, paymentStatus: 'failed' }))
+        }
+      }
+    }
+
+    poll()
+  }
+
   const generateWhatsAppMessage = () => {
     const orderItems = list.map(i => `${i.name} x${i.qty}`).join(', ')
+    const { finalTotal, depositAmount, remainingAmount, deliveryCost } = calculatePaymentAmounts()
     
-    let deliveryCost = 0
     let fulfillmentInfo = ''
-    
     if (deliveryDetails.fulfillmentType === 'pickup') {
       fulfillmentInfo = 'Shop Pickup - Free'
     } else {
       fulfillmentInfo = deliveryDetails.deliveryOption === 'express' ? 'Express Delivery (Same day) - Ksh 300' : 'Standard Delivery (2-3 days) - Free'
-      deliveryCost = deliveryDetails.deliveryOption === 'express' ? 300 : 0
     }
-    
-    const finalTotal = totalAmount + deliveryCost
     
     let message = `🛒 *ORDER DETAILS*\n`
     message += `Items: ${orderItems}\n`
     message += `Subtotal: Ksh ${Number(totalAmount).toLocaleString('en-KE')}\n`
     message += `Fulfillment: ${fulfillmentInfo}\n`
     message += `*Total: Ksh ${Number(finalTotal).toLocaleString('en-KE')}*\n\n`
+    
+    // Add payment information
+    if (mpesaPayment.depositPaid) {
+      message += `💳 *PAYMENT STATUS*\n`
+      message += `Deposit Paid: Ksh ${Number(depositAmount).toLocaleString('en-KE')} ✅\n`
+      message += `Remaining Balance: Ksh ${Number(remainingAmount).toLocaleString('en-KE')}\n\n`
+    }
     
     if (deliveryDetails.fulfillmentType === 'pickup') {
       message += `🏪 *PICKUP DETAILS*\n`
@@ -133,7 +251,14 @@ export default function CartPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <>
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, padding: '24px 16px 0' }}>
         <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Your Cart</h1>
         <Link href="/#collection" className="btn">Continue Shopping</Link>
@@ -464,6 +589,185 @@ export default function CartPage() {
             )}
           </section>
 
+          {/* M-Pesa Payment Section */}
+          <section style={{ 
+            border: '1px solid #253049', 
+            borderRadius: 8, 
+            padding: 16, 
+            backgroundColor: 'rgba(0, 123, 255, 0.05)',
+            position: 'relative',
+            zIndex: 3
+          }}>
+            <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              💳 M-Pesa Payment - 20% Deposit
+            </h2>
+            
+            {(() => {
+              const { finalTotal, depositAmount, remainingAmount } = calculatePaymentAmounts()
+              
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Payment Summary */}
+                  <div style={{ 
+                    background: 'rgba(0, 123, 255, 0.1)', 
+                    border: '1px solid rgba(0, 123, 255, 0.3)', 
+                    borderRadius: 6, 
+                    padding: 12 
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+                      <span>Order Total:</span>
+                      <strong>Ksh {Number(finalTotal).toLocaleString('en-KE')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13, color: '#007bff' }}>
+                      <span>Deposit (20%):</span>
+                      <strong>Ksh {Number(depositAmount).toLocaleString('en-KE')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted)' }}>
+                      <span>Remaining Balance:</span>
+                      <strong>Ksh {Number(remainingAmount).toLocaleString('en-KE')}</strong>
+                    </div>
+                  </div>
+
+                  {/* Payment Status */}
+                  {mpesaPayment.paymentStatus && (
+                    <div style={{ 
+                      padding: 12, 
+                      borderRadius: 6,
+                      backgroundColor: 
+                        mpesaPayment.paymentStatus === 'success' ? 'rgba(40, 167, 69, 0.1)' :
+                        mpesaPayment.paymentStatus === 'failed' ? 'rgba(220, 53, 69, 0.1)' :
+                        mpesaPayment.paymentStatus === 'timeout' ? 'rgba(255, 193, 7, 0.1)' :
+                        'rgba(0, 123, 255, 0.1)',
+                      border: `1px solid ${
+                        mpesaPayment.paymentStatus === 'success' ? 'rgba(40, 167, 69, 0.3)' :
+                        mpesaPayment.paymentStatus === 'failed' ? 'rgba(220, 53, 69, 0.3)' :
+                        mpesaPayment.paymentStatus === 'timeout' ? 'rgba(255, 193, 7, 0.3)' :
+                        'rgba(0, 123, 255, 0.3)'
+                      }`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                        {mpesaPayment.paymentStatus === 'success' && '✅ Payment Successful!'}
+                        {mpesaPayment.paymentStatus === 'failed' && '❌ Payment Failed'}
+                        {mpesaPayment.paymentStatus === 'timeout' && '⏱️ Payment Timeout'}
+                        {mpesaPayment.paymentStatus === 'pending' && '⏳ Processing Payment...'}
+                      </div>
+                      {mpesaPayment.paymentStatus === 'success' && (
+                        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                          Your 20% deposit has been received. You can now proceed with your order.
+                        </p>
+                      )}
+                      {mpesaPayment.paymentStatus === 'failed' && (
+                        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                          Payment was cancelled or failed. Please try again.
+                        </p>
+                      )}
+                      {mpesaPayment.paymentStatus === 'timeout' && (
+                        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                          Payment request timed out. Please try again.
+                        </p>
+                      )}
+                      {mpesaPayment.paymentStatus === 'pending' && (
+                        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                          Please check your phone and enter your M-Pesa PIN to complete the payment.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Payment Form */}
+                  {!mpesaPayment.depositPaid && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>
+                          M-Pesa Phone Number *
+                        </label>
+                        <input 
+                          type="tel" 
+                          value={mpesaPayment.phoneNumber}
+                          onChange={(e) => setMpesaPayment(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                          placeholder="e.g., 0700000000 or 254700000000"
+                          disabled={mpesaPayment.isProcessing}
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px 12px', 
+                            borderRadius: 6, 
+                            border: '1px solid #2a3342', 
+                            background: mpesaPayment.isProcessing ? 'rgba(42, 51, 66, 0.1)' : 'transparent', 
+                            color: 'var(--text)', 
+                            fontSize: 14,
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                      
+                      <button 
+                        onClick={handleMpesaPayment}
+                        disabled={mpesaPayment.isProcessing || !mpesaPayment.phoneNumber.trim()}
+                        style={{ 
+                          width: '100%',
+                          padding: '12px 16px', 
+                          borderRadius: 6, 
+                          border: 'none',
+                          background: mpesaPayment.isProcessing || !mpesaPayment.phoneNumber.trim() ? 
+                            'rgba(0, 123, 255, 0.3)' : '#007bff',
+                          color: 'white', 
+                          fontSize: 14, 
+                          fontWeight: 600,
+                          cursor: mpesaPayment.isProcessing || !mpesaPayment.phoneNumber.trim() ? 
+                            'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {mpesaPayment.isProcessing ? (
+                          <>
+                            <span style={{ 
+                              width: 16, 
+                              height: 16, 
+                              border: '2px solid rgba(255,255,255,0.3)', 
+                              borderTop: '2px solid white', 
+                              borderRadius: '50%', 
+                              animation: 'spin 1s linear infinite' 
+                            }}></span>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            📱 Pay Ksh {Number(depositAmount).toLocaleString('en-KE')} Deposit
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Payment Success Message */}
+                  {mpesaPayment.depositPaid && (
+                    <div style={{ 
+                      background: 'rgba(40, 167, 69, 0.1)', 
+                      border: '1px solid rgba(40, 167, 69, 0.3)', 
+                      borderRadius: 6, 
+                      padding: 12,
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#28a745', marginBottom: 4 }}>
+                        ✅ Deposit Payment Complete!
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                        Your 20% deposit of Ksh {Number(depositAmount).toLocaleString('en-KE')} has been received.
+                        <br />
+                        Remaining balance: Ksh {Number(remainingAmount).toLocaleString('en-KE')}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )
+            })()}
+          </section>
+
           {/* Order Summary */}
           <section style={{ 
             border: '1px solid #253049', 
@@ -474,34 +778,90 @@ export default function CartPage() {
             zIndex: 1
           }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700 }}>Order Summary</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
-              <span>Subtotal ({totalCount} items)</span>
-              <strong>Ksh {Number(totalAmount).toLocaleString('en-KE')}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
-              <span>{deliveryDetails.fulfillmentType === 'pickup' ? 'Pickup' : 'Delivery'}</span>
-              <strong>Ksh {deliveryDetails.fulfillmentType === 'pickup' ? '0' : (deliveryDetails.deliveryOption === 'express' ? '300' : '0')}</strong>
-            </div>
-            <div style={{ height: 1, background: '#253049', margin: '12px 0' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
-              <span>Total</span>
-              <strong style={{ color: 'green' }}>Ksh {Number(totalAmount + (deliveryDetails.fulfillmentType === 'pickup' ? 0 : (deliveryDetails.deliveryOption === 'express' ? 300 : 0))).toLocaleString('en-KE')}</strong>
-            </div>
+            {(() => {
+              const { finalTotal, depositAmount, remainingAmount, deliveryCost } = calculatePaymentAmounts()
+              
+              return (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
+                    <span>Subtotal ({totalCount} items)</span>
+                    <strong>Ksh {Number(totalAmount).toLocaleString('en-KE')}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
+                    <span>{deliveryDetails.fulfillmentType === 'pickup' ? 'Pickup' : 'Delivery'}</span>
+                    <strong>Ksh {Number(deliveryCost).toLocaleString('en-KE')}</strong>
+                  </div>
+                  <div style={{ height: 1, background: '#253049', margin: '12px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14, fontWeight: 700 }}>
+                    <span>Total</span>
+                    <strong style={{ color: 'green' }}>Ksh {Number(finalTotal).toLocaleString('en-KE')}</strong>
+                  </div>
+                  
+                  {/* Payment Status in Order Summary */}
+                  {mpesaPayment.depositPaid && (
+                    <>
+                      <div style={{ height: 1, background: '#28a745', margin: '8px 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13, color: '#28a745' }}>
+                        <span>✅ Deposit Paid (20%)</span>
+                        <strong>Ksh {Number(depositAmount).toLocaleString('en-KE')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 13, fontWeight: 600 }}>
+                        <span>Remaining Balance</span>
+                        <strong style={{ color: '#ffc107' }}>Ksh {Number(remainingAmount).toLocaleString('en-KE')}</strong>
+                      </div>
+                    </>
+                  )}
+                </>
+              )
+            })()}
             <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
               <input type="text" placeholder="Promo Code" style={{ flex: 1, borderRadius: 6, border: '1px solid #2a3342', background: 'transparent', color: 'var(--text)', padding: '6px 8px', fontSize: 13 }} />
               <button className="btn btn-small" style={{ fontSize: 12, padding: '6px 8px' }}>Apply</button>
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              <a 
-                className="btn btn-primary"
-                href={`https://wa.me/254718176584?text=${encodeURIComponent(generateWhatsAppMessage())}`}
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={handleWhatsAppCheckout}
-                style={{ flex: 1, textAlign: 'center', fontSize: 13, padding: '8px 12px' }}
-              >
-                Checkout via WhatsApp
-              </a>
+              {mpesaPayment.depositPaid ? (
+                <a 
+                  className="btn btn-primary"
+                  href={`https://wa.me/254718176584?text=${encodeURIComponent(generateWhatsAppMessage())}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={handleWhatsAppCheckout}
+                  style={{ 
+                    flex: 1, 
+                    textAlign: 'center', 
+                    fontSize: 13, 
+                    padding: '8px 12px',
+                    background: '#28a745',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4
+                  }}
+                >
+                  ✅ Complete Order via WhatsApp
+                </a>
+              ) : (
+                <button 
+                  disabled
+                  style={{ 
+                    flex: 1, 
+                    textAlign: 'center', 
+                    fontSize: 13, 
+                    padding: '8px 12px',
+                    background: 'rgba(0, 123, 255, 0.3)',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4
+                  }}
+                >
+                  🔒 Pay Deposit First to Checkout
+                </button>
+              )}
               <button className="btn" onClick={clear} style={{ fontSize: 12, padding: '8px 10px' }}>Clear Cart</button>
             </div>
           </section>
@@ -546,6 +906,7 @@ export default function CartPage() {
           onClick={() => setShowValidationPopup(false)}
         />
       )}
-    </div>
+      </div>
+    </>
   )
 }
