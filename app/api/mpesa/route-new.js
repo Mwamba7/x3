@@ -34,18 +34,12 @@ const DARAJA_URLS = {
   sandbox: {
     oauth: 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
     stkpush: 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-    stkquery: 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query',
-    c2bregister: 'https://sandbox.safaricom.co.ke/mpesa/c2b/v1/registerurl',
-    accountbalance: 'https://sandbox.safaricom.co.ke/mpesa/accountbalance/v1/query',
-    transactionstatus: 'https://sandbox.safaricom.co.ke/mpesa/transactionstatus/v1/query'
+    stkquery: 'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query'
   },
   production: {
     oauth: 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
     stkpush: 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-    stkquery: 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query',
-    c2bregister: 'https://api.safaricom.co.ke/mpesa/c2b/v1/registerurl',
-    accountbalance: 'https://api.safaricom.co.ke/mpesa/accountbalance/v1/query',
-    transactionstatus: 'https://api.safaricom.co.ke/mpesa/transactionstatus/v1/query'
+    stkquery: 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query'
   }
 }
 
@@ -54,8 +48,8 @@ let tokenCache = { token: null, expiry: null }
 const requestTracker = new Map()
 const RATE_LIMITS = {
   window: 60000, // 1 minute
-  maxRequests: 10, // Increased limit
-  maxStatusQueries: 20 // Higher limit for status queries
+  maxRequests: 10,
+  maxStatusQueries: 20
 }
 
 // Rate Limiting System
@@ -83,7 +77,7 @@ class RateLimiter {
   }
 }
 
-// Token Management with Enhanced Caching
+// Token Management
 class TokenManager {
   static async getAccessToken() {
     // Return cached token if valid
@@ -107,8 +101,7 @@ class TokenManager {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache'
-        },
-        timeout: 30000 // 30 second timeout
+        }
       })
       
       if (!response.ok) {
@@ -172,26 +165,6 @@ class MpesaUtils {
   static generateTransactionId() {
     return `TXN${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`
   }
-}
-
-// Format phone number to required format
-function formatPhoneNumber(phone) {
-  if (!phone) return ''
-  
-  // Remove any non-digit characters
-  let cleaned = phone.replace(/\D/g, '')
-  
-  // Handle different formats
-  if (cleaned.startsWith('254')) {
-    return cleaned.length === 12 ? cleaned : ''
-  } else if (cleaned.startsWith('0') && cleaned.length === 10) {
-    return '254' + cleaned.slice(1)
-  } else if ((cleaned.startsWith('7') || cleaned.startsWith('1')) && cleaned.length === 9) {
-    return '254' + cleaned
-  }
-  
-  // Return empty string if format doesn't match (will fail validation)
-  return ''
 }
 
 // Request Validation
@@ -503,124 +476,5 @@ export async function GET(request) {
     console.error('❌ Status query error:', error)
     const errorResponse = ErrorHandler.handleDarajaError(error, 'STATUS_QUERY')
     return NextResponse.json(errorResponse, { status: 500 })
-  }
-}
-      let errorMessage = 'Payment request failed. Please try again.'
-      
-      if (data.ResponseDescription) {
-        if (data.ResponseDescription.includes('invalid phone number')) {
-          errorMessage = 'Invalid phone number. Please check your M-Pesa number and try again.'
-        } else if (data.ResponseDescription.includes('system busy')) {
-          errorMessage = 'M-Pesa system is busy. Please try again in a few minutes.'
-        } else if (data.ResponseDescription.includes('timeout')) {
-          errorMessage = 'Request timed out. Please try again.'
-        } else {
-          errorMessage = data.ResponseDescription
-        }
-      }
-      
-      return NextResponse.json({
-        success: false,
-        message: errorMessage
-      }, { status: 400 })
-    }
-
-  } catch (error) {
-    console.error('STK Push error:', error)
-    
-    // Provide more specific error messages
-    let errorMessage = 'Payment request failed. Please try again.'
-    
-    if (error.message.includes('Failed to generate access token')) {
-      errorMessage = 'M-Pesa service temporarily unavailable. Please try again in a few minutes.'
-    } else if (error.message.includes('credentials not configured')) {
-      errorMessage = 'Payment service configuration error. Please contact support.'
-    } else if (error.message.includes('fetch')) {
-      errorMessage = 'Network error. Please check your connection and try again.'
-    } else if (error.message.includes('JSON')) {
-      errorMessage = 'Invalid request format. Please try again.'
-    }
-    
-    return NextResponse.json(
-      { success: false, message: errorMessage },
-      { status: 500 }
-    )
-  }
-}
-
-// Query STK Push status
-export async function GET(request) {
-  try {
-    console.log('🔍 M-Pesa status query request received')
-    
-    // Get client IP for rate limiting
-    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-    
-    // Check rate limit (more lenient for status queries)
-    if (!checkRateLimit(`${clientIP}-query`)) {
-      console.log(`⚠️ Rate limit exceeded for status query from IP: ${clientIP}`)
-      return NextResponse.json(
-        { success: false, message: 'Too many status queries. Please wait before checking again.' },
-        { status: 429 }
-      )
-    }
-    
-    const { searchParams } = new URL(request.url)
-    const checkoutRequestId = searchParams.get('checkoutRequestId')
-
-    if (!checkoutRequestId) {
-      return NextResponse.json(
-        { success: false, message: 'CheckoutRequestID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Get access token
-    const accessToken = await generateAccessToken()
-    
-    // Generate password and timestamp
-    const { password, timestamp } = generatePassword()
-
-    const queryData = {
-      BusinessShortCode: BUSINESS_SHORT_CODE,
-      Password: password,
-      Timestamp: timestamp,
-      CheckoutRequestID: checkoutRequestId
-    }
-
-    const response = await fetch(API_URLS[ENVIRONMENT].stkquery, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(queryData)
-    })
-
-    const data = await response.json()
-    
-    return NextResponse.json({
-      success: true,
-      data: data
-    })
-
-  } catch (error) {
-    console.error('STK Push query error:', error)
-    
-    // Provide more specific error messages
-    let errorMessage = 'Unable to check payment status. Please try again.'
-    
-    if (error.message.includes('Failed to generate access token')) {
-      errorMessage = 'M-Pesa service temporarily unavailable. Please try again in a few minutes.'
-    } else if (error.message.includes('credentials not configured')) {
-      errorMessage = 'Payment service configuration error. Please contact support.'
-    } else if (error.message.includes('fetch')) {
-      errorMessage = 'Network error. Please check your connection and try again.'
-    }
-    
-    return NextResponse.json(
-      { success: false, message: errorMessage },
-      { status: 500 }
-    )
   }
 }
