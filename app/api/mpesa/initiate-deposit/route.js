@@ -70,6 +70,23 @@ function validatePhoneNumber(phoneNumber) {
 
 export async function POST(request) {
   try {
+    // Validate environment variables first
+    if (!MPESA_CONSUMER_KEY || !MPESA_CONSUMER_SECRET || !MPESA_BUSINESS_SHORT_CODE || !MPESA_PASSKEY) {
+      console.error('Missing M-Pesa environment variables')
+      return NextResponse.json(
+        { success: false, error: 'M-Pesa service not configured. Please contact support.' },
+        { status: 500 }
+      )
+    }
+
+    if (!BASE_URL) {
+      console.error('Missing NEXT_PUBLIC_BASE_URL environment variable')
+      return NextResponse.json(
+        { success: false, error: 'Payment service configuration error. Please contact support.' },
+        { status: 500 }
+      )
+    }
+
     const { phoneNumber, cartTotal, cartId } = await request.json()
 
     // Validate required fields
