@@ -18,9 +18,9 @@ export function CartProvider({ children }) {
     if (typeof window === "undefined") return {}
     
     // Force empty cart for development/reset (uncomment to clear cart)
-    window.localStorage.removeItem("cart:v1")
-    window.localStorage.removeItem("fulfillmentDetails")
-    return {}
+    // window.localStorage.removeItem("cart:v1")
+    // window.localStorage.removeItem("fulfillmentDetails")
+    // return {}
     
     try {
       const raw = window.localStorage.getItem("cart:v1")

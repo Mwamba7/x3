@@ -33,30 +33,42 @@ export default function CartPage() {
   useEffect(() => {
     setIsClient(true)
     
-    // Clear any saved data to start fresh (temporary for reset)
-    localStorage.removeItem('fulfillmentDetails')
-    localStorage.removeItem('mpesaPayment')
+    // Load saved fulfillment details
+    const savedDetails = localStorage.getItem('fulfillmentDetails')
+    if (savedDetails) {
+      try {
+        const parsedDetails = JSON.parse(savedDetails)
+        setDeliveryDetails(parsedDetails)
+      } catch (error) {
+        console.error('Error loading saved fulfillment details:', error)
+      }
+    }
     
-    // Reset delivery details to default
-    setDeliveryDetails({
-      fulfillmentType: 'pickup',
-      customerName: '',
-      address: '',
-      phone: '',
-      altPhone: '',
-      deliveryOption: 'standard',
-      instructions: ''
-    })
-    
-    // Reset M-Pesa payment state
-    setMpesaPayment({
-      phoneNumber: '',
-      isProcessing: false,
-      paymentStatus: null,
-      checkoutRequestId: null,
-      depositPaid: false,
-      errorMessage: null
-    })
+    // Load saved M-Pesa payment state
+    const savedPayment = localStorage.getItem('mpesaPayment')
+    if (savedPayment) {
+      try {
+        const parsedPayment = JSON.parse(savedPayment)
+        setMpesaPayment(parsedPayment)
+        console.log('🔄 Restored payment state:', parsedPayment)
+        
+        // If there's a pending payment that's not successful, check its status
+        if (parsedPayment.checkoutRequestId && 
+            parsedPayment.paymentStatus !== 'success' && 
+            !parsedPayment.isProcessing) {
+          console.log('🔍 Found pending payment, will check status automatically...')
+          // Set a flag to check payment status after component is ready
+          setTimeout(() => {
+            if (parsedPayment.checkoutRequestId) {
+              console.log('🔍 Auto-checking payment status for:', parsedPayment.checkoutRequestId)
+              pollPaymentStatus(parsedPayment.checkoutRequestId)
+            }
+          }, 3000) // Check after 3 seconds
+        }
+      } catch (error) {
+        console.error('Error loading saved payment state:', error)
+      }
+    }
   }, [])
 
   // Save fulfillment details to localStorage whenever they change (only on client)
@@ -65,6 +77,22 @@ export default function CartPage() {
       localStorage.setItem('fulfillmentDetails', JSON.stringify(deliveryDetails))
     }
   }, [deliveryDetails, isClient])
+
+  // Save M-Pesa payment state to localStorage whenever it changes (only on client)
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('mpesaPayment', JSON.stringify(mpesaPayment))
+      console.log('💾 Saved payment state:', mpesaPayment)
+    }
+  }, [mpesaPayment, isClient])
+
+  // Check if payment has been made by verifying existing payment state
+  const checkExistingPayment = () => {
+    if (mpesaPayment.checkoutRequestId && mpesaPayment.paymentStatus !== 'success') {
+      console.log('🔍 Checking existing payment status...')
+      pollPaymentStatus(mpesaPayment.checkoutRequestId)
+    }
+  }
 
   // Don't render dynamic content until after hydration to prevent mismatch
   if (!isClient) {
@@ -231,9 +259,17 @@ export default function CartPage() {
   const pollPaymentStatus = async (checkoutRequestId) => {
     let attempts = 0
     const maxAttempts = 30 // Poll for 2.5 minutes (5s intervals)
+    const gracePeriod = 6 // 30 seconds grace period before showing any failures
 
-    // Update status to pending when we start polling
-    setMpesaPayment(prev => ({ ...prev, paymentStatus: 'pending' }))
+    console.log('🔍 Starting payment verification...')
+    
+    // Start polling immediately but with grace period for failures
+    setMpesaPayment(prev => ({ ...prev, paymentStatus: 'pending', isProcessing: true }))
+    
+    // Start polling after 3 seconds
+    setTimeout(() => {
+      poll()
+    }, 3000)
 
     const poll = async () => {
       try {
@@ -280,8 +316,33 @@ export default function CartPage() {
               return newState
             })
             return
-          } else if (resultCode && resultCode !== '1032') {
-            // Payment failed (1032 is still pending)
+          } else if (resultCode === '1032' || resultCode === '4999') {
+            // Payment still processing (1032 = pending, 4999 = under processing)
+            console.log(`⏳ Payment still processing (Code ${resultCode})... Attempt ${attempts + 1}/${maxAttempts}`)
+            
+            // Show processing status with timer
+            setMpesaPayment(prev => ({ 
+              ...prev, 
+              paymentStatus: 'processing',
+              errorMessage: `Transaction processing... (${(attempts + 1) * 5}s). Please complete the payment on your phone.`
+            }))
+            
+            // Continue polling
+            attempts++
+            if (attempts < maxAttempts) {
+              setTimeout(poll, 5000)
+            } else {
+              // After timeout, stop processing but don't mark as failed - let user check manually
+              setMpesaPayment(prev => ({ 
+                ...prev, 
+                isProcessing: false, 
+                paymentStatus: 'timeout',
+                errorMessage: 'Payment verification timed out. Use "Check Payment Status" button to verify if payment was completed.'
+              }))
+            }
+            return
+          } else if (resultCode) {
+            // Payment failed (other codes)
             console.log('Payment failed with code:', resultCode, 'Description:', ResultDesc)
             
             // Get user-friendly error message based on result code
@@ -321,11 +382,7 @@ export default function CartPage() {
                 errorMessage = 'Payment was cancelled by user.'
                 paymentStatus = 'cancelled'
                 break
-              case '1032':
-                // This should not happen here since we check for 1032 above, but just in case
-                errorMessage = 'Payment is still being processed. Please wait...'
-                paymentStatus = 'processing'
-                break
+              // Note: 1032 is handled explicitly above, so it won't reach this switch
               case '1037':
                 errorMessage = 'Payment timeout. Please try again.'
                 break
@@ -357,15 +414,37 @@ export default function CartPage() {
               // Continue polling for processing payments
               return
             } else {
-              // For failed or cancelled payments, stop polling
-              setMpesaPayment(prev => ({ 
-                ...prev, 
-                isProcessing: false, 
-                paymentStatus: paymentStatus,
-                errorMessage: errorMessage,
-                depositPaid: false 
-              }))
-              return
+              // For failed or cancelled payments, only show after grace period
+              if (attempts >= gracePeriod) {
+                setMpesaPayment(prev => ({ 
+                  ...prev, 
+                  isProcessing: false, 
+                  paymentStatus: paymentStatus,
+                  errorMessage: errorMessage,
+                  depositPaid: false 
+                }))
+                return
+              } else {
+                // Still in grace period, continue polling
+                console.log(`⏳ In grace period (${attempts + 1}/${gracePeriod}), continuing to poll...`)
+                setMpesaPayment(prev => ({ 
+                  ...prev, 
+                  paymentStatus: 'processing',
+                  errorMessage: `Verifying payment... (${(attempts + 1) * 5}s)`
+                }))
+                attempts++
+                if (attempts < maxAttempts) {
+                  setTimeout(poll, 5000)
+                } else {
+                  setMpesaPayment(prev => ({ 
+                    ...prev, 
+                    isProcessing: false, 
+                    paymentStatus: 'timeout',
+                    errorMessage: 'Payment verification timed out. Use "Check Payment Status" to verify manually.'
+                  }))
+                }
+                return
+              }
             }
           }
           // If ResultCode is 1032, continue polling (still pending)
@@ -864,7 +943,7 @@ export default function CartPage() {
                       }`
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
-                        {mpesaPayment.paymentStatus === 'success' && '✅ Payment Successful!'}
+                        {mpesaPayment.paymentStatus === 'success' && '✅ Payment Made Successfully!'}
                         {mpesaPayment.paymentStatus === 'failed' && '❌ Payment Failed'}
                         {mpesaPayment.paymentStatus === 'cancelled' && '🚫 Payment Cancelled'}
                         {mpesaPayment.paymentStatus === 'timeout' && '⏱️ Payment Timeout'}
@@ -992,7 +1071,7 @@ export default function CartPage() {
                       )}
                       {mpesaPayment.paymentStatus === 'pending' && (
                         <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                          Please check your phone and enter your M-Pesa PIN to complete the payment.
+                          Verifying payment... Please check your phone and enter your M-Pesa PIN to complete the payment.
                         </p>
                       )}
                     </div>
@@ -1142,6 +1221,30 @@ export default function CartPage() {
               <input type="text" placeholder="Promo Code" style={{ flex: 1, borderRadius: 6, border: '1px solid #2a3342', background: 'transparent', color: 'var(--text)', padding: '6px 8px', fontSize: 13 }} />
               <button className="btn btn-small" style={{ fontSize: 12, padding: '6px 8px' }}>Apply</button>
             </div>
+            {/* Payment verification button - only show if there's a pending payment */}
+            {mpesaPayment.checkoutRequestId && mpesaPayment.paymentStatus !== 'success' && !mpesaPayment.isProcessing && (
+              <div style={{ marginBottom: 8 }}>
+                <button 
+                  onClick={checkExistingPayment}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    background: '#17a2b8',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    width: '100%'
+                  }}
+                >
+                  🔍 Check Payment Status
+                </button>
+                <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                  Click to verify if your payment has been processed
+                </p>
+              </div>
+            )}
+            
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               {mpesaPayment.depositPaid && mpesaPayment.paymentStatus === 'success' ? (
                 <a 
