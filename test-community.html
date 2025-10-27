@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Community Products</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        button { padding: 12px 24px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 8px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 6px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .links { margin-top: 15px; }
+        .links a { display: inline-block; margin: 5px 10px 5px 0; padding: 8px 16px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; }
+        .links a:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Community Products</h1>
+    <p>Use this page to create test community products for the marketplace:</p>
+    
+    <div>
+        <button onclick="createProducts()" id="createBtn">Create Test Community Products</button>
+        <button onclick="checkProducts()" id="checkBtn">Check Current Products</button>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        async function createProducts() {
+            const resultDiv = document.getElementById('result');
+            const createBtn = document.getElementById('createBtn');
+            
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creating...';
+            resultDiv.innerHTML = '<div class="info">Creating community products...</div>';
+            
+            try {
+                const response = await fetch('/api/test/create-community-products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p><strong>${data.message}</strong></p>
+                        <h4>Created Products:</h4>
+                        <ul>
+                            ${data.products.map(p => `<li><strong>${p.name}</strong> - Ksh ${p.price.toLocaleString()} (${p.category})</li>`).join('')}
+                        </ul>
+                        <div class="links">
+                            <a href="/" target="_blank">📱 View Website</a>
+                            <a href="/admin/community" target="_blank">⚙️ Admin Community</a>
+                            <a href="/admin" target="_blank">🏠 Admin Dashboard</a>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to create products');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                    <p>Make sure the server is running on port 3001.</p>
+                `;
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create Test Community Products';
+            }
+        }
+
+        async function checkProducts() {
+            const resultDiv = document.getElementById('result');
+            const checkBtn = document.getElementById('checkBtn');
+            
+            checkBtn.disabled = true;
+            checkBtn.textContent = 'Checking...';
+            resultDiv.innerHTML = '<div class="info">Checking current community products...</div>';
+            
+            try {
+                const response = await fetch('/api/test/community-products', {
+                    method: 'GET'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.products && data.products.length > 0) {
+                        resultDiv.className = 'result success';
+                        resultDiv.innerHTML = `
+                            <h3>📋 Current Community Products (${data.products.length})</h3>
+                            <ul>
+                                ${data.products.map(p => `<li><strong>${p.name}</strong> - Ksh ${p.price.toLocaleString()} (${p.category}) - ${p.status}</li>`).join('')}
+                            </ul>
+                            <div class="links">
+                                <a href="/" target="_blank">📱 View Website</a>
+                                <a href="/admin/community" target="_blank">⚙️ Admin Community</a>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.className = 'result info';
+                        resultDiv.innerHTML = `
+                            <h3>📭 No Community Products Found</h3>
+                            <p>Click "Create Test Community Products" to add some sample products.</p>
+                        `;
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to check products');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                `;
+            } finally {
+                checkBtn.disabled = false;
+                checkBtn.textContent = 'Check Current Products';
+            }
+        }
+
+        // Auto-check products on page load
+        window.addEventListener('load', checkProducts);
+    </script>
+</body>
+</html>

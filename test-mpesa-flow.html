@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Pesa Flow Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .step {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+        .step.success {
+            border-left-color: #28a745;
+        }
+        .step.error {
+            border-left-color: #dc3545;
+        }
+        .step.pending {
+            border-left-color: #ffc107;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success-result {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error-result {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info-result {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-pending { background-color: #ffc107; }
+        .status-idle { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <h1>🧪 M-Pesa Integration Test Flow</h1>
+    
+    <div class="container">
+        <h2>📋 Test Configuration</h2>
+        <div>
+            <label>Phone Number: <input type="tel" id="testPhone" value="254712345678" style="margin-left: 10px; padding: 5px;"></label>
+        </div>
+        <div style="margin-top: 10px;">
+            <label>Amount (Ksh): <input type="number" id="testAmount" value="1" style="margin-left: 10px; padding: 5px;"></label>
+        </div>
+        <button onclick="runFullTest()" style="margin-top: 15px; background-color: #28a745;">🚀 Run Complete Test</button>
+        <button onclick="clearResults()" style="background-color: #dc3545;">🧹 Clear Results</button>
+    </div>
+
+    <div class="container">
+        <div class="step" id="step1">
+            <h3><span class="status-indicator status-idle" id="status1"></span>Step 1: Test Configuration</h3>
+            <button onclick="testConfig()">Test Config</button>
+            <div id="result1"></div>
+        </div>
+
+        <div class="step" id="step2">
+            <h3><span class="status-indicator status-idle" id="status2"></span>Step 2: Test Authentication</h3>
+            <button onclick="testAuth()">Test Auth</button>
+            <div id="result2"></div>
+        </div>
+
+        <div class="step" id="step3">
+            <h3><span class="status-indicator status-idle" id="status3"></span>Step 3: Send STK Push</h3>
+            <button onclick="sendSTKPush()">Send STK Push</button>
+            <div id="result3"></div>
+        </div>
+
+        <div class="step" id="step4">
+            <h3><span class="status-indicator status-idle" id="status4"></span>Step 4: Monitor Payment Status</h3>
+            <button onclick="startStatusMonitoring()" id="monitorBtn" disabled>Start Monitoring</button>
+            <button onclick="stopStatusMonitoring()" id="stopBtn" disabled>Stop Monitoring</button>
+            <div id="result4"></div>
+        </div>
+
+        <div class="step" id="step5">
+            <h3><span class="status-indicator status-idle" id="status5"></span>Step 5: Verify Callback</h3>
+            <button onclick="checkCallback()">Check Callback</button>
+            <div id="result5"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Test Summary</h2>
+        <div id="testSummary">
+            <p>Run the complete test to see results...</p>
+        </div>
+    </div>
+
+    <script>
+        let currentCheckoutRequestId = null;
+        let statusMonitorInterval = null;
+        let testResults = {
+            config: false,
+            auth: false,
+            stkPush: false,
+            payment: false,
+            callback: false
+        };
+
+        function updateStatus(step, status) {
+            const indicator = document.getElementById(`status${step}`);
+            const stepDiv = document.getElementById(`step${step}`);
+            
+            indicator.className = `status-indicator status-${status}`;
+            stepDiv.className = `step ${status}`;
+        }
+
+        function showResult(step, content, type = 'info') {
+            const resultDiv = document.getElementById(`result${step}`);
+            resultDiv.innerHTML = `<div class="${type}-result">${content}</div>`;
+        }
+
+        async function testConfig() {
+            updateStatus(1, 'pending');
+            showResult(1, 'Testing configuration...', 'info');
+            
+            try {
+                const response = await fetch('/api/test-mpesa');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    testResults.config = true;
+                    updateStatus(1, 'success');
+                    showResult(1, `✅ Configuration Test Passed
+
+Environment Variables:
+- Consumer Key: ${data.configuration.consumerKey}
+- Consumer Secret: ${data.configuration.consumerSecret}
+- Business Short Code: ${data.configuration.businessShortCode}
+- Passkey: ${data.configuration.passkey}
+- Environment: ${data.configuration.environment}
+- Base URL: ${data.configuration.baseUrl}
+
+Authentication: ${data.authentication}`, 'success');
+                } else {
+                    throw new Error(data.error || 'Configuration test failed');
+                }
+            } catch (error) {
+                testResults.config = false;
+                updateStatus(1, 'error');
+                showResult(1, `❌ Configuration Test Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuth() {
+            updateStatus(2, 'pending');
+            showResult(2, 'Testing M-Pesa authentication...', 'info');
+            
+            try {
+                const response = await fetch('/api/mpesa/auth');
+                const data = await response.json();
+                
+                if (data.success) {
+                    testResults.auth = true;
+                    updateStatus(2, 'success');
+                    showResult(2, `✅ Authentication Successful
+
+Access Token: ${data.access_token.substring(0, 30)}...
+Expires In: ${data.expires_in} seconds`, 'success');
+                } else {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+            } catch (error) {
+                testResults.auth = false;
+                updateStatus(2, 'error');
+                showResult(2, `❌ Authentication Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendSTKPush() {
+            const phone = document.getElementById('testPhone').value;
+            const amount = document.getElementById('testAmount').value;
+            
+            updateStatus(3, 'pending');
+            showResult(3, 'Sending STK Push request...', 'info');
+            
+            try {
+                const response = await fetch('/api/mpesa/stk-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        amount: parseInt(amount),
+                        reference: `TEST_${Date.now()}`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    testResults.stkPush = true;
+                    currentCheckoutRequestId = data.checkoutRequestId;
+                    updateStatus(3, 'success');
+                    showResult(3, `✅ STK Push Sent Successfully
+
+CheckoutRequestID: ${data.checkoutRequestId}
+MerchantRequestID: ${data.merchantRequestId}
+Phone: ${data.phone}
+Amount: Ksh ${data.amount}
+
+📱 Check your phone for M-Pesa prompt!`, 'success');
+                    
+                    // Enable monitoring
+                    document.getElementById('monitorBtn').disabled = false;
+                } else {
+                    throw new Error(data.error || 'STK Push failed');
+                }
+            } catch (error) {
+                testResults.stkPush = false;
+                updateStatus(3, 'error');
+                showResult(3, `❌ STK Push Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function startStatusMonitoring() {
+            if (!currentCheckoutRequestId) {
+                showResult(4, '❌ No CheckoutRequestID available. Send STK Push first.', 'error');
+                return;
+            }
+            
+            updateStatus(4, 'pending');
+            document.getElementById('monitorBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            
+            let attempts = 0;
+            const maxAttempts = 60; // 5 minutes
+            
+            statusMonitorInterval = setInterval(async () => {
+                attempts++;
+                
+                try {
+                    const response = await fetch('/api/mpesa/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ checkoutRequestId: currentCheckoutRequestId })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    const remainingTime = Math.max(0, (maxAttempts - attempts) * 5);
+                    const minutes = Math.floor(remainingTime / 60);
+                    const seconds = remainingTime % 60;
+                    
+                    if (data.success && data.status === 'completed') {
+                        testResults.payment = true;
+                        updateStatus(4, 'success');
+                        showResult(4, `✅ Payment Completed Successfully!
+
+Status: ${data.status}
+Transaction ID: ${data.transactionId}
+Amount: Ksh ${data.amount}
+Phone: ${data.phone}
+Date: ${data.transactionDate}
+
+Attempts: ${attempts}/${maxAttempts}`, 'success');
+                        
+                        stopStatusMonitoring();
+                        return;
+                    } else if (data.status === 'cancelled' || data.status === 'failed' || data.status === 'timeout') {
+                        testResults.payment = false;
+                        updateStatus(4, 'error');
+                        showResult(4, `❌ Payment ${data.status.toUpperCase()}
+
+Message: ${data.message}
+Attempts: ${attempts}/${maxAttempts}`, 'error');
+                        
+                        stopStatusMonitoring();
+                        return;
+                    } else {
+                        // Still pending
+                        showResult(4, `⏳ Payment Status: ${data.status || 'pending'}
+
+Message: ${data.message || 'Waiting for payment...'}
+Time Remaining: ${minutes}:${seconds.toString().padStart(2, '0')}
+Attempts: ${attempts}/${maxAttempts}
+
+Keep your phone ready to complete the M-Pesa payment!`, 'info');
+                    }
+                    
+                    if (attempts >= maxAttempts) {
+                        testResults.payment = false;
+                        updateStatus(4, 'error');
+                        showResult(4, `⏰ Payment Monitoring Timeout
+
+Maximum attempts (${maxAttempts}) reached.
+If you completed the payment, check the callback results.`, 'error');
+                        
+                        stopStatusMonitoring();
+                    }
+                    
+                } catch (error) {
+                    showResult(4, `❌ Status Check Error: ${error.message}
+
+Attempt: ${attempts}/${maxAttempts}`, 'error');
+                }
+            }, 5000); // Check every 5 seconds
+        }
+
+        function stopStatusMonitoring() {
+            if (statusMonitorInterval) {
+                clearInterval(statusMonitorInterval);
+                statusMonitorInterval = null;
+            }
+            document.getElementById('monitorBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+
+        async function checkCallback() {
+            updateStatus(5, 'pending');
+            showResult(5, 'Checking callback results...', 'info');
+            
+            try {
+                const response = await fetch('/api/mpesa/debug');
+                const data = await response.json();
+                
+                if (data.storedResults && data.storedResults.length > 0) {
+                    const hasOurResult = data.storedResults.find(([key]) => key === currentCheckoutRequestId);
+                    
+                    if (hasOurResult) {
+                        testResults.callback = true;
+                        updateStatus(5, 'success');
+                        showResult(5, `✅ Callback Received Successfully!
+
+CheckoutRequestID: ${hasOurResult[0]}
+Success: ${hasOurResult[1].success}
+Result: ${hasOurResult[1].resultDesc}
+Transaction ID: ${hasOurResult[1].metadata?.mpesaReceiptNumber || 'N/A'}
+Amount: ${hasOurResult[1].metadata?.amount || 'N/A'}
+Phone: ${hasOurResult[1].metadata?.phoneNumber || 'N/A'}
+
+Total Stored Results: ${data.totalResults}`, 'success');
+                    } else {
+                        updateStatus(5, 'error');
+                        showResult(5, `⚠️ Callback Not Found
+
+Our CheckoutRequestID: ${currentCheckoutRequestId}
+Total Stored Results: ${data.totalResults}
+
+Stored Results:
+${data.storedResults.map(([key, value]) => `- ${key}: ${value.success ? 'Success' : 'Failed'}`).join('\n')}`, 'error');
+                    }
+                } else {
+                    updateStatus(5, 'error');
+                    showResult(5, `❌ No Callback Results Found
+
+Total Stored Results: ${data.totalResults}
+This could mean:
+1. Payment was not completed
+2. Callback URL is not reachable
+3. M-Pesa hasn't sent the callback yet`, 'error');
+                }
+            } catch (error) {
+                testResults.callback = false;
+                updateStatus(5, 'error');
+                showResult(5, `❌ Callback Check Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runFullTest() {
+            clearResults();
+            
+            // Run tests sequentially
+            await testConfig();
+            if (testResults.config) {
+                await testAuth();
+                if (testResults.auth) {
+                    await sendSTKPush();
+                    if (testResults.stkPush) {
+                        startStatusMonitoring();
+                        
+                        // Auto-check callback after 30 seconds
+                        setTimeout(() => {
+                            checkCallback();
+                            updateTestSummary();
+                        }, 30000);
+                    }
+                }
+            }
+            
+            updateTestSummary();
+        }
+
+        function clearResults() {
+            stopStatusMonitoring();
+            currentCheckoutRequestId = null;
+            testResults = {
+                config: false,
+                auth: false,
+                stkPush: false,
+                payment: false,
+                callback: false
+            };
+            
+            for (let i = 1; i <= 5; i++) {
+                updateStatus(i, 'idle');
+                document.getElementById(`result${i}`).innerHTML = '';
+            }
+            
+            document.getElementById('monitorBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            
+            updateTestSummary();
+        }
+
+        function updateTestSummary() {
+            const passed = Object.values(testResults).filter(Boolean).length;
+            const total = Object.keys(testResults).length;
+            
+            const summaryDiv = document.getElementById('testSummary');
+            summaryDiv.innerHTML = `
+                <h3>Test Results: ${passed}/${total} Passed</h3>
+                <ul>
+                    <li>✅ Configuration: ${testResults.config ? 'PASS' : 'FAIL'}</li>
+                    <li>✅ Authentication: ${testResults.auth ? 'PASS' : 'FAIL'}</li>
+                    <li>✅ STK Push: ${testResults.stkPush ? 'PASS' : 'FAIL'}</li>
+                    <li>✅ Payment: ${testResults.payment ? 'PASS' : 'FAIL'}</li>
+                    <li>✅ Callback: ${testResults.callback ? 'PASS' : 'FAIL'}</li>
+                </ul>
+                
+                ${passed === total ? 
+                    '<p style="color: #28a745; font-weight: bold;">🎉 All tests passed! M-Pesa integration is working correctly.</p>' :
+                    '<p style="color: #dc3545; font-weight: bold;">❌ Some tests failed. Check the individual steps above.</p>'
+                }
+            `;
+        }
+
+        // Initialize
+        updateTestSummary();
+    </script>
+</body>
+</html>

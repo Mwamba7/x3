@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Status Update Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            border: 2px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .product-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: white;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: white;
+        }
+        .status-available { background: #28a745; }
+        .status-sold { background: #17a2b8; }
+        .status-pending { background: #ffc107; color: #000; }
+        .status-rejected { background: #dc3545; }
+        select, input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Product Status Update Test Tool</h1>
+        <p>This tool tests the complete product status update workflow from admin to user account display.</p>
+
+        <div class="test-section">
+            <h3>Step 1: Check User Authentication</h3>
+            <button onclick="checkAuth()">🔍 Check Current User</button>
+            <div id="authInfo" class="debug-info">Click "Check Current User" to see authentication status...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 2: Load User Products</h3>
+            <button onclick="loadUserProducts()">📦 Load My Products</button>
+            <button onclick="loadAllProducts()">🌐 Load All Products</button>
+            <div id="userProductsInfo" class="debug-info">Click "Load My Products" to see your submitted products...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 3: Test Status Update</h3>
+            <div>
+                <label>Product ID: </label>
+                <input type="text" id="productId" placeholder="Enter product ID to update">
+                <select id="newStatus">
+                    <option value="available">✅ Available</option>
+                    <option value="sold">💰 Sold</option>
+                </select>
+                <button onclick="updateProductStatus()">🔄 Update Status</button>
+            </div>
+            <div id="updateResult" class="debug-info">Enter a product ID and select a status to test updates...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 4: Verify Changes</h3>
+            <button onclick="verifyStatusChange()">✅ Verify Status Changes</button>
+            <div id="verificationResult" class="debug-info">Click "Verify Status Changes" after updating a product...</div>
+        </div>
+
+        <div id="status" class="status info">Ready to test product status updates...</div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let userProducts = [];
+        let allProducts = [];
+
+        async function checkAuth() {
+            updateStatus('Checking authentication...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.user;
+                    document.getElementById('authInfo').textContent = 
+                        `✅ Authenticated User:\n${JSON.stringify(data.user, null, 2)}`;
+                    updateStatus('✅ User authenticated successfully', 'success');
+                } else {
+                    document.getElementById('authInfo').textContent = 
+                        `❌ Authentication failed:\n${JSON.stringify(data, null, 2)}`;
+                    updateStatus('❌ Authentication failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                document.getElementById('authInfo').textContent = 
+                    `❌ Network error:\n${error.message}`;
+                updateStatus('❌ Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function loadUserProducts() {
+            if (!currentUser) {
+                updateStatus('❌ Please check authentication first', 'error');
+                return;
+            }
+
+            updateStatus('Loading user products...', 'info');
+            
+            try {
+                const response = await fetch('/api/user/products');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    userProducts = data.products || [];
+                    displayProducts(userProducts, 'userProductsInfo', 'Your Products');
+                    updateStatus(`✅ Loaded ${userProducts.length} user products`, 'success');
+                } else {
+                    document.getElementById('userProductsInfo').textContent = 
+                        `❌ Failed to load products:\n${JSON.stringify(data, null, 2)}`;
+                    updateStatus('❌ Failed to load user products: ' + data.error, 'error');
+                }
+            } catch (error) {
+                document.getElementById('userProductsInfo').textContent = 
+                    `❌ Network error:\n${error.message}`;
+                updateStatus('❌ Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function loadAllProducts() {
+            updateStatus('Loading all products...', 'info');
+            
+            try {
+                const response = await fetch('/api/products');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    allProducts = Array.isArray(data) ? data : [];
+                    displayProducts(allProducts, 'userProductsInfo', 'All Products', true);
+                    updateStatus(`✅ Loaded ${allProducts.length} total products`, 'success');
+                } else {
+                    document.getElementById('userProductsInfo').textContent = 
+                        `❌ Failed to load products:\n${JSON.stringify(data, null, 2)}`;
+                    updateStatus('❌ Failed to load products', 'error');
+                }
+            } catch (error) {
+                document.getElementById('userProductsInfo').textContent = 
+                    `❌ Network error:\n${error.message}`;
+                updateStatus('❌ Network error: ' + error.message, 'error');
+            }
+        }
+
+        function displayProducts(products, elementId, title, showAll = false) {
+            const element = document.getElementById(elementId);
+            
+            if (!products || products.length === 0) {
+                element.textContent = `${title}: No products found`;
+                return;
+            }
+
+            let html = `<strong>${title} (${products.length}):</strong>\n\n`;
+            
+            products.forEach((product, index) => {
+                const statusClass = `status-${product.status || 'unknown'}`;
+                html += `📦 ${index + 1}. ${product.name || 'Unnamed'}\n`;
+                html += `   ID: ${product._id}\n`;
+                html += `   Status: ${product.status || 'unknown'}\n`;
+                html += `   Price: Ksh ${product.price || 0}\n`;
+                html += `   Category: ${product.category || 'unknown'}\n`;
+                if (product.sellerId) {
+                    html += `   Seller ID: ${product.sellerId}\n`;
+                }
+                if (product.metadata?.originalSeller) {
+                    html += `   Original Seller: ${product.metadata.originalSeller.email || product.metadata.originalSeller.phone}\n`;
+                }
+                html += `   Created: ${new Date(product.createdAt).toLocaleString()}\n`;
+                html += `\n`;
+            });
+
+            element.innerHTML = `<pre>${html}</pre>`;
+        }
+
+        async function updateProductStatus() {
+            const productId = document.getElementById('productId').value.trim();
+            const newStatus = document.getElementById('newStatus').value;
+
+            if (!productId) {
+                updateStatus('❌ Please enter a product ID', 'error');
+                return;
+            }
+
+            updateStatus(`Updating product ${productId} to status: ${newStatus}...`, 'info');
+
+            try {
+                const response = await fetch(`/api/products/${productId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: newStatus
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('updateResult').textContent = 
+                        `✅ Product updated successfully:\n${JSON.stringify(data, null, 2)}`;
+                    updateStatus(`✅ Product ${productId} updated to ${newStatus}`, 'success');
+                } else {
+                    document.getElementById('updateResult').textContent = 
+                        `❌ Update failed:\n${JSON.stringify(data, null, 2)}`;
+                    updateStatus('❌ Update failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                document.getElementById('updateResult').textContent = 
+                    `❌ Network error:\n${error.message}`;
+                updateStatus('❌ Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function verifyStatusChange() {
+            updateStatus('Verifying status changes...', 'info');
+            
+            // Reload user products to see changes
+            await loadUserProducts();
+            
+            const productId = document.getElementById('productId').value.trim();
+            if (productId) {
+                // Also check the specific product
+                try {
+                    const response = await fetch(`/api/products/${productId}`);
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        document.getElementById('verificationResult').textContent = 
+                            `✅ Current product status:\n${JSON.stringify(data, null, 2)}`;
+                        updateStatus(`✅ Verification complete - Status: ${data.status}`, 'success');
+                    } else {
+                        document.getElementById('verificationResult').textContent = 
+                            `❌ Failed to verify:\n${JSON.stringify(data, null, 2)}`;
+                        updateStatus('❌ Verification failed', 'error');
+                    }
+                } catch (error) {
+                    document.getElementById('verificationResult').textContent = 
+                        `❌ Verification error:\n${error.message}`;
+                    updateStatus('❌ Verification error: ' + error.message, 'error');
+                }
+            } else {
+                document.getElementById('verificationResult').textContent = 
+                    'ℹ️ User products reloaded. Check "Load My Products" section for updated status.';
+                updateStatus('ℹ️ User products reloaded successfully', 'info');
+            }
+        }
+
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+
+        // Auto-load user data when page loads
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>

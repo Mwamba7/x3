@@ -1,7 +1,9 @@
-import prisma from '../../../../lib/prisma'
+import connectDB from '../../../../lib/mongodb'
+import User from '../../../../models/User'
 import { NextResponse } from 'next/server'
 import { verifyPassword, hashPassword } from '../../../../lib/auth'
 import { requireAdmin } from '../../../../lib/adminAuth'
+import mongoose from 'mongoose'
 
 export async function POST(req) {
   const user = await requireAdmin()
@@ -11,14 +13,19 @@ export async function POST(req) {
     if (!currentPassword || !newPassword) {
       return NextResponse.json({ error: 'Both current and new passwords are required' }, { status: 400 })
     }
-    const dbUser = await prisma.user.findUnique({ where: { id: user.uid } })
+    await connectDB()
+    if (!mongoose.Types.ObjectId.isValid(user.uid)) {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
+    }
+    
+    const dbUser = await User.findById(user.uid)
     if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-    const ok = await verifyPassword(currentPassword, dbUser.passwordHash)
+    const ok = await verifyPassword(currentPassword, dbUser.password)
     if (!ok) return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
 
     const passwordHash = await hashPassword(newPassword)
-    await prisma.user.update({ where: { id: user.uid }, data: { passwordHash } })
+    await User.findByIdAndUpdate(user.uid, { password: passwordHash })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error(e)

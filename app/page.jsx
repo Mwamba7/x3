@@ -1,22 +1,29 @@
 import StoreClient from '../components/StoreClient'
 import FashionClient from '../components/FashionClient'
 import ReusedClient from '../components/ReusedClient'
+import SellPageProductsClient from '../components/SellPageProductsClient'
 import { getProducts as getLocalProducts } from '../lib/products'
 import { getFashionProducts } from '../lib/fashion'
 import Link from 'next/link'
-import prisma from '../lib/prisma'
+import connectDB from '../lib/mongodb'
+import Product from '../models/Product'
 import HeroRotator from '../components/HeroRotator'
 import HeroCartButton from '../components/HeroCartButton'
 
 export default async function Page() {
   let products = []
   try {
-    const rows = await prisma.product.findMany({
-      where: { category: { in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] } },
-      orderBy: { createdAt: 'desc' },
-    })
+    await connectDB()
+    const rows = await Product.find({
+      category: { $in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] },
+      // Exclude Community Marketplace products - they should only appear in marketplace
+      $nor: [
+        { 'metadata.source': 'sell-page', 'metadata.submissionType': 'public' }
+      ]
+    }).sort({ createdAt: -1 })
+    
     products = rows.map(r => ({
-      id: r.id,
+      id: r._id.toString(),
       name: r.name,
       category: r.category,
       price: r.price,
@@ -32,12 +39,17 @@ export default async function Page() {
   }
   let fashionProducts = []
   try {
-    const frows = await prisma.product.findMany({
-      where: { category: { in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] } },
-      orderBy: { createdAt: 'desc' },
-    })
+    await connectDB()
+    const frows = await Product.find({
+      category: { $in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] },
+      // Exclude Community Marketplace products - they should only appear in marketplace
+      $nor: [
+        { 'metadata.source': 'sell-page', 'metadata.submissionType': 'public' }
+      ]
+    }).sort({ createdAt: -1 })
+    
     fashionProducts = frows.map(r => ({
-      id: r.id,
+      id: r._id.toString(),
       name: r.name,
       category: r.category,
       price: r.price,
@@ -53,12 +65,17 @@ export default async function Page() {
   // Pre-owned Products (independent via category isolation)
   let reusedProducts = []
   try {
-    const rrows = await prisma.product.findMany({
-      where: { category: { startsWith: 'preowned' } },
-      orderBy: { createdAt: 'desc' },
-    })
+    await connectDB()
+    const rrows = await Product.find({
+      category: { $regex: '^preowned', $options: 'i' },
+      // Exclude Community Marketplace products
+      $nor: [
+        { 'metadata.source': 'sell-page', 'metadata.submissionType': 'public' }
+      ]
+    }).sort({ createdAt: -1 })
+    
     reusedProducts = rrows.map(r => ({
-      id: r.id,
+      id: r._id.toString(),
       name: r.name,
       category: r.category,
       price: r.price,
@@ -75,12 +92,40 @@ export default async function Page() {
       reusedProducts = Array.isArray(local) ? local.filter(p => typeof p.category === 'string' && p.category.toLowerCase().startsWith('preowned')) : []
     } catch {}
   }
+
+  // Community Marketplace Products (approved from sell page)
+  let communityProducts = []
+  try {
+    await connectDB()
+    const crows = await Product.find({
+      'metadata.source': 'sell-page',
+      'metadata.submissionType': 'public',
+      status: 'available'
+    }).sort({ createdAt: -1 }).limit(12)
+    
+    communityProducts = crows.map(r => ({
+      id: r._id.toString(),
+      name: r.name,
+      category: r.category,
+      price: r.price,
+      img: r.img,
+      images: r.imagesJson ? JSON.parse(r.imagesJson) : (r.images || []),
+      meta: r.meta || r.description || '',
+      condition: r.condition || 'Used',
+      status: r.status || 'available',
+      createdAt: r.createdAt.toISOString(),
+      metadata: r.metadata
+    }))
+  } catch (e) {
+    console.error('Error fetching community products:', e)
+    communityProducts = []
+  }
   return (
     <>
       <section className="hero" aria-label="Featured promotions" style={{ position: 'relative' }}>
         <HeroCartButton />
         {/* Background: auto-rotating products from All Products + Fashion + Pre-owned */}
-        <HeroRotator products={[...products, ...fashionProducts, ...reusedProducts]} intervalMs={10000} />
+        <HeroRotator products={[...products, ...fashionProducts, ...reusedProducts, ...communityProducts]} intervalMs={10000} />
       </section>
 
 
@@ -90,6 +135,8 @@ export default async function Page() {
         <FashionClient products={fashionProducts} />
 
         <ReusedClient products={reusedProducts} />
+
+        <SellPageProductsClient products={communityProducts} />
 
         <section id="about" className="info-section">
           <h3>About Super Twice Resellers</h3>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Pesa Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .danger {
+            background-color: #dc3545;
+        }
+        .danger:hover {
+            background-color: #c82333;
+        }
+        .success {
+            background-color: #28a745;
+        }
+        .success:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success-result {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error-result {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info-result {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 M-Pesa Debug Tool</h1>
+    
+    <div class="container">
+        <h2>📱 Test STK Push</h2>
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" placeholder="0712345678" value="0712345678">
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount (Ksh):</label>
+            <input type="number" id="amount" placeholder="100" value="1">
+        </div>
+        <button onclick="testSTKPush()">Send STK Push</button>
+        <div id="stkResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 Check Payment Status</h2>
+        <div class="form-group">
+            <label for="checkoutId">Checkout Request ID:</label>
+            <input type="text" id="checkoutId" placeholder="ws_CO_191220191020363925">
+        </div>
+        <button onclick="checkStatus()">Check Status</button>
+        <div id="statusResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧹 Debug Actions</h2>
+        <button onclick="viewStoredResults()">View Stored Results</button>
+        <button onclick="clearAllResults()" class="danger">Clear All Results</button>
+        <button onclick="testAuth()" class="success">Test Authentication</button>
+        <div id="debugResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>📞 Test Callback</h2>
+        <p>Callback URL: <code id="callbackUrl"></code></p>
+        <button onclick="testCallback()">Test Callback Handler</button>
+        <div id="callbackResult"></div>
+    </div>
+
+    <script>
+        // Set callback URL
+        document.getElementById('callbackUrl').textContent = window.location.origin + '/api/mpesa/callback';
+
+        async function testSTKPush() {
+            const phone = document.getElementById('phone').value;
+            const amount = document.getElementById('amount').value;
+            const resultDiv = document.getElementById('stkResult');
+            
+            resultDiv.innerHTML = '<div class="info-result">Sending STK Push...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/stk-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        phone: phone,
+                        amount: parseInt(amount),
+                        reference: `TEST_${Date.now()}`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="success-result">✅ STK Push Sent Successfully!
+                    
+CheckoutRequestID: ${data.checkoutRequestId}
+MerchantRequestID: ${data.merchantRequestId}
+Phone: ${data.phone}
+Amount: Ksh ${data.amount}
+
+Copy the CheckoutRequestID above to check payment status.</div>`;
+                    
+                    // Auto-fill the checkout ID
+                    document.getElementById('checkoutId').value = data.checkoutRequestId;
+                } else {
+                    resultDiv.innerHTML = `<div class="error-result">❌ STK Push Failed:
+                    
+${data.error}
+
+Details: ${JSON.stringify(data.details || {}, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-result">💥 Network Error:
+                
+${error.message}</div>`;
+            }
+        }
+
+        async function checkStatus() {
+            const checkoutId = document.getElementById('checkoutId').value;
+            const resultDiv = document.getElementById('statusResult');
+            
+            if (!checkoutId) {
+                resultDiv.innerHTML = '<div class="error-result">Please enter a Checkout Request ID</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="info-result">Checking payment status...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ checkoutRequestId: checkoutId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="success-result">✅ Payment Completed!
+                    
+Status: ${data.status}
+Transaction ID: ${data.transactionId}
+Amount: Ksh ${data.amount}
+Phone: ${data.phone}
+Date: ${data.transactionDate}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error-result">⏳ Payment Status: ${data.status}
+                    
+Message: ${data.message}
+
+${data.status === 'pending' ? 'Keep checking - payment may still be processing...' : ''}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-result">💥 Status Check Error:
+                
+${error.message}</div>`;
+            }
+        }
+
+        async function viewStoredResults() {
+            const resultDiv = document.getElementById('debugResult');
+            resultDiv.innerHTML = '<div class="info-result">Loading stored results...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/debug');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<div class="info-result">📊 Stored Payment Results:
+                
+Total Results: ${data.totalResults}
+
+${data.storedResults.length > 0 ? 
+    data.storedResults.map(([key, value]) => 
+        `CheckoutRequestID: ${key}
+Success: ${value.success}
+Result: ${value.resultDesc}
+Transaction ID: ${value.metadata?.mpesaReceiptNumber || 'N/A'}
+---`
+    ).join('\n') : 'No stored results found.'}
+
+Last Updated: ${data.timestamp}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-result">💥 Debug Error:
+                
+${error.message}</div>`;
+            }
+        }
+
+        async function clearAllResults() {
+            const resultDiv = document.getElementById('debugResult');
+            
+            if (!confirm('Are you sure you want to clear all stored payment results?')) {
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="info-result">Clearing all results...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/debug', {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<div class="success-result">🧹 Results Cleared!
+                
+Cleared Count: ${data.clearedCount}
+Timestamp: ${data.timestamp}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-result">💥 Clear Error:
+                
+${error.message}</div>`;
+            }
+        }
+
+        async function testAuth() {
+            const resultDiv = document.getElementById('debugResult');
+            resultDiv.innerHTML = '<div class="info-result">Testing M-Pesa authentication...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/auth');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="success-result">✅ Authentication Successful!
+                    
+Access Token: ${data.access_token.substring(0, 20)}...
+Expires In: ${data.expires_in} seconds</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error-result">❌ Authentication Failed:
+                    
+${data.error}
+
+Details: ${JSON.stringify(data.details || {}, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-result">💥 Auth Error:
+                
+${error.message}</div>`;
+            }
+        }
+
+        async function testCallback() {
+            const resultDiv = document.getElementById('callbackResult');
+            resultDiv.innerHTML = '<div class="info-result">Testing callback handler...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/callback');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<div class="success-result">✅ Callback Handler Active!
+                
+Message: ${data.message}
+Stored Results: ${data.storedResults}
+Timestamp: ${data.timestamp}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error-result">💥 Callback Test Error:
+                
+${error.message}</div>`;
+            }
+        }
+
+        // Auto-refresh status every 10 seconds if we have a checkout ID
+        setInterval(() => {
+            const checkoutId = document.getElementById('checkoutId').value;
+            if (checkoutId && checkoutId.startsWith('ws_CO_')) {
+                console.log('🔄 Auto-checking payment status...');
+                checkStatus();
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

@@ -1,10 +1,12 @@
-import prisma from '../../../lib/prisma'
+import connectDB from '../../../lib/mongodb'
+import Product from '../../../models/Product'
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '../../../lib/adminAuth'
 
 export async function GET() {
   try {
-    const items = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } })
+    await connectDB()
+    const items = await Product.find().sort({ createdAt: -1 })
     return NextResponse.json(items)
   } catch (e) {
     console.error(e)
@@ -28,8 +30,16 @@ export async function POST(req) {
     const imagesArr = Array.isArray(images)
       ? images.filter(Boolean)
       : []
-    const created = await prisma.product.create({
-      data: { name, category, price: priceNum, img, imagesJson: JSON.stringify(imagesArr), meta, condition, status },
+    await connectDB()
+    const created = await Product.create({
+      name, 
+      category, 
+      price: priceNum, 
+      img, 
+      imagesJson: JSON.stringify(imagesArr), 
+      meta, 
+      condition, 
+      status
     })
     return NextResponse.json(created, { status: 201 })
   } catch (e) {

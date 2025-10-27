@@ -1,0 +1,9 @@
+version: "2"
+authtoken: # Add your ngrok authtoken here if you have one
+tunnels:
+  mpesa:
+    proto: http
+    addr: 3002
+    inspect: false
+    bind_tls: true
+    host_header: "localhost:3002"

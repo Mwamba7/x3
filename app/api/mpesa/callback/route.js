@@ -1,171 +1,124 @@
 import { NextResponse } from 'next/server'
+import { storePaymentResult } from '../../../../lib/payment-storage'
 
-/**
- * M-Pesa Callback Handler
- * Handles payment notifications from Safaricom Daraja API
- */
-
-// In-memory storage for demo (use database in production)
-const paymentResults = new Map()
-
-// M-Pesa callback handler
 export async function POST(request) {
   try {
     console.log('📞 M-Pesa callback received')
     
-    const body = await request.json()
-    console.log('📋 Callback payload:', JSON.stringify(body, null, 2))
+    const callbackData = await request.json()
+    console.log('📊 Callback data:', JSON.stringify(callbackData, null, 2))
+
+    // Extract the callback body
+    const { Body } = callbackData
     
-    // Extract the callback data
-    const { Body } = body
-    
-    if (Body && Body.stkCallback) {
-      const { 
-        MerchantRequestID, 
-        CheckoutRequestID, 
-        ResultCode, 
-        ResultDesc,
-        CallbackMetadata 
-      } = Body.stkCallback
-      
-      console.log('📊 Transaction Status:', {
-        MerchantRequestID,
-        CheckoutRequestID,
-        ResultCode,
-        ResultDesc
+    if (!Body || !Body.stkCallback) {
+      console.error('❌ Invalid callback structure')
+      return NextResponse.json({
+        ResultCode: 1,
+        ResultDesc: 'Invalid callback structure'
       })
-      
-      // Store result for frontend polling
-      const callbackResult = {
-        MerchantRequestID,
-        CheckoutRequestID,
-        ResultCode,
-        ResultDesc,
-        timestamp: new Date().toISOString(),
-        processed: true
-      }
-      
-      // Process based on result code
-      if (ResultCode === 0) {
-        // Payment successful
-        console.log('✅ Payment successful!')
-        
-        // Extract payment details from metadata
-        if (CallbackMetadata && CallbackMetadata.Item) {
-          const metadata = {}
-          CallbackMetadata.Item.forEach(item => {
-            metadata[item.Name] = item.Value
-          })
-          
-          console.log('💰 Payment details:', {
-            Amount: metadata.Amount,
-            MpesaReceiptNumber: metadata.MpesaReceiptNumber,
-            TransactionDate: metadata.TransactionDate,
-            PhoneNumber: metadata.PhoneNumber
-          })
-          
-          // Add payment details to result
-          callbackResult.paymentDetails = {
-            amount: metadata.Amount,
-            mpesaReceiptNumber: metadata.MpesaReceiptNumber,
-            transactionDate: metadata.TransactionDate,
-            phoneNumber: metadata.PhoneNumber,
-            balance: metadata.Balance
-          }
-        }
-        
-        callbackResult.status = 'success'
-        
-        // Here you would typically:
-        // 1. Update your database with payment confirmation
-        // 2. Send confirmation email/SMS to customer
-        // 3. Update order status
-        // 4. Trigger any post-payment workflows
-        
-      } else {
-        // Payment failed or cancelled
-        console.log('❌ Payment failed:', ResultDesc)
-        callbackResult.status = 'failed'
-        
-        // Common failure codes:
-        // 1032: Request cancelled by user
-        // 1037: Timeout (user didn't enter PIN)
-        // 2001: Wrong PIN entered too many times
-        // 1001: Insufficient funds
-        // 1019: Transaction failed
-        
-        // Handle failed payment
-        // 1. Update database with failure status
-        // 2. Notify customer of failure
-        // 3. Log for analysis
-      }
-      
-      // Store the result (use database in production)
-      paymentResults.set(CheckoutRequestID, callbackResult)
-      
-      // Clean up old results (keep for 1 hour)
-      setTimeout(() => {
-        paymentResults.delete(CheckoutRequestID)
-      }, 3600000)
-      
-    } else {
-      console.log('⚠️ Invalid callback format received')
     }
-    
-    // Always return success to M-Pesa to stop retries
-    return NextResponse.json({ 
-      ResultCode: 0, 
-      ResultDesc: 'Callback processed successfully' 
+
+    const { stkCallback } = Body
+    const { 
+      MerchantRequestID, 
+      CheckoutRequestID, 
+      ResultCode, 
+      ResultDesc,
+      CallbackMetadata 
+    } = stkCallback
+
+    console.log('🔍 Processing callback:', {
+      MerchantRequestID,
+      CheckoutRequestID,
+      ResultCode,
+      ResultDesc
     })
+
+    // Create payment result object
+    const paymentResult = {
+      merchantRequestId: MerchantRequestID,
+      checkoutRequestId: CheckoutRequestID,
+      resultCode: ResultCode,
+      resultDesc: ResultDesc,
+      timestamp: new Date().toISOString(),
+      success: ResultCode === 0
+    }
+
+    // If payment was successful, extract metadata
+    if (ResultCode === 0 && CallbackMetadata && CallbackMetadata.Item) {
+      const metadata = {}
+      
+      CallbackMetadata.Item.forEach(item => {
+        switch (item.Name) {
+          case 'Amount':
+            metadata.amount = item.Value
+            break
+          case 'MpesaReceiptNumber':
+            metadata.mpesaReceiptNumber = item.Value
+            break
+          case 'TransactionDate':
+            metadata.transactionDate = item.Value
+            break
+          case 'PhoneNumber':
+            metadata.phoneNumber = item.Value
+            break
+        }
+      })
+
+      paymentResult.metadata = metadata
+      console.log('✅ Payment successful:', metadata)
+    } else {
+      console.log('❌ Payment failed:', ResultDesc)
+    }
+
+    // Store the result using the new storage system
+    await storePaymentResult(CheckoutRequestID, paymentResult)
     
+    console.log('💾 Payment result stored for CheckoutRequestID:', CheckoutRequestID)
+
+    // Respond to M-Pesa
+    return NextResponse.json({
+      ResultCode: 0,
+      ResultDesc: 'Success'
+    })
+
   } catch (error) {
-    console.error('❌ Callback processing error:', error)
+    console.error('💥 Callback processing error:', error)
     
-    // Still return success to avoid M-Pesa retries
-    return NextResponse.json({ 
-      ResultCode: 0, 
-      ResultDesc: 'Callback received' 
+    return NextResponse.json({
+      ResultCode: 1,
+      ResultDesc: 'Internal server error'
     })
   }
 }
 
-// GET endpoint to check callback results (for frontend polling)
-export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const checkoutRequestId = searchParams.get('checkoutRequestId')
-    
-    if (!checkoutRequestId) {
-      return NextResponse.json({
-        success: false,
-        error: 'MISSING_PARAMETER',
-        message: 'CheckoutRequestID is required'
-      }, { status: 400 })
-    }
-    
-    const result = paymentResults.get(checkoutRequestId)
-    
-    if (result) {
-      return NextResponse.json({
-        success: true,
-        data: result,
-        found: true
-      })
-    } else {
-      return NextResponse.json({
-        success: true,
-        data: null,
-        found: false,
-        message: 'No callback received yet'
-      })
-    }
-    
-  } catch (error) {
-    console.error('❌ Callback check error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to check callback status'
-    }, { status: 500 })
-  }
+// Export function to get payment result (for status checking)
+export function getPaymentResult(checkoutRequestId) {
+  return paymentResults.get(checkoutRequestId)
+}
+
+// Export function to clear old results (cleanup)
+export function clearPaymentResult(checkoutRequestId) {
+  return paymentResults.delete(checkoutRequestId)
+}
+
+// GET endpoint for testing callback functionality
+export async function GET() {
+  const { getAllPaymentResults, getMemoryStorageStats } = await import('../../../../lib/payment-storage')
+  const allResults = await getAllPaymentResults()
+  const memoryStats = getMemoryStorageStats()
+  
+  return NextResponse.json({
+    message: 'M-Pesa callback endpoint is active',
+    totalResults: allResults.length,
+    memoryResults: memoryStats.size,
+    recentResults: allResults.slice(-5).map(([key, value]) => ({
+      checkoutRequestId: key,
+      success: value.success,
+      timestamp: value.timestamp,
+      amount: value.metadata?.amount
+    })),
+    timestamp: new Date().toISOString()
+  })
 }

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdrawal Sync Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pending { background: #ffc107; color: #000; }
+        .status.processing { background: #17a2b8; color: #fff; }
+        .status.completed { background: #28a745; color: #fff; }
+        .status.cancelled { background: #dc3545; color: #fff; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .mismatch {
+            background-color: #ffebee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Withdrawal Synchronization Test</h1>
+    
+    <div class="container">
+        <h2>Debug Actions</h2>
+        <button class="btn" onclick="checkSync()">Check Sync Status</button>
+        <button class="btn" onclick="forceSync()">Force Sync All</button>
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
+        <h2>Withdrawal Requests (Admin View)</h2>
+        <div id="withdrawalRequests"></div>
+    </div>
+
+    <div class="container">
+        <h2>Withdrawals (User View)</h2>
+        <div id="withdrawals"></div>
+    </div>
+
+    <div class="container">
+        <h2>Status Mismatches</h2>
+        <div id="mismatches"></div>
+    </div>
+
+    <script>
+        async function checkSync() {
+            try {
+                const response = await fetch('/api/debug/withdrawal-sync');
+                const data = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <h3>Sync Status</h3>
+                    <p><strong>Total Withdrawal Requests:</strong> ${data.totalWithdrawalRequests}</p>
+                    <p><strong>Total Withdrawals:</strong> ${data.totalWithdrawals}</p>
+                    <p><strong>Mismatches:</strong> ${data.totalMismatches}</p>
+                `;
+
+                // Display withdrawal requests
+                let wrTable = '<table><tr><th>ID</th><th>Product ID</th><th>Product Name</th><th>Status</th><th>Seller</th></tr>';
+                data.withdrawalRequests.forEach(wr => {
+                    wrTable += `<tr>
+                        <td>${wr.id}</td>
+                        <td>${wr.productId}</td>
+                        <td>${wr.productName}</td>
+                        <td><span class="status ${wr.status}">${wr.status}</span></td>
+                        <td>${wr.sellerName}</td>
+                    </tr>`;
+                });
+                wrTable += '</table>';
+                document.getElementById('withdrawalRequests').innerHTML = wrTable;
+
+                // Display withdrawals
+                let wTable = '<table><tr><th>ID</th><th>Product ID</th><th>Product Name</th><th>Status</th><th>User ID</th></tr>';
+                data.withdrawals.forEach(w => {
+                    wTable += `<tr>
+                        <td>${w.id}</td>
+                        <td>${w.productId}</td>
+                        <td>${w.productName}</td>
+                        <td><span class="status ${w.status}">${w.status}</span></td>
+                        <td>${w.userId}</td>
+                    </tr>`;
+                });
+                wTable += '</table>';
+                document.getElementById('withdrawals').innerHTML = wTable;
+
+                // Display mismatches
+                if (data.mismatches.length > 0) {
+                    let mTable = '<table><tr><th>Product ID</th><th>Admin Status</th><th>User Status</th><th>Actions</th></tr>';
+                    data.mismatches.forEach(m => {
+                        mTable += `<tr class="mismatch">
+                            <td>${m.productId}</td>
+                            <td><span class="status ${m.withdrawalRequestStatus}">${m.withdrawalRequestStatus}</span></td>
+                            <td><span class="status ${m.withdrawalStatus}">${m.withdrawalStatus}</span></td>
+                            <td>Needs Sync</td>
+                        </tr>`;
+                    });
+                    mTable += '</table>';
+                    document.getElementById('mismatches').innerHTML = mTable;
+                } else {
+                    document.getElementById('mismatches').innerHTML = '<p style="color: green;">✅ All records are in sync!</p>';
+                }
+
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function forceSync() {
+            try {
+                const response = await fetch('/api/debug/withdrawal-sync', { method: 'POST' });
+                const data = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <h3>Force Sync Results</h3>
+                    <p style="color: green;">${data.message}</p>
+                    <p><strong>Synced:</strong> ${data.syncedCount} / ${data.totalRequests}</p>
+                `;
+                
+                // Refresh the display
+                setTimeout(checkSync, 1000);
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-load on page load
+        window.onload = checkSync;
+    </script>
+</body>
+</html>

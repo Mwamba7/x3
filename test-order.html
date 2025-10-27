@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order Creation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Order Creation Test</h1>
+        
+        <div class="test-section">
+            <h2>1. Test Database Connection</h2>
+            <button onclick="testDatabase()">Test Database</button>
+            <div id="db-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. Test Order Creation</h2>
+            <button onclick="testOrderCreation()">Create Test Order</button>
+            <div id="order-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. Test Real Order Data</h2>
+            <button onclick="testRealOrder()">Test with Real Cart Data</button>
+            <div id="real-order-result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testDatabase() {
+            const resultDiv = document.getElementById('db-result');
+            resultDiv.innerHTML = 'Testing database connection...';
+            
+            try {
+                const response = await fetch('/api/test-db');
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>Database Connection: SUCCESS</strong><br>
+                            Connection State: ${result.connectionState}<br>
+                            Existing Orders: ${result.existingOrders}<br>
+                            MongoDB URI: ${result.mongoUri}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>Database Connection: FAILED</strong><br>
+                            Error: ${result.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>Request Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testOrderCreation() {
+            const resultDiv = document.getElementById('order-result');
+            resultDiv.innerHTML = 'Creating test order...';
+            
+            try {
+                const response = await fetch('/api/test-order', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>Order Creation: SUCCESS</strong><br>
+                            Order ID: ${result.orderId}<br>
+                            <details>
+                                <summary>Order Details</summary>
+                                <pre>${JSON.stringify(result.order, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>Order Creation: FAILED</strong><br>
+                            Error: ${result.error}<br>
+                            <details>
+                                <summary>Error Stack</summary>
+                                <pre>${result.stack}</pre>
+                            </details>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>Request Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testRealOrder() {
+            const resultDiv = document.getElementById('real-order-result');
+            resultDiv.innerHTML = 'Testing with real order data...';
+            
+            // Simulate real cart data
+            const orderData = {
+                customer: {
+                    name: 'John Doe',
+                    phone: '0712345678',
+                    email: 'john@example.com',
+                    address: {
+                        street: '123 Test Street',
+                        city: 'Nairobi',
+                        area: 'Westlands',
+                        instructions: 'Call when you arrive'
+                    }
+                },
+                items: [
+                    {
+                        id: 'product-1',
+                        name: 'iPhone 13',
+                        price: 50000,
+                        qty: 1,
+                        condition: 'excellent',
+                        img: 'iphone13.jpg'
+                    },
+                    {
+                        id: 'product-2',
+                        name: 'MacBook Pro',
+                        price: 120000,
+                        qty: 1,
+                        condition: 'good',
+                        img: 'macbook.jpg'
+                    }
+                ],
+                subtotalAmount: 170000,
+                deliveryFee: 80,
+                totalAmount: 170080,
+                delivery: {
+                    method: 'delivery',
+                    estimatedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+                },
+                transactionId: 'TEST_TRANSACTION_123'
+            };
+            
+            try {
+                const response = await fetch('/api/orders/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>Real Order Test: SUCCESS</strong><br>
+                            Order ID: ${result.orderId}<br>
+                            Message: ${result.message}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>Real Order Test: FAILED</strong><br>
+                            Status: ${response.status}<br>
+                            Error: ${result.error || 'Unknown error'}<br>
+                            <details>
+                                <summary>Request Data</summary>
+                                <pre>${JSON.stringify(orderData, null, 2)}</pre>
+                            </details>
+                            <details>
+                                <summary>Response Data</summary>
+                                <pre>${JSON.stringify(result, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>Request Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

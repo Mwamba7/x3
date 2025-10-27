@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug M-Pesa STK Push</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 M-Pesa STK Push Debugger</h1>
+        
+        <div class="test-section">
+            <h2>1. Environment Check</h2>
+            <button onclick="checkEnvironment()">Check M-Pesa Configuration</button>
+            <div id="envResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. Authentication Test</h2>
+            <button onclick="testAuth()">Test M-Pesa Authentication</button>
+            <div id="authResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. STK Push Test</h2>
+            <input type="tel" id="testPhone" placeholder="254708374149" value="254708374149">
+            <input type="number" id="testAmount" placeholder="100" value="100" min="1" max="70000">
+            <button onclick="testSTKPush()">Send STK Push</button>
+            <div id="stkResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>4. Network Test</h2>
+            <button onclick="testNetwork()">Test Safaricom API Connectivity</button>
+            <div id="networkResult"></div>
+        </div>
+        
+        <div class="info">
+            <h3>📋 Common Issues & Solutions</h3>
+            <ul>
+                <li><strong>Invalid Credentials:</strong> Check MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET</li>
+                <li><strong>Network Issues:</strong> Ensure internet connection and Safaricom API access</li>
+                <li><strong>Phone Format:</strong> Use 254XXXXXXXXX format</li>
+                <li><strong>Amount Limits:</strong> Sandbox: 1-70,000 KSH</li>
+                <li><strong>Environment:</strong> Ensure MPESA_ENVIRONMENT=sandbox</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function checkEnvironment() {
+            const resultDiv = document.getElementById('envResult');
+            resultDiv.innerHTML = '<div class="info">Checking environment variables...</div>';
+            
+            try {
+                const response = await fetch('/api/debug-env');
+                const data = await response.json();
+                
+                let html = '<h4>Environment Status:</h4>';
+                if (data.configured) {
+                    html += '<div class="success">✅ M-Pesa environment is configured</div>';
+                } else {
+                    html += '<div class="error">❌ M-Pesa environment not configured</div>';
+                }
+                
+                html += '<h4>Configuration Details:</h4>';
+                html += `<pre>${JSON.stringify(data.config, null, 2)}</pre>`;
+                
+                if (data.issues && data.issues.length > 0) {
+                    html += '<h4>Issues Found:</h4>';
+                    data.issues.forEach(issue => {
+                        html += `<div class="error">❌ ${issue}</div>`;
+                    });
+                }
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testAuth() {
+            const resultDiv = document.getElementById('authResult');
+            resultDiv.innerHTML = '<div class="info">Testing M-Pesa authentication...</div>';
+            
+            try {
+                const response = await fetch('/api/test-auth');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Authentication successful<br>
+                            Token length: ${data.tokenLength} characters<br>
+                            Environment: ${data.environment}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Authentication failed<br>
+                            Error: ${data.error}<br>
+                            <pre>${JSON.stringify(data.details, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testSTKPush() {
+            const phone = document.getElementById('testPhone').value;
+            const amount = document.getElementById('testAmount').value;
+            const resultDiv = document.getElementById('stkResult');
+            
+            if (!phone || !amount) {
+                resultDiv.innerHTML = '<div class="error">Please enter phone number and amount</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="info">Sending STK Push request...</div>';
+            
+            try {
+                const response = await fetch('/api/pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, amount: parseInt(amount) })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ STK Push sent successfully!<br>
+                            Reference: ${data.reference}<br>
+                            Phone: ${data.phone}<br>
+                            Amount: Ksh ${data.amount}<br>
+                            Checkout ID: ${data.checkoutRequestId || 'N/A'}<br>
+                            Message: ${data.message}
+                        </div>
+                        <div class="info">
+                            📱 Check phone ${data.phone} for M-Pesa prompt and enter PIN: 1234
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ STK Push failed<br>
+                            Message: ${data.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testNetwork() {
+            const resultDiv = document.getElementById('networkResult');
+            resultDiv.innerHTML = '<div class="info">Testing network connectivity...</div>';
+            
+            try {
+                // Test direct connection to Safaricom sandbox
+                const testUrl = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+                
+                resultDiv.innerHTML = `
+                    <div class="info">
+                        Testing connection to: ${testUrl}<br>
+                        This test checks if your network can reach Safaricom's API...
+                    </div>
+                `;
+                
+                // Note: This will likely fail due to CORS, but that's expected
+                // The real test is in the server-side authentication
+                setTimeout(() => {
+                    resultDiv.innerHTML += `
+                        <div class="warning">
+                            ⚠️ Direct browser test limited by CORS policy (this is normal)<br>
+                            Use the Authentication Test above for real connectivity check
+                        </div>
+                    `;
+                }, 2000);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-run environment check on page load
+        window.addEventListener('load', checkEnvironment);
+    </script>
+</body>
+</html>

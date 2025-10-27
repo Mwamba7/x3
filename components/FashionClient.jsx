@@ -19,14 +19,16 @@ export default function FashionClient({ products }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
   const [showSoldOverlay, setShowSoldOverlay] = useState(null)
-  const [addedId, setAddedId] = useState(null)
+  const [popupState, setPopupState] = useState({ id: null, action: null })
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    
+    // Removed cart lock error listener - using CartProtectionNotification instead
   }, [])
   const formatKsh = (n) => `Ksh ${Number(n).toLocaleString('en-KE')}`
-  const { addItem, removeItem, items } = useCart()
+  const { addItem, removeItem, items, isCartLocked } = useCart()
 
   function buildSrcSet(url) {
     if (!url) return undefined
@@ -52,7 +54,7 @@ export default function FashionClient({ products }) {
   }, [products, active, query, sort])
 
   return (
-    <section className="products-section" aria-label="Outfits, Fashion & Sneakers" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <section className="products-section fashion-section" aria-label="Outfits, Fashion & Sneakers" style={{ paddingTop: 0, paddingBottom: 0 }}>
       <header className="products-header">
         <h3>Outfits, Fashion & Sneakers</h3>
         <div className="filters" role="tablist" aria-label="Fashion categories">
@@ -125,45 +127,76 @@ export default function FashionClient({ products }) {
                   style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }}
                 />
                 <span className="badge condition">{p.condition}</span>
-                <span className={`badge ${isSold ? 'sold-badge' : ''}`} style={{ position: 'absolute', right: 10, top: 10, background: isSold ? undefined : 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', fontSize: 11, padding: '6px 8px', borderRadius: 999 }}>{isSold ? 'Sold' : 'Available'}</span>
+                <span className={`badge ${isSold ? 'sold-badge' : ''}`} style={{ position: 'absolute', right: 10, top: 10, background: 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', fontSize: 10, padding: '4px 6px', borderRadius: 999, color: isSold ? '#ef4444' : '#3b82f6' }}>{isSold ? 'Sold' : 'Available'}</span>
                 {showSoldOverlay === p.id && (
                   <div className="sold-overlay visible">
                     <span className="emoji" role="img" aria-label="Lock">🔒</span>
                     Sold
                   </div>
                 )}
-                {addedId === p.id && (
-                  <div className="added-popup visible">
-                    Added!
+                {/* Unified Action Popup */}
+                {popupState.id === p.id && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '60%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: popupState.action === 'added' ? 'rgba(10, 16, 26, 0.85)' : 
+                                 popupState.action === 'blocked' ? '#ff6b35' : '#dc3545',
+                    color: popupState.action === 'added' ? 'var(--primary)' : 'white',
+                    fontWeight: '600',
+                    fontSize: '11px',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    zIndex: 3,
+                    pointerEvents: 'none',
+                    opacity: 1,
+                    transition: 'opacity 0.3s ease'
+                  }}>
+                    {popupState.action === 'added' ? 'Added!' : 
+                     popupState.action === 'blocked' ? '🔒 Blocked!' : 'Removed!'}
                   </div>
                 )}
               </div>
               <div className="info">
                 <h4 className="name">{p.name}</h4>
-                <div className="meta-tags">
-                  {String(p.meta || '').split(/[|,]/).map(s => s.trim()).filter(Boolean).slice(0, 4).map((tag, i) => (
-                    <span key={i} className="meta-tag">{tag}</span>
-                  ))}
-                </div>
-                <div className="price-row">
+                <div className="price-row" style={{ position: 'relative' }}>
                   <span className="price">{formatKsh(p.price)}</span>
                   <button
                     className={`btn btn-small ${isInCart ? 'in-cart-btn' : ''}`}
                     disabled={isSold}
-                    style={isInCart ? { color: 'blue' } : undefined}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      
+                      // Check if cart is locked before showing normal popups
+                      const savedPayment = localStorage.getItem('mpesaPayment')
+                      let isLocked = false
+                      if (savedPayment) {
+                        try {
+                          const paymentData = JSON.parse(savedPayment)
+                          isLocked = paymentData.depositPaid === true
+                        } catch {}
+                      }
+                      
                       if (isInCart) {
                         removeItem(p.id);
+                        // Only show removed popup if cart is not locked
+                        if (!isCartLocked) {
+                          setPopupState({ id: p.id, action: 'removed' });
+                          setTimeout(() => setPopupState({ id: null, action: null }), 2000);
+                        }
                       } else {
                         addItem(p, 1);
-                        setAddedId(p.id);
-                        setTimeout(() => setAddedId(null), 1500);
+                        // Only show added popup if cart is not locked
+                        if (!isCartLocked) {
+                          setPopupState({ id: p.id, action: 'added' });
+                          setTimeout(() => setPopupState({ id: null, action: null }), 1500);
+                        }
                       }
                     }}
                   >
-                    {isInCart ? 'In Cart' : 'Add to Cart'}
+{isInCart ? 'Remove' : 'Add to Cart'}
                   </button>
                 </div>
               </div>

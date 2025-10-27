@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Pesa Payment Diagnosis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-good { color: #28a745; }
+        .status-bad { color: #dc3545; }
+        .status-warning { color: #ffc107; }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+        .section.good { border-left-color: #28a745; }
+        .section.bad { border-left-color: #dc3545; }
+        .section.warning { border-left-color: #ffc107; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .success { background-color: #28a745; }
+        .danger { background-color: #dc3545; }
+        .warning { background-color: #ffc107; color: #212529; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success-result {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error-result {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info-result {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 M-Pesa Payment Diagnosis Tool</h1>
+    
+    <div class="container">
+        <h2>Quick Actions</h2>
+        <button onclick="runFullDiagnosis()" class="success">🔍 Run Full Diagnosis</button>
+        <button onclick="checkStoredPayments()">💾 Check Stored Payments</button>
+        <button onclick="testCallback()">📞 Test Callback URL</button>
+        <button onclick="clearAllData()" class="danger">🧹 Clear All Payment Data</button>
+    </div>
+
+    <div class="container">
+        <h2>📊 System Status</h2>
+        <div id="systemStatus">Click "Run Full Diagnosis" to check system status...</div>
+    </div>
+
+    <div class="container">
+        <h2>💾 Payment Storage</h2>
+        <div id="paymentStorage">
+            <button onclick="checkStoredPayments()">Check Payment Storage</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Manual Tests</h2>
+        <div>
+            <h3>Test STK Push & Monitor</h3>
+            <input type="tel" id="testPhone" placeholder="254712345678" value="254712345678" style="padding: 8px; margin: 5px;">
+            <input type="number" id="testAmount" placeholder="Amount" value="1" style="padding: 8px; margin: 5px;">
+            <button onclick="testSTKPush()">Send STK Push</button>
+            <button onclick="startMonitoring()" id="monitorBtn" disabled>Start Monitoring</button>
+            <button onclick="stopMonitoring()" id="stopBtn" disabled>Stop Monitoring</button>
+        </div>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔧 Troubleshooting</h2>
+        <div id="troubleshooting">
+            <p>Run diagnosis to see troubleshooting recommendations...</p>
+        </div>
+    </div>
+
+    <script>
+        let monitoringInterval = null;
+        let currentCheckoutRequestId = null;
+
+        async function runFullDiagnosis() {
+            const statusDiv = document.getElementById('systemStatus');
+            statusDiv.innerHTML = '<div class="info-result">Running full system diagnosis...</div>';
+            
+            try {
+                const response = await fetch('/api/diagnose-payment');
+                const data = await response.json();
+                
+                displaySystemStatus(data);
+                displayTroubleshooting(data);
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error-result">Diagnosis failed: ${error.message}</div>`;
+            }
+        }
+
+        function displaySystemStatus(data) {
+            const statusDiv = document.getElementById('systemStatus');
+            
+            let html = `<div class="section ${data.status === 'healthy' ? 'good' : 'bad'}">`;
+            html += `<h3>Overall Status: ${data.status === 'healthy' ? '✅ Healthy' : '❌ Issues Found'}</h3>`;
+            html += `</div>`;
+            
+            // Environment
+            html += `<div class="section ${data.environment.baseUrl ? 'good' : 'bad'}">`;
+            html += `<h4>🌐 Environment Configuration</h4>`;
+            html += `<ul>`;
+            html += `<li>Base URL: ${data.environment.baseUrl || 'Not set'}</li>`;
+            html += `<li>M-Pesa Environment: ${data.environment.mpesaEnvironment}</li>`;
+            html += `<li>Consumer Key: ${data.environment.hasConsumerKey ? '✅ Set' : '❌ Missing'}</li>`;
+            html += `<li>Consumer Secret: ${data.environment.hasConsumerSecret ? '✅ Set' : '❌ Missing'}</li>`;
+            html += `<li>Passkey: ${data.environment.hasPasskey ? '✅ Set' : '❌ Missing'}</li>`;
+            html += `<li>Business Short Code: ${data.environment.businessShortCode}</li>`;
+            html += `</ul>`;
+            html += `</div>`;
+            
+            // Authentication
+            html += `<div class="section ${data.authentication.working ? 'good' : 'bad'}">`;
+            html += `<h4>🔐 M-Pesa Authentication</h4>`;
+            html += `<p>Status: ${data.authentication.working ? '✅ Working' : '❌ Failed'}</p>`;
+            if (data.authentication.error) {
+                html += `<p>Error: ${data.authentication.error}</p>`;
+            }
+            html += `</div>`;
+            
+            // Callbacks
+            html += `<div class="section ${data.callbacks.reachable ? 'good' : 'bad'}">`;
+            html += `<h4>📞 Callback Configuration</h4>`;
+            html += `<ul>`;
+            html += `<li>Callback URL: ${data.callbacks.callbackUrl}</li>`;
+            html += `<li>Reachable: ${data.callbacks.reachable ? '✅ Yes' : '❌ No'}</li>`;
+            if (data.callbacks.error) {
+                html += `<li>Error: ${data.callbacks.error}</li>`;
+            }
+            html += `</ul>`;
+            html += `</div>`;
+            
+            // Storage
+            html += `<div class="section ${data.storage.totalResults > 0 ? 'good' : 'warning'}">`;
+            html += `<h4>💾 Payment Storage</h4>`;
+            html += `<ul>`;
+            html += `<li>Total Results: ${data.storage.totalResults}</li>`;
+            html += `<li>Memory Results: ${data.storage.memory.size}</li>`;
+            html += `</ul>`;
+            if (data.storage.recentResults.length > 0) {
+                html += `<h5>Recent Payments:</h5>`;
+                html += `<table>`;
+                html += `<tr><th>Checkout ID</th><th>Success</th><th>Transaction ID</th><th>Timestamp</th></tr>`;
+                data.storage.recentResults.forEach(result => {
+                    html += `<tr>`;
+                    html += `<td>${result.checkoutRequestId.substring(0, 20)}...</td>`;
+                    html += `<td>${result.success ? '✅' : '❌'}</td>`;
+                    html += `<td>${result.transactionId}</td>`;
+                    html += `<td>${new Date(result.timestamp).toLocaleString()}</td>`;
+                    html += `</tr>`;
+                });
+                html += `</table>`;
+            }
+            html += `</div>`;
+            
+            statusDiv.innerHTML = html;
+        }
+
+        function displayTroubleshooting(data) {
+            const troubleshootingDiv = document.getElementById('troubleshooting');
+            
+            if (data.issues.length === 0) {
+                troubleshootingDiv.innerHTML = `<div class="section good">
+                    <h3>✅ No Issues Found</h3>
+                    <p>Your M-Pesa integration appears to be working correctly!</p>
+                </div>`;
+                return;
+            }
+            
+            let html = `<div class="section bad">`;
+            html += `<h3>❌ Issues Found (${data.issues.length})</h3>`;
+            html += `<ul>`;
+            data.issues.forEach(issue => {
+                html += `<li>${issue}</li>`;
+            });
+            html += `</ul>`;
+            html += `</div>`;
+            
+            html += `<div class="section warning">`;
+            html += `<h3>💡 Recommended Solutions</h3>`;
+            html += `<ol>`;
+            data.solutions.forEach(solution => {
+                html += `<li>${solution}</li>`;
+            });
+            html += `</ol>`;
+            html += `</div>`;
+            
+            troubleshootingDiv.innerHTML = html;
+        }
+
+        async function checkStoredPayments() {
+            const storageDiv = document.getElementById('paymentStorage');
+            storageDiv.innerHTML = '<div class="info-result">Checking payment storage...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/debug');
+                const data = await response.json();
+                
+                let html = `<h4>📊 Storage Statistics</h4>`;
+                html += `<ul>`;
+                html += `<li>Total Results: ${data.totalResults}</li>`;
+                html += `<li>Memory Results: ${data.memoryResults}</li>`;
+                html += `</ul>`;
+                
+                if (data.storedResults.length > 0) {
+                    html += `<h4>💾 Stored Payment Results</h4>`;
+                    html += `<table>`;
+                    html += `<tr><th>Checkout ID</th><th>Success</th><th>Transaction ID</th><th>Amount</th><th>Timestamp</th></tr>`;
+                    
+                    data.storedResults.forEach(([key, value]) => {
+                        html += `<tr>`;
+                        html += `<td>${key.substring(0, 25)}...</td>`;
+                        html += `<td>${value.success ? '✅' : '❌'}</td>`;
+                        html += `<td>${value.metadata?.mpesaReceiptNumber || 'N/A'}</td>`;
+                        html += `<td>${value.metadata?.amount || 'N/A'}</td>`;
+                        html += `<td>${new Date(value.timestamp).toLocaleString()}</td>`;
+                        html += `</tr>`;
+                    });
+                    html += `</table>`;
+                } else {
+                    html += `<div class="warning-result">No payment results found in storage.</div>`;
+                }
+                
+                storageDiv.innerHTML = html;
+                
+            } catch (error) {
+                storageDiv.innerHTML = `<div class="error-result">Failed to check storage: ${error.message}</div>`;
+            }
+        }
+
+        async function testCallback() {
+            try {
+                const response = await fetch('/api/test-callback');
+                const data = await response.json();
+                
+                alert(`Callback URL Test: ${response.ok ? 'SUCCESS' : 'FAILED'}\n\nResponse: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                alert(`Callback URL Test FAILED: ${error.message}`);
+            }
+        }
+
+        async function testSTKPush() {
+            const phone = document.getElementById('testPhone').value;
+            const amount = document.getElementById('testAmount').value;
+            const resultsDiv = document.getElementById('testResults');
+            
+            resultsDiv.innerHTML = '<div class="info-result">Sending STK Push...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/stk-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        amount: parseInt(amount),
+                        reference: `TEST_${Date.now()}`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentCheckoutRequestId = data.checkoutRequestId;
+                    document.getElementById('monitorBtn').disabled = false;
+                    
+                    resultsDiv.innerHTML = `<div class="success-result">✅ STK Push Sent Successfully!
+
+CheckoutRequestID: ${data.checkoutRequestId}
+Phone: ${data.phone}
+Amount: Ksh ${data.amount}
+
+📱 Check your phone for M-Pesa prompt!</div>`;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error-result">❌ STK Push Failed:
+
+${data.error}
+
+Details: ${JSON.stringify(data.details || {}, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error-result">❌ STK Push Error: ${error.message}</div>`;
+            }
+        }
+
+        async function startMonitoring() {
+            if (!currentCheckoutRequestId) {
+                alert('No CheckoutRequestID available. Send STK Push first.');
+                return;
+            }
+            
+            document.getElementById('monitorBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            
+            const resultsDiv = document.getElementById('testResults');
+            let attempts = 0;
+            
+            monitoringInterval = setInterval(async () => {
+                attempts++;
+                
+                try {
+                    const response = await fetch('/api/mpesa/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ checkoutRequestId: currentCheckoutRequestId })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.status === 'completed') {
+                        resultsDiv.innerHTML = `<div class="success-result">✅ Payment Completed Successfully!
+
+Status: ${data.status}
+Transaction ID: ${data.transactionId}
+Amount: Ksh ${data.amount}
+Phone: ${data.phone}
+
+Monitoring stopped after ${attempts} attempts.</div>`;
+                        
+                        stopMonitoring();
+                        return;
+                    } else if (data.status === 'cancelled' || data.status === 'failed') {
+                        resultsDiv.innerHTML = `<div class="error-result">❌ Payment ${data.status.toUpperCase()}
+
+Message: ${data.message}
+Attempts: ${attempts}</div>`;
+                        
+                        stopMonitoring();
+                        return;
+                    } else {
+                        resultsDiv.innerHTML = `<div class="info-result">⏳ Payment Status: ${data.status || 'pending'}
+
+Message: ${data.message || 'Waiting for payment...'}
+Attempts: ${attempts}
+
+Keep your phone ready to complete the M-Pesa payment!</div>`;
+                    }
+                    
+                } catch (error) {
+                    console.error('Monitoring error:', error);
+                }
+            }, 5000);
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+            document.getElementById('monitorBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+
+        async function clearAllData() {
+            if (!confirm('Are you sure you want to clear all payment data? This cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/mpesa/debug', { method: 'DELETE' });
+                const data = await response.json();
+                
+                alert(`Payment data cleared successfully!\n\nMemory: ${data.memoryCount} records\nDatabase: ${data.dbCount} records`);
+                
+                // Refresh the storage display
+                checkStoredPayments();
+                
+            } catch (error) {
+                alert(`Failed to clear payment data: ${error.message}`);
+            }
+        }
+
+        // Auto-run diagnosis on page load
+        window.addEventListener('load', () => {
+            setTimeout(runFullDiagnosis, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Orders System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛍️ Admin Orders System Test</h1>
+        <p>Test the admin order management system functionality</p>
+        
+        <div>
+            <h3>Test Actions</h3>
+            <button class="btn" onclick="createTestOrder()">Create Test Order</button>
+            <button class="btn" onclick="fetchOrders()">Fetch All Orders</button>
+            <button class="btn" onclick="updateOrderStatus()">Update Order Status</button>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showResult(message, isError = false, isSuccess = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = message;
+            resultDiv.className = 'result';
+            if (isError) resultDiv.className += ' error';
+            if (isSuccess) resultDiv.className += ' success';
+        }
+
+        async function createTestOrder() {
+            try {
+                showResult('Creating test order...');
+                
+                const testOrder = {
+                    orderId: `ORD-TEST-${Date.now()}`,
+                    customer: {
+                        name: 'Test Customer',
+                        phone: '0712345678',
+                        address: {
+                            street: 'Test Address, Nairobi'
+                        }
+                    },
+                    items: [{
+                        productId: 'test-product',
+                        name: 'Test Product',
+                        price: 10000,
+                        quantity: 1,
+                        condition: 'new',
+                        lineTotal: 10000,
+                        img: 'https://via.placeholder.com/150'
+                    }],
+                    subtotal: 10000,
+                    deliveryFee: 100,
+                    totalAmount: 10100,
+                    payment: {
+                        depositAmount: 2020,
+                        remainingAmount: 8080,
+                        depositPaid: true
+                    },
+                    delivery: {
+                        method: 'delivery',
+                        estimatedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+                    },
+                    status: 'received'
+                };
+
+                const response = await fetch('/api/orders/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testOrder)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Test order created successfully! Order ID: ${result.orderId}`, false, true);
+                } else {
+                    showResult(`❌ Failed to create test order: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error creating test order: ${error.message}`, true);
+            }
+        }
+
+        async function fetchOrders() {
+            try {
+                showResult('Fetching orders...');
+                
+                const response = await fetch('/api/admin/orders');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Found ${result.orders.length} orders. Check admin panel at /admin/orders`, false, true);
+                } else {
+                    showResult(`❌ Failed to fetch orders: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error fetching orders: ${error.message}`, true);
+            }
+        }
+
+        async function updateOrderStatus() {
+            try {
+                const orderId = prompt('Enter Order ID to update:');
+                if (!orderId) return;
+                
+                const status = prompt('Enter new status (received, processing, in_transit, delivered):');
+                if (!status) return;
+                
+                showResult('Updating order status...');
+                
+                const response = await fetch('/api/admin/orders/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ orderId, status })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Order status updated to: ${status}`, false, true);
+                } else {
+                    showResult(`❌ Failed to update status: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error updating status: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

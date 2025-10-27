@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Receiving System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Receiving System</h1>
+        <p>Test the new receiving stage with payment and delivery confirmation</p>
+        
+        <div>
+            <h3>Test Actions</h3>
+            <button class="btn" onclick="testOrderAPI()">Test Order API</button>
+            <button class="btn" onclick="testPaymentAPI()">Test Payment API</button>
+            <button class="btn" onclick="testDeliveryAPI()">Test Delivery API</button>
+            <button class="btn" onclick="checkOrderStatus()">Check Order Status</button>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showResult(message, isError = false, isSuccess = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = message;
+            resultDiv.className = 'result';
+            if (isError) resultDiv.className += ' error';
+            if (isSuccess) resultDiv.className += ' success';
+        }
+
+        async function testOrderAPI() {
+            try {
+                showResult('Testing order API...');
+                
+                const response = await fetch('/api/admin/orders');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Order API working! Found ${result.orders.length} orders`, false, true);
+                } else {
+                    showResult(`❌ Order API error: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Order API error: ${error.message}`, true);
+            }
+        }
+
+        async function testPaymentAPI() {
+            try {
+                const orderId = prompt('Enter Order ID to test payment:');
+                if (!orderId) return;
+                
+                showResult('Testing payment API...');
+                
+                const response = await fetch('/api/orders/pay-remaining', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        transactionId: 'TEST123456',
+                        amount: 1000
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Payment API working! ${result.message}`, false, true);
+                } else {
+                    showResult(`❌ Payment API error: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Payment API error: ${error.message}`, true);
+            }
+        }
+
+        async function testDeliveryAPI() {
+            try {
+                const orderId = prompt('Enter Order ID to test delivery:');
+                if (!orderId) return;
+                
+                showResult('Testing delivery API...');
+                
+                const response = await fetch('/api/orders/mark-delivered', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Delivery API working! ${result.message}`, false, true);
+                } else {
+                    showResult(`❌ Delivery API error: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Delivery API error: ${error.message}`, true);
+            }
+        }
+
+        async function checkOrderStatus() {
+            try {
+                const phone = prompt('Enter phone number to check orders:');
+                if (!phone) return;
+                
+                showResult('Checking order status...');
+                
+                const response = await fetch(`/api/orders/search?phone=${encodeURIComponent(phone)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const orders = result.orders;
+                    if (orders.length > 0) {
+                        const statusSummary = orders.map(order => 
+                            `Order ${order.orderId}: ${order.status} (Remaining paid: ${order.payment.remainingPaid})`
+                        ).join('\n');
+                        showResult(`✅ Found ${orders.length} orders:\n${statusSummary}`, false, true);
+                    } else {
+                        showResult('No orders found for this phone number', false, true);
+                    }
+                } else {
+                    showResult(`❌ Search error: ${result.error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Search error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

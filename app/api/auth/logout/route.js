@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server'
-import { authConfig } from '../../../../lib/auth'
 
 export async function POST() {
-  const res = NextResponse.json({ ok: true })
-  res.cookies.set(authConfig.sessionCookie, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  })
-  return res
+  try {
+    const response = NextResponse.json({
+      success: true,
+      message: 'Logged out successfully'
+    })
+
+    // Clear the auth token cookie
+    response.cookies.set('auth-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0
+    })
+
+    console.log('✅ User logged out successfully')
+    return response
+
+  } catch (error) {
+    console.error('❌ Logout error:', error)
+    return NextResponse.json({
+      error: 'Logout failed'
+    }, { status: 500 })
+  }
 }

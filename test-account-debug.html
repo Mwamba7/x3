@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Account API Debug Test</h1>
+    
+    <div class="section">
+        <h3>Authentication Status</h3>
+        <button onclick="checkAuth()">Check Auth</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>User Products API</h3>
+        <button onclick="testProductsAPI()">Test Products API</button>
+        <div id="products-result" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>User Sales API</h3>
+        <button onclick="testSalesAPI()">Test Sales API</button>
+        <div id="sales-result" class="result"></div>
+    </div>
+
+    <script>
+        async function checkAuth() {
+            const resultDiv = document.getElementById('auth-result');
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Authenticated</strong><br>
+                        User: ${data.user?.name || 'Unknown'}<br>
+                        Email: ${data.user?.email || 'Unknown'}<br>
+                        ID: ${data.user?._id || 'Unknown'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `❌ Not authenticated: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function testProductsAPI() {
+            const resultDiv = document.getElementById('products-result');
+            try {
+                const response = await fetch('/api/user/products');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Products API Success</strong><br>
+                        Total products: ${data.products?.length || 0}<br>
+                        <details>
+                            <summary>Raw data</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `❌ Products API Error: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Network Error: ${error.message}`;
+            }
+        }
+
+        async function testSalesAPI() {
+            const resultDiv = document.getElementById('sales-result');
+            try {
+                const response = await fetch('/api/user/sales');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Sales API Success</strong><br>
+                        Total sales: ${data.sales?.length || 0}<br>
+                        <details>
+                            <summary>Raw data</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `❌ Sales API Error: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Network Error: ${error.message}`;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            checkAuth();
+            setTimeout(testProductsAPI, 1000);
+            setTimeout(testSalesAPI, 2000);
+        };
+    </script>
+</body>
+</html>

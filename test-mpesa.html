@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Pesa Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .container { border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>M-Pesa Integration Test</h1>
+        <p>Test the M-Pesa STK Push integration with sandbox credentials.</p>
+        
+        <form id="paymentForm">
+            <label for="phone">Phone Number (254XXXXXXXXX):</label>
+            <input type="tel" id="phone" placeholder="254708374149" value="254708374149" required>
+            
+            <label for="amount">Amount (KES):</label>
+            <input type="number" id="amount" placeholder="100" value="100" min="1" required>
+            
+            <label for="customerName">Customer Name:</label>
+            <input type="text" id="customerName" placeholder="John Doe" value="Test Customer" required>
+            
+            <button type="submit" id="payButton">Send STK Push</button>
+        </form>
+        
+        <div id="result"></div>
+        
+        <div id="statusSection" style="display: none;">
+            <h3>Payment Status</h3>
+            <div id="statusDisplay"></div>
+            <button id="checkStatusBtn">Check Status</button>
+            <button id="resetBtn">Reset Test</button>
+        </div>
+    </div>
+
+    <script>
+        let checkoutRequestId = null;
+        let statusInterval = null;
+
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const phone = document.getElementById('phone').value;
+            const amount = document.getElementById('amount').value;
+            const customerName = document.getElementById('customerName').value;
+            const orderId = `TEST-${Date.now()}`;
+            
+            const resultDiv = document.getElementById('result');
+            const payButton = document.getElementById('payButton');
+            
+            // Validate inputs
+            if (!phone.match(/^254[17]\d{8}$/)) {
+                resultDiv.innerHTML = '<div class="error">Invalid phone number format. Use 254XXXXXXXXX</div>';
+                return;
+            }
+            
+            payButton.disabled = true;
+            payButton.textContent = 'Sending STK Push...';
+            resultDiv.innerHTML = '<div class="info">Initiating payment request...</div>';
+            
+            try {
+                const response = await fetch('/api/mpesa/stk-push', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phone,
+                        amount: parseInt(amount),
+                        orderId: orderId,
+                        customerName: customerName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    checkoutRequestId = data.checkoutRequestId;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>STK Push Sent Successfully!</strong><br>
+                            Check your phone (${phone}) for the M-Pesa payment prompt.<br>
+                            <small>Checkout Request ID: ${data.checkoutRequestId}</small>
+                        </div>
+                    `;
+                    
+                    // Show status section
+                    document.getElementById('statusSection').style.display = 'block';
+                    
+                    // Start automatic status checking
+                    startStatusPolling();
+                    
+                } else {
+                    resultDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error"><strong>Network Error:</strong> ${error.message}</div>`;
+            } finally {
+                payButton.disabled = false;
+                payButton.textContent = 'Send STK Push';
+            }
+        });
+        
+        function startStatusPolling() {
+            if (statusInterval) clearInterval(statusInterval);
+            
+            statusInterval = setInterval(async () => {
+                if (checkoutRequestId) {
+                    await checkPaymentStatus();
+                }
+            }, 3000); // Check every 3 seconds
+            
+            // Stop polling after 5 minutes
+            setTimeout(() => {
+                if (statusInterval) {
+                    clearInterval(statusInterval);
+                    statusInterval = null;
+                }
+            }, 300000);
+        }
+        
+        async function checkPaymentStatus() {
+            if (!checkoutRequestId) return;
+            
+            try {
+                const response = await fetch(`/api/mpesa/payment-status?checkoutRequestId=${checkoutRequestId}`);
+                const data = await response.json();
+                
+                const statusDisplay = document.getElementById('statusDisplay');
+                
+                if (data.success && data.payment) {
+                    const payment = data.payment;
+                    const timestamp = new Date(payment.timestamp).toLocaleString();
+                    
+                    if (payment.status === 'completed') {
+                        statusDisplay.innerHTML = `
+                            <div class="success">
+                                <strong>✅ Payment Successful!</strong><br>
+                                Amount: KES ${payment.amount}<br>
+                                Receipt: ${payment.mpesaReceiptNumber || 'Processing'}<br>
+                                Time: ${timestamp}
+                            </div>
+                        `;
+                        
+                        // Stop polling
+                        if (statusInterval) {
+                            clearInterval(statusInterval);
+                            statusInterval = null;
+                        }
+                        
+                    } else if (payment.status === 'failed') {
+                        statusDisplay.innerHTML = `
+                            <div class="error">
+                                <strong>❌ Payment Failed</strong><br>
+                                Reason: ${payment.resultDesc || 'Unknown error'}<br>
+                                Time: ${timestamp}
+                            </div>
+                        `;
+                        
+                        // Stop polling
+                        if (statusInterval) {
+                            clearInterval(statusInterval);
+                            statusInterval = null;
+                        }
+                        
+                    } else {
+                        statusDisplay.innerHTML = `
+                            <div class="info">
+                                <strong>⏳ Payment Pending</strong><br>
+                                Status: ${payment.status}<br>
+                                Waiting for customer to complete payment...<br>
+                                Time: ${timestamp}
+                            </div>
+                        `;
+                    }
+                } else {
+                    statusDisplay.innerHTML = `
+                        <div class="info">
+                            <strong>🔍 Checking Status...</strong><br>
+                            No payment data available yet.
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+        
+        document.getElementById('checkStatusBtn').addEventListener('click', checkPaymentStatus);
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            // Clear intervals
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+            
+            // Reset form
+            checkoutRequestId = null;
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('statusDisplay').innerHTML = '';
+            document.getElementById('statusSection').style.display = 'none';
+            document.getElementById('payButton').disabled = false;
+            document.getElementById('payButton').textContent = 'Send STK Push';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Pesa Integration Diagnosis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-healthy { background-color: #d4edda; border-left: 5px solid #28a745; }
+        .status-needs_attention { background-color: #fff3cd; border-left: 5px solid #ffc107; }
+        .status-broken { background-color: #f8d7da; border-left: 5px solid #dc3545; }
+        .status-unknown { background-color: #d1ecf1; border-left: 5px solid #17a2b8; }
+        
+        .status-card {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .issue { 
+            background-color: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            color: #721c24; 
+            padding: 10px; 
+            margin: 5px 0; 
+            border-radius: 4px; 
+        }
+        .warning { 
+            background-color: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            color: #856404; 
+            padding: 10px; 
+            margin: 5px 0; 
+            border-radius: 4px; 
+        }
+        .solution { 
+            background-color: #d4edda; 
+            border: 1px solid #c3e6cb; 
+            color: #155724; 
+            padding: 10px; 
+            margin: 5px 0; 
+            border-radius: 4px; 
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .fix-button {
+            background-color: #28a745;
+            font-weight: bold;
+        }
+        .fix-button:hover { background-color: #218838; }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 M-Pesa Integration Diagnosis</h1>
+        <p>This tool will analyze your M-Pesa integration and identify any issues.</p>
+        
+        <button onclick="runDiagnosis()" id="diagnosisBtn">🔍 Run Full Diagnosis</button>
+        <button onclick="quickFix()" class="fix-button">⚡ Quick Fix</button>
+        
+        <div id="diagnosisResult">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Click "Run Full Diagnosis" to analyze your M-Pesa integration</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Manual Checks</h2>
+            <div class="grid">
+                <div>
+                    <h3>Environment Setup</h3>
+                    <ul>
+                        <li>✅ .env file exists in project root</li>
+                        <li>✅ MPESA_CONSUMER_KEY is set</li>
+                        <li>✅ MPESA_CONSUMER_SECRET is set</li>
+                        <li>✅ MPESA_ENVIRONMENT = "sandbox"</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>API Routes</h3>
+                    <ul>
+                        <li>✅ /api/pay/route.js exists</li>
+                        <li>✅ /api/mpesa-callback/route.js exists</li>
+                        <li>✅ Server is running on correct port</li>
+                        <li>✅ No console errors</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🧪 Test Credentials</h2>
+            <p>Use these for sandbox testing:</p>
+            <pre>
+Phone: 254708374149
+PIN: 1234
+Amount: 1-70000 KSH
+Environment: sandbox
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        async function runDiagnosis() {
+            const resultDiv = document.getElementById('diagnosisResult');
+            const btn = document.getElementById('diagnosisBtn');
+            
+            btn.disabled = true;
+            btn.textContent = '🔍 Analyzing...';
+            
+            resultDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Running comprehensive M-Pesa diagnosis...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/diagnose-mpesa');
+                const diagnosis = await response.json();
+                
+                let html = '<h2>📊 Diagnosis Results</h2>';
+                
+                // Overall status
+                html += `<div class="status-card status-${diagnosis.status}">`;
+                html += `<h3>Overall Status: ${getStatusText(diagnosis.status)}</h3>`;
+                html += `<p>Diagnosis completed at: ${new Date(diagnosis.timestamp).toLocaleString()}</p>`;
+                html += '</div>';
+                
+                // Issues
+                if (diagnosis.issues && diagnosis.issues.length > 0) {
+                    html += '<h3>🚨 Issues Found</h3>';
+                    diagnosis.issues.forEach(issue => {
+                        html += `<div class="issue">${issue}</div>`;
+                    });
+                }
+                
+                // Warnings
+                if (diagnosis.warnings && diagnosis.warnings.length > 0) {
+                    html += '<h3>⚠️ Warnings</h3>';
+                    diagnosis.warnings.forEach(warning => {
+                        html += `<div class="warning">${warning}</div>`;
+                    });
+                }
+                
+                // Solutions
+                if (diagnosis.solutions && diagnosis.solutions.length > 0) {
+                    html += '<h3>💡 Solutions</h3>';
+                    diagnosis.solutions.forEach(solution => {
+                        html += `<div class="solution">${solution}</div>`;
+                    });
+                }
+                
+                // Detailed information
+                html += '<h3>🔍 Detailed Analysis</h3>';
+                
+                // File status
+                if (diagnosis.details.files) {
+                    html += '<h4>📁 Files</h4>';
+                    html += `<p>.env file exists: ${diagnosis.details.files.envExists ? '✅ Yes' : '❌ No'}</p>`;
+                    html += `<p>.env.example exists: ${diagnosis.details.files.envExampleExists ? '✅ Yes' : '❌ No'}</p>`;
+                }
+                
+                // Environment variables
+                if (diagnosis.details.environment) {
+                    html += '<h4>🔧 Environment Variables</h4>';
+                    const env = diagnosis.details.environment;
+                    html += `<p>Consumer Key: ${env.hasConsumerKey ? '✅ Set' : '❌ Missing'} (${env.consumerKeyLength} chars)</p>`;
+                    html += `<p>Consumer Secret: ${env.hasConsumerSecret ? '✅ Set' : '❌ Missing'} (${env.consumerSecretLength} chars)</p>`;
+                    html += `<p>Business Short Code: ${env.hasBusinessShortCode ? '✅ Set' : '❌ Missing'}</p>`;
+                    html += `<p>Passkey: ${env.hasPasskey ? '✅ Set' : '❌ Missing'}</p>`;
+                    html += `<p>Environment: ${env.environment}</p>`;
+                    html += `<p>Base URL: ${env.baseUrl}</p>`;
+                }
+                
+                // Authentication test
+                if (diagnosis.details.authTest) {
+                    html += '<h4>🔐 Authentication Test</h4>';
+                    const auth = diagnosis.details.authTest;
+                    if (auth.attempted) {
+                        if (auth.success) {
+                            html += `<p>✅ Authentication successful</p>`;
+                            html += `<p>Token received: ${auth.hasToken ? 'Yes' : 'No'} (${auth.tokenLength} chars)</p>`;
+                        } else {
+                            html += `<p>❌ Authentication failed</p>`;
+                            html += `<p>Status: ${auth.status || 'Unknown'}</p>`;
+                            html += `<p>Error: ${auth.error || 'Unknown error'}</p>`;
+                        }
+                        html += `<p>Base URL: ${auth.baseUrl}</p>`;
+                    } else {
+                        html += `<p>⚠️ Not attempted: ${auth.reason}</p>`;
+                    }
+                }
+                
+                // API Routes
+                if (diagnosis.details.apiRoutes) {
+                    html += '<h4>🛣️ API Routes</h4>';
+                    Object.entries(diagnosis.details.apiRoutes).forEach(([route, exists]) => {
+                        html += `<p>${route}: ${exists ? '✅ Exists' : '❌ Missing'}</p>`;
+                    });
+                }
+                
+                // Components
+                if (diagnosis.details.components) {
+                    html += '<h4>🧩 Components</h4>';
+                    Object.entries(diagnosis.details.components).forEach(([component, exists]) => {
+                        html += `<p>${component}: ${exists ? '✅ Exists' : '❌ Missing'}</p>`;
+                    });
+                }
+                
+                // Raw data
+                html += '<h4>📄 Raw Diagnosis Data</h4>';
+                html += `<pre>${JSON.stringify(diagnosis, null, 2)}</pre>`;
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="issue">
+                        <h3>❌ Diagnosis Failed</h3>
+                        <p>Error: ${error.message}</p>
+                        <p>This usually means the server is not running or there's a network issue.</p>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Run Full Diagnosis';
+            }
+        }
+        
+        function getStatusText(status) {
+            switch(status) {
+                case 'healthy': return '✅ Healthy - M-Pesa integration is working';
+                case 'needs_attention': return '⚠️ Needs Attention - Minor issues found';
+                case 'broken': return '❌ Broken - Major issues need fixing';
+                default: return '❓ Unknown - Analysis needed';
+            }
+        }
+        
+        function quickFix() {
+            const resultDiv = document.getElementById('diagnosisResult');
+            resultDiv.innerHTML = `
+                <div class="solution">
+                    <h3>⚡ Quick Fix Steps</h3>
+                    <ol>
+                        <li><strong>Create .env file:</strong> <code>copy .env.example .env</code></li>
+                        <li><strong>Add M-Pesa credentials to .env:</strong>
+                            <pre>MPESA_CONSUMER_KEY="VhJ3SaroNiEiFQTTimt7HDn3dDlWTmJjxKfAB4wqwZIZpLte"
+MPESA_CONSUMER_SECRET="nI0Eg3zEfyiw0lY3JhPJu5ATwgK979wMtTqZVX8mFo06k1y7ujCQpwK4z0mGpkUM"
+MPESA_BUSINESS_SHORT_CODE="174379"
+MPESA_PASSKEY="bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+MPESA_ENVIRONMENT="sandbox"</pre>
+                        </li>
+                        <li><strong>Restart server:</strong> Stop (Ctrl+C) and run <code>npm run dev</code></li>
+                        <li><strong>Test:</strong> Visit <a href="/test-simple-payment.html">/test-simple-payment.html</a></li>
+                    </ol>
+                    <button onclick="runDiagnosis()" style="margin-top: 15px;">🔍 Run Diagnosis After Fix</button>
+                </div>
+            `;
+        }
+        
+        // Auto-run diagnosis on page load
+        window.addEventListener('load', () => {
+            setTimeout(runDiagnosis, 1000);
+        });
+    </script>
+</body>
+</html>

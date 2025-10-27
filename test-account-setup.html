@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Setup Tester - Think Twice Resellers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .success-btn {
+            background-color: #28a745;
+        }
+        .success-btn:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            margin-bottom: 20px;
+        }
+        .step {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Account Dashboard Setup Tester</h1>
+    
+    <div class="container">
+        <div class="info">
+            <strong>Purpose:</strong> This tool helps you populate your account dashboard with test data to verify the sales tracking and product management systems.
+        </div>
+
+        <div class="step">
+            <strong>Step 1:</strong> Enter your account information (same email/phone as your registered account)
+        </div>
+
+        <div class="form-group">
+            <label for="userName">Your Name:</label>
+            <input type="text" id="userName" required placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+            <label for="userPhone">Your Phone Number:</label>
+            <input type="tel" id="userPhone" required placeholder="e.g., 0718176584">
+        </div>
+
+        <div class="form-group">
+            <label for="userEmail">Your Email:</label>
+            <input type="email" id="userEmail" required placeholder="your.email@example.com">
+        </div>
+    </div>
+
+    <!-- Sales Setup -->
+    <div class="container">
+        <h2>💰 Setup Sales History</h2>
+        <div class="step">
+            <strong>Step 2:</strong> Create test sales data to populate your "Sales History" tab
+        </div>
+
+        <div class="form-group">
+            <label for="salesCount">Number of Test Sales:</label>
+            <select id="salesCount">
+                <option value="1">1 Sale</option>
+                <option value="2">2 Sales</option>
+                <option value="3" selected>3 Sales</option>
+                <option value="5">5 Sales</option>
+            </select>
+        </div>
+
+        <button id="createSalesBtn" class="success-btn">Create Test Sales</button>
+        <div id="salesResult" class="result"></div>
+    </div>
+
+    <!-- Products Setup -->
+    <div class="container">
+        <h2>📦 Setup Listed Products</h2>
+        <div class="step">
+            <strong>Step 3:</strong> Assign existing products to your account for the "Listed Products" tab
+        </div>
+
+        <div class="form-group">
+            <label for="productsCount">Number of Products to Assign:</label>
+            <select id="productsCount">
+                <option value="2">2 Products</option>
+                <option value="3" selected>3 Products</option>
+                <option value="5">5 Products</option>
+                <option value="10">10 Products</option>
+            </select>
+        </div>
+
+        <button id="assignProductsBtn">Assign Products to My Account</button>
+        <div id="productsResult" class="result"></div>
+    </div>
+
+    <!-- Final Steps -->
+    <div class="container">
+        <h2>✅ Final Steps</h2>
+        <div class="step">
+            <strong>Step 4:</strong> After running the tests above, visit your account dashboard
+        </div>
+        
+        <a href="/account" target="_blank">
+            <button style="background-color: #17a2b8;">Open My Account Dashboard</button>
+        </a>
+
+        <div style="margin-top: 20px;">
+            <h3>What you should see:</h3>
+            <ul>
+                <li><strong>My Orders:</strong> Your actual purchase history</li>
+                <li><strong>Sales History:</strong> Test sales you created above</li>
+                <li><strong>Listed Products:</strong> Products assigned to your account</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Create Sales
+        document.getElementById('createSalesBtn').addEventListener('click', async function() {
+            const btn = this;
+            const result = document.getElementById('salesResult');
+            const userName = document.getElementById('userName').value;
+            const userPhone = document.getElementById('userPhone').value;
+            const userEmail = document.getElementById('userEmail').value;
+            const salesCount = parseInt(document.getElementById('salesCount').value);
+
+            if (!userName || !userPhone || !userEmail) {
+                alert('Please fill in your account information first');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Creating Sales...';
+            result.style.display = 'none';
+
+            try {
+                let successCount = 0;
+                let errors = [];
+
+                for (let i = 0; i < salesCount; i++) {
+                    try {
+                        const response = await fetch('/api/admin/create-test-sale', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userName, userPhone, userEmail })
+                        });
+
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            const data = await response.json();
+                            errors.push(data.error);
+                        }
+                    } catch (error) {
+                        errors.push(error.message);
+                    }
+
+                    // Small delay between requests
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                if (successCount > 0) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Created ${successCount} test sales successfully!</strong><br>
+                        ${errors.length > 0 ? `<br>Errors: ${errors.join(', ')}` : ''}
+                        <br><br><strong>Next:</strong> Check your Account → Sales History tab
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `<strong>❌ Failed to create sales:</strong> ${errors.join(', ')}`;
+                }
+
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Create Test Sales';
+            result.style.display = 'block';
+        });
+
+        // Assign Products
+        document.getElementById('assignProductsBtn').addEventListener('click', async function() {
+            const btn = this;
+            const result = document.getElementById('productsResult');
+            const userEmail = document.getElementById('userEmail').value;
+            const productsCount = parseInt(document.getElementById('productsCount').value);
+
+            if (!userEmail) {
+                alert('Please fill in your email first');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Assigning Products...';
+            result.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/admin/assign-products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userEmail, productCount: productsCount })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ ${data.message}</strong><br><br>
+                        <strong>Assigned Products:</strong><br>
+                        ${data.assignedProducts.map(p => `• ${p.name} - Ksh ${p.price.toLocaleString()}`).join('<br>')}
+                        <br><br><strong>Next:</strong> Check your Account → Listed Products tab
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `<strong>❌ Error:</strong> ${data.error}`;
+                }
+
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<strong>❌ Network Error:</strong> ${error.message}`;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Assign Products to My Account';
+            result.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

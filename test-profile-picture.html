@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Picture Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .profile-section {
+            border: 2px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #007bff;
+        }
+        .placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            border: 3px solid #6c757d;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Profile Picture Debug Tool</h1>
+        <p>This tool helps debug profile picture display issues for Nicholas Mwamba (jaddan87@gmail.com)</p>
+
+        <div class="profile-section">
+            <h3>Current User Profile Picture</h3>
+            <div id="currentProfilePic" class="placeholder">👤</div>
+            <div id="userInfo" class="debug-info">Loading user data...</div>
+        </div>
+
+        <div class="profile-section">
+            <h3>Actions</h3>
+            <button onclick="checkUserData()">🔍 Check Current User Data</button>
+            <button onclick="testProfilePictureUpload()">📤 Test Profile Picture Upload</button>
+            <button onclick="refreshUserData()">🔄 Refresh User Data</button>
+        </div>
+
+        <div id="status" class="status info">Ready to debug profile picture issues...</div>
+        <div id="debugOutput" class="debug-info"></div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        async function checkUserData() {
+            updateStatus('Checking current user data...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.user;
+                    displayUserData(data.user);
+                    updateProfilePicture(data.user);
+                    updateStatus('✅ User data loaded successfully', 'success');
+                } else {
+                    updateStatus('❌ Failed to load user data: ' + data.error, 'error');
+                    document.getElementById('userInfo').textContent = 'Error: ' + data.error;
+                }
+            } catch (error) {
+                updateStatus('❌ Network error: ' + error.message, 'error');
+                document.getElementById('userInfo').textContent = 'Network Error: ' + error.message;
+            }
+        }
+
+        function displayUserData(user) {
+            const userInfo = document.getElementById('userInfo');
+            const debugInfo = {
+                'User ID': user.id,
+                'Name': user.name,
+                'Email': user.email,
+                'Phone': user.phone,
+                'Profile Object': user.profile ? 'EXISTS' : 'NULL',
+                'Profile Picture Path': user.profile?.profilePicture ? 'EXISTS' : 'NULL',
+                'Profile Picture Length': user.profile?.profilePicture ? user.profile.profilePicture.length + ' characters' : 'N/A',
+                'Profile Picture Type': user.profile?.profilePicture ? 
+                    (user.profile.profilePicture.startsWith('data:') ? 'Base64 Image' : 'URL') : 'N/A'
+            };
+            
+            userInfo.textContent = JSON.stringify(debugInfo, null, 2);
+            
+            // Also log to debug output
+            document.getElementById('debugOutput').textContent = 
+                'Full User Object:\n' + JSON.stringify(user, null, 2);
+        }
+
+        function updateProfilePicture(user) {
+            const profilePicElement = document.getElementById('currentProfilePic');
+            
+            if (user.profile?.profilePicture) {
+                profilePicElement.innerHTML = `<img src="${user.profile.profilePicture}" alt="Profile" class="profile-pic">`;
+                updateStatus('✅ Profile picture found and displayed', 'success');
+            } else {
+                profilePicElement.innerHTML = '👤';
+                updateStatus('⚠️ No profile picture found in user data', 'error');
+            }
+        }
+
+        async function testProfilePictureUpload() {
+            if (!currentUser) {
+                updateStatus('❌ Please check user data first', 'error');
+                return;
+            }
+
+            updateStatus('Testing profile picture upload...', 'info');
+
+            // Create a simple test image (1x1 pixel red image in base64)
+            const testImageBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+
+            try {
+                const response = await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: currentUser.name,
+                        email: currentUser.email,
+                        phone: currentUser.phone,
+                        profilePicture: testImageBase64
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateStatus('✅ Test profile picture uploaded successfully', 'success');
+                    // Refresh user data to see the change
+                    await checkUserData();
+                } else {
+                    updateStatus('❌ Failed to upload test profile picture: ' + data.error, 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ Network error during upload: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshUserData() {
+            await checkUserData();
+        }
+
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+
+        // Auto-load user data when page loads
+        window.onload = function() {
+            checkUserData();
+        };
+    </script>
+</body>
+</html>

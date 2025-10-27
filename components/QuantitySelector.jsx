@@ -6,7 +6,8 @@ export default function QuantitySelector({
   quantity, 
   maxQuantity = 99, 
   onQuantityChange, 
-  disabled = false 
+  disabled = false,
+  onLockedAttempt
 }) {
   const [inputValue, setInputValue] = useState(quantity.toString())
 
@@ -15,6 +16,8 @@ export default function QuantitySelector({
       const newQty = quantity - 1
       onQuantityChange(newQty)
       setInputValue(newQty.toString())
+    } else if (disabled && onLockedAttempt) {
+      onLockedAttempt()
     }
   }
 
@@ -23,6 +26,8 @@ export default function QuantitySelector({
       const newQty = quantity + 1
       onQuantityChange(newQty)
       setInputValue(newQty.toString())
+    } else if (disabled && onLockedAttempt) {
+      onLockedAttempt()
     }
   }
 

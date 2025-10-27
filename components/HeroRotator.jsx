@@ -98,8 +98,8 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
           {/* Product name overlay - top left */}
           <div style={{
             position: 'absolute',
-            top: '12px',
-            left: '16px',
+            top: '20px',
+            left: '2px',
             zIndex: 2,
             display: 'flex',
             flexDirection: 'column',
@@ -107,10 +107,7 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
           }}>
             {/* Product name */}
             <div style={{
-              backgroundColor: 'rgba(0,0,0,0.7)',
               padding: '8px 12px',
-              borderRadius: '6px',
-              backdropFilter: 'blur(4px)',
               width: '140px',
               height: '18px',
               display: 'flex',
@@ -118,8 +115,8 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
             }}>
               <p style={{
                 margin: 0,
-                fontSize: '12px',
-                color: '#22c55e',
+                fontSize: '16px',
+                color: 'white',
                 fontWeight: '500',
                 textShadow: '0 1px 2px rgba(0,0,0,0.8)',
                 overflow: 'hidden',
@@ -132,43 +129,20 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
             </div>
           </div>
 
-          {/* Product condition indicator - bottom center */}
-          <div style={{
-            position: 'absolute',
-            bottom: '16px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 2,
-            display: 'flex',
-            justifyContent: 'center'
-          }}>
-            <span style={{
-              fontSize: '10px',
-              color: 'white',
-              fontWeight: '600',
-              fontStyle: 'italic',
-              textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              {currentProduct.category?.toLowerCase().includes('preowned') ? 'PRE-OWNED' : 
-               currentProduct.condition ? currentProduct.condition.toUpperCase() : 'NEW'}
-            </span>
-          </div>
 
           {/* Status indicator and price - bottom left */}
           <div style={{
             position: 'absolute',
-            bottom: '16px',
-            left: '16px',
+            bottom: '12px',
+            left: '12px',
             zIndex: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: '4px'
+            gap: '2px'
           }}>
             {/* Status text */}
             <span style={{
-              fontSize: '12px',
+              fontSize: '14px',
               color: currentProduct.status === 'sold' ? '#ef4444' : '#22c55e',
               fontWeight: '700',
               textShadow: '0 2px 4px rgba(0,0,0,0.9)',

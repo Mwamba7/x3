@@ -1,10 +1,16 @@
-import prisma from '../../../../lib/prisma'
+import connectDB from '../../../../lib/mongodb'
+import Product from '../../../../models/Product'
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '../../../../lib/adminAuth'
+import mongoose from 'mongoose'
 
 export async function GET(_req, { params }) {
   try {
-    const item = await prisma.product.findUnique({ where: { id: params.id } })
+    await connectDB()
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+    }
+    const item = await Product.findById(params.id)
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json(item)
   } catch (e) {
@@ -34,7 +40,8 @@ export async function PATCH(req, { params }) {
     }
     // Keep pre-owned items within the pre-owned section even if category is edited
     try {
-      const current = await prisma.product.findUnique({ where: { id: params.id }, select: { category: true } })
+      await connectDB()
+      const current = await Product.findById(params.id).select('category')
       const isPreowned = typeof current?.category === 'string' && current.category.toLowerCase().startsWith('preowned')
       if (isPreowned && 'category' in data) {
         const incoming = String(data.category || '').trim().toLowerCase()
@@ -58,7 +65,8 @@ export async function PATCH(req, { params }) {
         data.category = electronicsSet.has(incoming) ? incoming : current.category
       }
     } catch {}
-    const updated = await prisma.product.update({ where: { id: params.id }, data })
+    await connectDB()
+    const updated = await Product.findByIdAndUpdate(params.id, data, { new: true })
     return NextResponse.json(updated)
   } catch (e) {
     console.error('PATCH /api/products/[id] error:', e)
@@ -70,7 +78,11 @@ export async function DELETE(_req, { params }) {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
-    await prisma.product.delete({ where: { id: params.id } })
+    await connectDB()
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+    }
+    await Product.findByIdAndDelete(params.id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error(e)

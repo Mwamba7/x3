@@ -8,23 +8,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:full": "prisma generate && next build",
     "start": "next start",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:seed": "node prisma/seed.js",
-    "postinstall": "prisma generate",
-    "deploy": "prisma generate && next build && next start"
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "html2canvas": "^1.4.1",
+    "jose": "^5.2.4",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
+    "mongoose": "^8.19.1",
     "next": "^14.2.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@prisma/client": "^5.16.1",
-    "bcryptjs": "^2.4.3",
-    "jose": "^5.2.4"
-  },
-  "devDependencies": {
-    "prisma": "^5.16.1"
+    "react-dom": "^18.2.0"
   }
 }

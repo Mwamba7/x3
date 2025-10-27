@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Order Completion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 10px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Order Completion</h1>
+        
+        <div class="section">
+            <h3>Test Order Data</h3>
+            <button onclick="testOrderCompletion()">Test Order Completion API</button>
+            <div id="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>Sample Order Data</h3>
+            <pre id="sampleData"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Sample order data that matches the expected format
+        const sampleOrderData = {
+            customer: {
+                name: "John Doe",
+                phone: "0712345678",
+                email: "john@example.com",
+                address: {
+                    street: "123 Test Street",
+                    city: "Nairobi",
+                    area: "Westlands",
+                    instructions: "Call when you arrive"
+                }
+            },
+            items: [
+                {
+                    id: "test-product-1",
+                    name: "Test Product",
+                    price: 35000,
+                    qty: 1,
+                    condition: "good",
+                    img: "/images/test.jpg"
+                }
+            ],
+            subtotalAmount: 35000,
+            deliveryFee: 80,
+            totalAmount: 35080,
+            delivery: {
+                method: "delivery",
+                estimatedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+            },
+            transactionId: "TEST_PAYMENT_123"
+        };
+
+        // Display sample data
+        document.getElementById('sampleData').textContent = JSON.stringify(sampleOrderData, null, 2);
+
+        async function testOrderCompletion() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing order completion...</p>';
+
+            try {
+                console.log('🚀 Testing order completion with data:', sampleOrderData);
+
+                const response = await fetch('/api/orders/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(sampleOrderData)
+                });
+
+                const result = await response.json();
+
+                console.log('📋 Response:', result);
+                console.log('📊 Status:', response.status);
+
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Order Completed Successfully!</h4>
+                            <p><strong>Order ID:</strong> ${result.orderId}</p>
+                            <p><strong>Message:</strong> ${result.message}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Order Failed</h4>
+                            <p><strong>Error:</strong> ${result.error}</p>
+                            <p><strong>Details:</strong> ${result.details || 'No details provided'}</p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                        </div>
+                    `;
+                }
+
+                // Show full response
+                resultDiv.innerHTML += `
+                    <h4>Full Response:</h4>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                console.error('❌ Error testing order:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network/JavaScript Error</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Test database connection
+        async function testDatabase() {
+            try {
+                const response = await fetch('/api/test-db');
+                const result = await response.json();
+                console.log('Database test result:', result);
+            } catch (error) {
+                console.error('Database test failed:', error);
+            }
+        }
+
+        // Run database test on page load
+        testDatabase();
+    </script>
+</body>
+</html>

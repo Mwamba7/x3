@@ -3,8 +3,10 @@ import { Inter } from 'next/font/google'
 import Link from 'next/link'
 import Nav from '../components/Nav'
 import { CartProvider } from '../components/CartContext'
-import CartDrawer from '../components/CartDrawer'
+import { AuthProvider } from '../components/AuthContext'
 import CurrentYear from '../components/CurrentYear'
+import CartLockNotification from '../components/CartLockNotification'
+import CartProtectionNotification from '../components/CartProtectionNotification'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -17,46 +19,49 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <CartProvider>
-          <header className="site-header">
-            <div className="container header-inner">
-              <div className="brand">
-                <span className="logo" aria-hidden="true">♻️</span>
-                <h1 className="brand-title"><Link href="/">Super Twice Resellers</Link></h1>
+        <AuthProvider>
+          <CartProvider>
+            <header className="site-header">
+              <div className="container header-inner">
+                <div className="brand">
+                  <span className="logo" aria-hidden="true">♻️</span>
+                  <h1 className="brand-title"><Link href="/">Super Twice Resellers</Link></h1>
+                </div>
+                <Nav />
               </div>
-              <Nav />
-            </div>
-          </header>
-          <main className="page-content">
-            {children}
-          </main>
-          <footer className="site-footer">
-            <div className="container footer-inner">
-              <p style={{ margin: 0, paddingTop: 6, width: '100%', textAlign: 'center' }}>© <CurrentYear /> Super Twice Resellers. All rights reserved.</p>
-              <div className="footer-links">
+            </header>
+            <main className="page-content">
+              {children}
+            </main>
+            <footer className="site-footer">
+              <div className="container footer-inner">
+                <p style={{ margin: 0, paddingTop: 6, width: '100%', textAlign: 'center' }}>© <CurrentYear /> Super Twice Resellers. All rights reserved.</p>
+                <div className="footer-links">
 
+                </div>
+                <a
+                  href="https://okerotechnologies.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    margin: 0,
+                    marginLeft: 'auto',
+                    textAlign: 'right',
+                    fontStyle: 'italic',
+                    color: '#3b82f6',
+                    textDecoration: 'none',
+                    display: 'block',
+                    marginBottom: '12px',
+                  }}
+                >
+                  Powered by Okero Technologies
+                </a>
               </div>
-              <a
-                href="https://okerotechnologies.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  margin: 0,
-                  marginLeft: 'auto',
-                  textAlign: 'right',
-                  fontStyle: 'italic',
-                  color: '#3b82f6',
-                  textDecoration: 'none',
-                  display: 'block',
-                  marginBottom: '12px',
-                }}
-              >
-                Powered by Okero Technologies
-              </a>
-            </div>
-          </footer>
-          <CartDrawer />
-        </CartProvider>
+            </footer>
+            <CartLockNotification />
+            <CartProtectionNotification />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   )
