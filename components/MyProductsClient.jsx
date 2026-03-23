@@ -1047,8 +1047,8 @@ function WithdrawalModalContent({
             lineHeight: 1.4 
           }}>
             {status === 'pending' && 'Your withdrawal request is pending admin review. You will be notified once it\'s processed.'}
-            {status === 'processing' && 'Your withdrawal is currently being processed. Payment will be sent to your M-Pesa account within 24 hours.'}
-            {status === 'completed' && `Your withdrawal has been completed successfully. Payment should have been received in your M-Pesa account (${withdrawalStatus.sellerPhone}).`}
+            {status === 'processing' && 'Your withdrawal is currently being processed. Payment will be sent to your account within 24 hours.'}
+            {status === 'completed' && `Your withdrawal has been completed successfully. Payment should have been received in your account (${withdrawalStatus.sellerPhone}).`}
             {status === 'failed' && 'Your withdrawal request failed. Please contact admin for assistance or try submitting a new request.'}
           </p>
         </div>
@@ -1080,7 +1080,7 @@ function WithdrawalModalContent({
           
           {/* Final Amount */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: '600' }}>Amount Sent to M-Pesa:</span>
+            <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: '600' }}>Amount Sent to Account:</span>
             <span style={{ fontSize: 14, color: '#28a745', fontWeight: '700' }}>
               Ksh {Number(withdrawalStatus.withdrawalAmount || calculateWithdrawalAmount(selectedProduct.price).withdrawalAmount).toLocaleString('en-KE')}
             </span>
@@ -1190,7 +1190,7 @@ function WithdrawalModalContent({
       
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'var(--text)', fontWeight: '500' }}>
-          M-Pesa Phone Number *
+          Phone Number *
         </label>
         <input
           type="tel"
@@ -1222,7 +1222,7 @@ function WithdrawalModalContent({
           ⏰ Important Notice:
         </h4>
         <p style={{ margin: 0, fontSize: 12, color: '#155724', lineHeight: 1.4 }}>
-          All money will be sent to your M-Pesa account within 24 hours after processing your withdrawal request.
+          All money will be sent to your account within 24 hours after processing your withdrawal request.
         </p>
       </div>
       

@@ -34,10 +34,10 @@ export default async function AdminEditProductPage({ params }) {
   if (!product) redirect('/admin/products')
 
   return (
-    <main className="container" style={{ padding: '24px 0', maxWidth: 720 }}>
+    <main className="container" style={{ padding: '32px 24px 32px 0', maxWidth: 1200 }}>
       <h2 style={{ marginTop: 0, marginBottom: 10 }}>Edit Product</h2>
       <div style={{ marginBottom: 16 }}>
-        <a className="btn" href="/admin/products">← Back to Products</a>
+        <a className="btn" href="/admin/products">Back to Products</a>
       </div>
       <AdminProductForm initial={product} />
     </main>

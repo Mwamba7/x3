@@ -41,106 +41,241 @@ export default async function AdminHubPage() {
   ])
 
   return (
-    <main className="container" style={{ padding: '24px 0' }}>
-      <h2 style={{ marginTop: 0, marginBottom: 10 }}>Admin Dashboard</h2>
-      <Controls pendingCount={pendingCount} withdrawalCount={withdrawalCount} communityCount={communityCount} ordersCount={ordersCount} />
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 8px', marginLeft: '8px' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .dashboard-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+          background: var(--card);
+          border-radius: 8px;
+          padding: 1.5rem;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          border-left: 4px solid #3498db;
+          transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+          transform: translateY(-2px);
+        }
+        
+        .stat-card.priority {
+          border-left-color: #e74c3c;
+        }
+        
+        .stat-card.success {
+          border-left-color: #27ae60;
+        }
+        
+        .stat-card.warning {
+          border-left-color: #f39c12;
+        }
+        
+        .stat-number {
+          font-size: 2rem;
+          font-weight: bold;
+          color: var(--text);
+          margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+          color: var(--muted);
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .stat-icon {
+          font-size: 2rem;
+          float: right;
+          opacity: 0.3;
+        }
+        
+        .management-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+        
+        .management-card {
+          background: #0f1521;
+          border: 1px solid #2a3342;
+          border-radius: 12px;
+          padding: 10px 12px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          text-decoration: none;
+          color: var(--text);
+          transition: all 0.2s ease;
+          min-height: 48px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        
+        .management-card:hover {
+          border-color: var(--primary-700);
+          box-shadow: 0 0 0 3px var(--ring);
+          text-decoration: none;
+          color: inherit;
+        }
+        
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          margin-top: -0.5rem;
+        }
+        
+        .card-title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0;
+        }
+        
+        .card-count {
+          background: var(--border);
+          color: var(--text);
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+        
+        .card-count.priority {
+          background: #e74c3c;
+          color: white;
+        }
+        
+        .section-title {
+          color: var(--text);
+          margin-bottom: 1.5rem;
+          margin-top: 0;
+          font-size: 1.25rem;
+          font-weight: 600;
+        }
+      ` }} />
+      
 
-      <section className="products-section">
-        <header className="products-header">
-          <h3>Manage Sections</h3>
-        </header>
-        <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-          <Tile title="Orders Management" count={ordersCount} href="/admin/orders" priority={ordersCount > 0} />
-          <Tile title="Pending Approvals" count={pendingCount} href="/admin/pending" priority />
-          <Tile title="Withdrawal Requests" count={withdrawalCount} href="/admin/withdrawals" priority={withdrawalCount > 0} />
-          <Tile title="Collection" count={allCount} href="/admin/products" primary />
-          <Tile title="Community Marketplace" count={communityCount} href="/admin/community" />
-          <Tile title="Outfits, Hoodies, Shoes, Sneakers, Ladies, Men" count={fashionCount} href="/admin/fashion" />
-          <Tile title="Pre-owned Products" count={preownedCount} href="/admin/preowned" />
-        </div>
-      </section>
+      {/* Management Sections */}
+      <h3 className="section-title">Management Sections</h3>
+      <div className="management-grid">
+        <a href="/admin/orders" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">🛍️ Orders Management</h4>
+            <span className={`card-count ${ordersCount > 0 ? 'priority' : ''}`}>{ordersCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Manage customer orders and track deliveries
+          </p>
+        </a>
+        
+        <a href="/admin/pending" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">⏳ Pending Approvals</h4>
+            <span className="card-count priority">{pendingCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Review and approve pending product submissions
+          </p>
+        </a>
+        
+        <a href="/admin/withdrawals" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">💳 Withdrawal Requests</h4>
+            <span className={`card-count ${withdrawalCount > 0 ? 'priority' : ''}`}>{withdrawalCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Process user withdrawal requests
+          </p>
+        </a>
+        
+        <a href="/admin/products" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">📦 Product Collection</h4>
+            <span className="card-count">{allCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Manage electronics and appliances inventory
+          </p>
+        </a>
+        
+        <a href="/admin/community" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">👥 Community Marketplace</h4>
+            <span className="card-count">{communityCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Moderate community-submitted products
+          </p>
+        </a>
+        
+        <a href="/admin/fashion" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">👕 Fashion Products</h4>
+            <span className="card-count">{fashionCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Manage clothing, shoes, and fashion items
+          </p>
+        </a>
+        
+        <a href="/admin/preowned" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">♻️ Pre-owned Products</h4>
+            <span className="card-count">{preownedCount}</span>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Manage second-hand and refurbished items
+          </p>
+        </a>
+      </div>
 
-      <section className="products-section">
-        <header className="products-header">
-          <h3>Quick Actions</h3>
-        </header>
-        <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-          <Action title="Add Product (Collection)" href="/admin/products/new" />
-          <Action title="Add Fashion Product" href="/admin/fashion/new" />
-          <Action title="Add Pre-owned Product" href="/admin/preowned/new" />
-          <Action title="Change Password" href="/admin/change-password" />
-        </div>
-      </section>
-    </main>
-  )
-}
-
-function Controls({ pendingCount, withdrawalCount, communityCount, ordersCount }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-      <a className={`btn${ordersCount > 0 ? ' btn-primary' : ''}`} href="/admin/orders" style={ordersCount > 0 ? { background: '#28a745', borderColor: '#28a745' } : {}}>🛍️ Orders ({ordersCount})</a>
-      <a className="btn btn-primary" href="/admin/pending">Pending ({pendingCount})</a>
-      <a className={`btn${withdrawalCount > 0 ? ' btn-primary' : ''}`} href="/admin/withdrawals" style={withdrawalCount > 0 ? { background: '#f2994a', borderColor: '#f2994a' } : {}}>💳 Withdrawals ({withdrawalCount})</a>
-      <a className="btn" href="/admin/products">Collection</a>
-      <a className="btn" href="/admin/community">📢 Community ({communityCount})</a>
-      <a className="btn" href="/admin/fashion">Fashion</a>
-      <a className="btn" href="/admin/preowned">Pre-owned</a>
-      <a className="btn" href="/admin/change-password">Change Password</a>
-      <form action="/api/auth/logout" method="post" style={{ display: 'inline' }}>
-        <button className="btn" type="submit">Logout</button>
-      </form>
+      {/* Quick Actions */}
+      <h3 className="section-title">Quick Actions</h3>
+      <div className="management-grid">
+        <a href="/admin/products/new" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">➕ Add Product</h4>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Add new products to the collection
+          </p>
+        </a>
+        
+        <a href="/admin/fashion/new" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">👕 Add Fashion Item</h4>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Add new fashion products
+          </p>
+        </a>
+        
+        <a href="/admin/preowned/new" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">♻️ Add Pre-owned</h4>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Add pre-owned products
+          </p>
+        </a>
+        
+        <a href="/admin/community/new" className="management-card">
+          <div className="card-header">
+            <h4 className="card-title">👥 Add Community Item</h4>
+          </div>
+          <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.875rem' }}>
+            Add new community marketplace items
+          </p>
+        </a>
+      </div>
     </div>
-  )
-}
-
-function Tile({ title, count, href, primary, priority }) {
-  const getButtonClass = () => {
-    if (priority) return 'btn' // Orange/warning style for pending
-    if (primary) return 'btn btn-primary'
-    return 'btn'
-  }
-
-  const getCardStyle = () => {
-    if (priority && count > 0) {
-      return { 
-        textDecoration: 'none', 
-        border: '2px solid #f2994a',
-        background: 'rgba(242, 153, 74, 0.1)'
-      }
-    }
-    return { textDecoration: 'none' }
-  }
-
-  return (
-    <a href={href} className="product-card" style={getCardStyle()}>
-      <div className="product-link" style={{ display: 'grid', gridTemplateColumns: '1fr' }}>
-        <div className="info">
-          <h4 className="name" style={{ marginBottom: 6 }}>
-            {priority && count > 0 && '🔔 '}{title}
-          </h4>
-          <p className="meta">{count} item{count === 1 ? '' : 's'}</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <span className={getButtonClass()} style={priority && count > 0 ? { background: '#f2994a', color: 'white' } : {}}>
-              {priority && count > 0 ? 'Review Now' : 'Open'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </a>
-  )
-}
-
-function Action({ title, href }) {
-  return (
-    <a href={href} className="product-card" style={{ textDecoration: 'none' }}>
-      <div className="product-link" style={{ display: 'grid', gridTemplateColumns: '1fr' }}>
-        <div className="info">
-          <h4 className="name" style={{ marginBottom: 6 }}>{title}</h4>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <span className="btn">Go</span>
-          </div>
-        </div>
-      </div>
-    </a>
   )
 }

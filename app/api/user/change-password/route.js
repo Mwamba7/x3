@@ -8,7 +8,7 @@ export async function POST(request) {
   try {
     await connectDB()
     
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }

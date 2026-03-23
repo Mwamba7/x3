@@ -13,7 +13,7 @@ export async function GET(request) {
     console.log('✅ TEST: Database connected')
 
     // Get auth token
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     if (!token) {
       console.log('❌ TEST: No auth token found')
       return NextResponse.json({ error: 'No auth token' }, { status: 401 })

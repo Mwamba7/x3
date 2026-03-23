@@ -22,34 +22,35 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
     }
 
     setLoading(true)
-    setMessage('Processing payment...')
+    setMessage('🔄 Initializing payment...')
 
     try {
-      // For now, let's bypass M-Pesa and directly process the payment
-      // This is for testing - in production you'd use the M-Pesa flow
-      
-      console.log('Bypassing M-Pesa for testing - directly processing payment')
-      await processRemainingPayment(`TEST_${Date.now()}`)
-      
-      /* Original M-Pesa flow - commented out for testing
       const response = await fetch('/api/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          email: order.customer.email || 'customer@example.com',
           phone: phone,
-          amount: remainingAmount
+          amount: remainingAmount,
+          reference: `REM-${order.orderId}-${Date.now()}`,
+          metadata: {
+            paymentType: 'remaining',
+            orderId: order.orderId,
+            remainingAmount: remainingAmount,
+            totalAmount: totalAmount,
+            depositAmount: depositAmount
+          }
         })
       })
 
       const data = await response.json()
 
-      if (data.success) {
-        // Process the remaining payment in our system immediately
-        await processRemainingPayment(data.reference || `PAY${Date.now()}`)
+      if (data.success && data.authorization_url) {
+        setMessage('🌐 Redirecting to secure payment page...')
+        window.location.href = data.authorization_url
       } else {
-        setMessage(data.message || 'Payment failed. Please try again.')
+        setMessage(data.error || data.message || 'Payment failed. Please try again.')
       }
-      */
     } catch (error) {
       console.error('Payment error:', error)
       setMessage('Network error. Please try again.')
@@ -304,7 +305,7 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
 
         {/* Payment Breakdown - Same as checkout */}
         <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '12px', backgroundColor: 'var(--surface)', marginBottom: '16px' }}>
-          <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 M-Pesa Payment (Remaining Balance)</h4>
+          <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 Paystack Payment (Remaining Balance)</h4>
           
           {/* Payment Breakdown */}
           <div style={{
@@ -508,7 +509,7 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
       </h3>
 
       <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '12px', backgroundColor: 'var(--surface)' }}>
-        <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 M-Pesa Payment (Remaining Balance)</h4>
+        <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 Paystack Payment (Remaining Balance)</h4>
         
         {/* Payment Breakdown */}
         <div style={{
@@ -577,7 +578,7 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
               color: 'var(--muted)', 
               lineHeight: 1.3
             }}>
-              You will receive an M-Pesa prompt on your phone
+              You will be redirected to a secure payment page
             </div>
           </div>
 

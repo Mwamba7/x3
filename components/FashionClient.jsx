@@ -169,30 +169,45 @@ export default function FashionClient({ products }) {
                       e.preventDefault();
                       e.stopPropagation();
                       
-                      // Check if cart is locked before showing normal popups
-                      const savedPayment = localStorage.getItem('mpesaPayment')
-                      let isLocked = false
-                      if (savedPayment) {
-                        try {
-                          const paymentData = JSON.parse(savedPayment)
-                          isLocked = paymentData.depositPaid === true
-                        } catch {}
-                      }
-                      
+                      // Use cart context to check if cart is locked (no localStorage dependency)
                       if (isInCart) {
                         removeItem(p.id);
                         // Only show removed popup if cart is not locked
                         if (!isCartLocked) {
                           setPopupState({ id: p.id, action: 'removed' });
                           setTimeout(() => setPopupState({ id: null, action: null }), 2000);
+                        } else {
+                          // Show cart locked notification
+                          window.dispatchEvent(new CustomEvent('cartLockError', {
+                            detail: {
+                              message: 'You need to first complete the products paid for. Your cart is locked because you have made a deposit payment. Please complete your current order before adding new items.',
+                              productName: p.name
+                            }
+                          }));
                         }
                       } else {
-                        addItem(p, 1);
-                        // Only show added popup if cart is not locked
-                        if (!isCartLocked) {
-                          setPopupState({ id: p.id, action: 'added' });
-                          setTimeout(() => setPopupState({ id: null, action: null }), 1500);
+                        // Check if cart is locked before adding
+                        if (isCartLocked && Object.keys(lockedCartItems).length > 0) {
+                          // Show cart locked notification
+                          window.dispatchEvent(new CustomEvent('cartLockError', {
+                            detail: {
+                              message: 'You need to first complete the products paid for. Your cart is locked because you have made a deposit payment. Please complete your current order before adding new items.',
+                              productName: p.name
+                            }
+                          }));
+                          return;
                         }
+                        
+                        addItem({
+                          id: p.id,
+                          name: p.name,
+                          price: p.price,
+                          image: p.image,
+                          condition: p.condition || 'unknown',
+                          category: p.category || 'unknown'
+                        });
+                        setPopupState({ id: p.id, action: 'added' });
+                        setTimeout(() => setPopupState({ id: null, action: null }), 2000);
                       }
                     }}
                   >

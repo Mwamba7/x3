@@ -466,7 +466,7 @@ function Pager({ page, totalPages, onChange }) {
           onClick={() => onChange(page - 1)}
           style={{ padding: '6px 12px', fontSize: '13px' }}
         >
-          ← Previous
+          Previous
         </button>
       )}
       

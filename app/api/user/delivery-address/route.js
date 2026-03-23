@@ -8,7 +8,7 @@ export async function GET(request) {
   try {
     await connectDB()
     
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -37,7 +37,7 @@ export async function PUT(request) {
     console.log('Delivery address update request received')
     await connectDB()
     
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     if (!token) {
       console.log('No auth token found')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -54,40 +54,39 @@ export async function PUT(request) {
 
     const requestBody = await request.json()
     console.log('Request body:', requestBody)
-    const { fullName, phone, street, city, region, postalCode, additionalInstructions } = requestBody
+    const { street, town, city, region, postalCode, additionalInstructions } = requestBody
 
-    // Validation
-    if (!fullName || fullName.length < 2) {
-      console.log('Full name validation failed:', fullName)
-      return NextResponse.json({ error: 'Full name is required and must be at least 2 characters' }, { status: 400 })
-    }
-
-    if (!phone || !/^(\+254|254|0)[17]\d{8}$/.test(phone)) {
-      console.log('Phone validation failed:', phone)
-      return NextResponse.json({ error: 'Please enter a valid Kenyan phone number' }, { status: 400 })
-    }
-
+    // Validation - only address fields since name/phone are in profile
     if (!street || street.length < 5) {
       console.log('Street validation failed:', street)
       return NextResponse.json({ error: 'Street address is required and must be at least 5 characters' }, { status: 400 })
     }
 
-    if (!city || city.length < 2) {
-      console.log('City validation failed:', city)
+    // Handle both town and city field names for compatibility
+    const cityValue = city || town
+    if (!cityValue || cityValue.length < 2) {
+      console.log('City validation failed:', cityValue)
       return NextResponse.json({ error: 'City is required and must be at least 2 characters' }, { status: 400 })
     }
 
     if (!region || region.length < 2) {
       console.log('Region validation failed:', region)
-      return NextResponse.json({ error: 'Region/County is required and must be at least 2 characters' }, { status: 400 })
+      return NextResponse.json({ error: 'Region is required and must be at least 2 characters' }, { status: 400 })
     }
 
     // Update delivery address
+    // Get user profile to include name and phone
+    const user = await User.findById(decoded.userId).select('name phone')
+    if (!user) {
+      console.log('User not found for ID:', decoded.userId)
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     const deliveryAddress = {
-      fullName: fullName.trim(),
-      phone: phone.trim(),
+      fullName: user.name,
+      phone: user.phone,
       street: street.trim(),
-      city: city.trim(),
+      city: (city || town).trim(),
       region: region.trim(),
       postalCode: postalCode ? postalCode.trim() : '',
       additionalInstructions: additionalInstructions ? additionalInstructions.trim() : '',
@@ -96,23 +95,23 @@ export async function PUT(request) {
 
     console.log('Updating delivery address with data:', deliveryAddress)
 
-    const user = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       decoded.userId,
       { deliveryAddress },
       { new: true, runValidators: true }
     ).select('deliveryAddress')
 
-    if (!user) {
+    if (!updatedUser) {
       console.log('User not found for ID:', decoded.userId)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     console.log('Delivery address updated successfully for user:', decoded.userId)
-    console.log('Saved delivery address:', user.deliveryAddress)
+    console.log('Saved delivery address:', updatedUser.deliveryAddress)
     
     return NextResponse.json({ 
       message: 'Delivery address updated successfully',
-      deliveryAddress: user.deliveryAddress
+      deliveryAddress: updatedUser.deliveryAddress
     })
   } catch (error) {
     console.error('Delivery address update error:', error)

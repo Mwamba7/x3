@@ -353,7 +353,7 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 8px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>🛍️ Order Management</h1>

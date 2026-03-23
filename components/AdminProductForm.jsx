@@ -336,8 +336,8 @@ export default function AdminProductForm({ initial, section = 'products', backUr
   }
 
   return (
-    <form onSubmit={onSubmit} className="sell-form" style={{ display: 'grid', gap: 12 }}>
-      <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
+    <form onSubmit={onSubmit} className="sell-form" style={{ display: 'grid', gap: 20, fontSize: '16px' }}>
+      <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <div>
           <label className="form-label" htmlFor="name">Name</label>
           <input className="form-control" id="name" placeholder="Product name" {...bind('name')} required />
@@ -357,7 +357,7 @@ export default function AdminProductForm({ initial, section = 'products', backUr
         </div>
       </div>
 
-      <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+      <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
         <div>
           <label className="form-label" htmlFor="price">Price (Ksh)</label>
           <input className="form-control" id="price" type="number" min="0" step="1" placeholder="e.g. 45000" {...bind('price')} required />
@@ -943,12 +943,13 @@ export default function AdminProductForm({ initial, section = 'products', backUr
       
       <div style={{ 
         display: 'flex', 
-        gap: 8, 
+        gap: 16, 
         flexWrap: 'wrap', 
         justifyContent: 'flex-start',
         alignItems: 'center',
-        paddingTop: '8px',
-        borderTop: '1px solid #253049'
+        paddingTop: '20px',
+        borderTop: '1px solid #253049',
+        marginTop: '20px'
       }}>
         <button 
           className="btn btn-primary" 
@@ -956,6 +957,8 @@ export default function AdminProductForm({ initial, section = 'products', backUr
           disabled={loading}
           style={{ 
             minWidth: '120px',
+            padding: '8px 16px',
+            fontSize: '14px',
             position: 'relative'
           }}
         >
@@ -978,9 +981,9 @@ export default function AdminProductForm({ initial, section = 'products', backUr
           type="button" 
           onClick={() => router.back()} 
           disabled={loading}
-          style={{ minWidth: '100px' }}
+          style={{ minWidth: '100px', padding: '8px 16px', fontSize: '14px' }}
         >
-          ← Cancel
+          Cancel
         </button>
         
         {isEdit && (
@@ -993,6 +996,8 @@ export default function AdminProductForm({ initial, section = 'products', backUr
               borderColor: '#5a2a2a', 
               color: '#f87171',
               minWidth: '120px',
+              padding: '8px 16px',
+              fontSize: '14px',
               marginLeft: 'auto'
             }}
             title="Permanently delete this product"

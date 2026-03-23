@@ -22,7 +22,12 @@ export async function GET() {
     const adminUser = await User.create({
       email: 'admin@supertwiceresellers.com',
       password: hashedPassword,
-      role: 'admin'
+      name: 'Super Admin',
+      phone: '254700000000',
+      role: 'admin',
+      isActive: true,
+      isEmailVerified: true,
+      isPhoneVerified: true
     })
 
     return NextResponse.json({

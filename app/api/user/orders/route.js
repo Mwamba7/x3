@@ -1,29 +1,29 @@
 import { NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import Order from '../../../../models/Order'
 import connectDB from '../../../../lib/mongodb'
+import { verifyAuth } from '../../../../lib/auth-middleware'
 
 export async function GET(request) {
   try {
     await connectDB()
     
-    // Get token from cookies
-    const token = request.cookies.get('auth-token')?.value
-    
-    if (!token) {
+    // Verify authentication using the same method as order creation
+    const authResult = await verifyAuth(request)
+    if (!authResult.authenticated) {
       return NextResponse.json({
-        error: 'Not authenticated'
+        error: 'Authentication required'
       }, { status: 401 })
     }
-
-    // Verify token
-    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'fallback-secret')
     
-    // Fetch user's orders
-    const orders = await Order.find({ userId: decoded.userId })
+    console.log('🔍 Fetching orders for user ID:', authResult.user.id)
+    
+    // Fetch user's orders using the same user ID format as order creation
+    const orders = await Order.find({ userId: authResult.user.id })
       .sort({ createdAt: -1 })
       .limit(50)
 
+    console.log('📋 Found orders:', orders.length)
+    
     return NextResponse.json({
       success: true,
       orders: orders

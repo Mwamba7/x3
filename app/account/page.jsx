@@ -39,12 +39,9 @@ export default function AccountPage() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [editingAddress, setEditingAddress] = useState(false)
   const [addressFormData, setAddressFormData] = useState({
-    fullName: '',
-    phone: '',
     street: '',
     town: '',
-    region: '',
-    additionalInstructions: ''
+    region: ''
   })
   const [changingPassword, setChangingPassword] = useState(false)
   const [profileData, setProfileData] = useState({
@@ -54,20 +51,14 @@ export default function AccountPage() {
     profilePicture: ''
   })
   const [addressData, setAddressData] = useState({
-    fullName: '',
-    phone: '',
     street: '',
     city: '',
-    region: '',
-    additionalInstructions: ''
+    region: ''
   })
   const [originalAddressData, setOriginalAddressData] = useState({
-    fullName: '',
-    phone: '',
     street: '',
     city: '',
-    region: '',
-    additionalInstructions: ''
+    region: ''
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -352,12 +343,9 @@ export default function AccountPage() {
         
         const address = data.deliveryAddress
         const addressInfo = {
-          fullName: address?.fullName || '',
-          phone: address?.phone || '',
           street: address?.street || '',
           town: address?.city || '',
-          region: address?.region || '',
-          additionalInstructions: address?.additionalInstructions || ''
+          region: address?.region || ''
         }
         
         setAddressData(addressInfo)
@@ -467,7 +455,7 @@ export default function AccountPage() {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
                 {user?.name || 'User'}
               </h2>
               <p style={{ margin: 0, fontSize: '14px', opacity: 0.9 }}>
@@ -490,60 +478,72 @@ export default function AccountPage() {
           <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text)' }}>Overview</h3>
           
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: window.innerWidth <= 768 ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(150px, 1fr))', 
-            gap: '12px',
             backgroundColor: 'var(--surface)',
             padding: '16px',
             borderRadius: '12px',
             border: '1px solid var(--border)'
           }}>
-            <div 
-              style={{ 
-                textAlign: 'left', 
-                cursor: 'pointer', 
-                paddingLeft: window.innerWidth >= 1024 ? '40px' : '30px' 
-              }}
-              onClick={() => setShowRecentModal(true)}
-            >
-              <div style={{ fontSize: '20px', color: 'var(--primary)', fontWeight: '600' }}>📊</div>
-              <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500', marginTop: '4px' }}>Recent</div>
-            </div>
-            
-            <div 
-              style={{ 
-                textAlign: 'left', 
-                cursor: 'pointer', 
-                paddingLeft: window.innerWidth >= 1024 ? '40px' : '30px' 
-              }}
-              onClick={() => setShowOrdersModal(true)}
-            >
-              <div style={{ fontSize: '20px', color: 'var(--primary)', fontWeight: '600' }}>📋</div>
-              <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500', marginTop: '4px' }}>Orders ({orders.length})</div>
-            </div>
-            
-            <div 
-              style={{ 
-                textAlign: 'left', 
-                cursor: 'pointer', 
-                paddingLeft: window.innerWidth >= 1024 ? '40px' : '30px' 
-              }}
-              onClick={() => setShowProductsModal(true)}
-            >
-              <div style={{ fontSize: '20px', color: 'var(--primary)', fontWeight: '600' }}>📦</div>
-              <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500', marginTop: '4px' }}>Products ({products.length})</div>
-            </div>
-            
-            <div 
-              style={{ 
-                textAlign: 'left', 
-                cursor: 'pointer', 
-                paddingLeft: window.innerWidth >= 1024 ? '40px' : '30px' 
-              }}
-              onClick={() => setShowSalesModal(true)}
-            >
-              <div style={{ fontSize: '20px', color: 'var(--primary)', fontWeight: '600' }}>💰</div>
-              <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500', marginTop: '4px' }}>Sales ({sales.length})</div>
+            {/* Overview Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
+              <button
+                onClick={() => setShowRecentModal(true)}
+                style={{ 
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  padding: '8px'
+                }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📊</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Recent</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  // Navigate to orders page - no phone storage needed for account-based system
+                  window.location.href = '/my-orders'
+                }}
+                style={{ 
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  padding: '8px'
+                }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📋</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Orders</div>
+              </button>
+              
+              
+              <button
+                onClick={() => setShowProductsModal(true)}
+                style={{ 
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  padding: '8px'
+                }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📦</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Products ({products.length})</div>
+              </button>
+              
+              <button
+                onClick={() => setShowSalesModal(true)}
+                style={{ 
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  padding: '8px'
+                }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '4px' }}>💰</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Sales ({sales.length})</div>
+              </button>
             </div>
           </div>
         </div>
@@ -703,8 +703,16 @@ export default function AccountPage() {
                 <div>
                   {addressData.fullName ? (
                     <div style={{ display: 'grid', gap: '12px', color: 'var(--text)' }}>
-                      <div><strong>Full Name:</strong> {addressData.fullName}</div>
-                      <div><strong>Phone:</strong> {addressData.phone}</div>
+                      <div style={{ 
+                        padding: '8px 12px', 
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                        borderRadius: '6px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        fontSize: '12px',
+                        color: '#3b82f6'
+                      }}>
+                        👤 <strong>Profile Info:</strong> {user?.name || 'Not set'} • {user?.phone || 'Not set'}
+                      </div>
                       <div><strong>Address:</strong> {addressData.street}</div>
                       <div><strong>Town:</strong> {addressData.town}</div>
                       <div><strong>Region:</strong> {addressData.region}</div>
@@ -726,46 +734,24 @@ export default function AccountPage() {
                 </div>
               ) : (
                 <div style={{ display: 'grid', gap: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={addressFormData.fullName}
-                      onChange={(e) => setAddressFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'var(--surface)',
-                        color: 'var(--text)'
-                      }}
-                      placeholder="Enter full name for delivery"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      value={addressFormData.phone}
-                      onChange={(e) => setAddressFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'var(--surface)',
-                        color: 'var(--text)'
-                      }}
-                      placeholder="0712345678"
-                    />
+                  {/* Non-editable Profile Info */}
+                  <div style={{ 
+                    padding: '12px', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                    borderRadius: '6px',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    fontSize: '14px',
+                    color: '#3b82f6'
+                  }}>
+                    <div style={{ fontWeight: '500', marginBottom: '8px', color: 'var(--text)' }}>
+                      👤 Profile Information
+                    </div>
+                    <div style={{ fontSize: '13px', marginBottom: '6px' }}>
+                      <strong>Name:</strong> {user?.name || 'Not set'} • <strong>Phone:</strong> {user?.phone || 'Not set'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'white' }}>
+                      To edit name/phone, go to Profile section
+                    </div>
                   </div>
                   
                   <div>
@@ -840,28 +826,6 @@ export default function AccountPage() {
                       />
                     </div>
                   </div>
-                  
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
-                      Additional Instructions
-                    </label>
-                    <textarea
-                      value={addressFormData.additionalInstructions}
-                      onChange={(e) => setAddressFormData(prev => ({ ...prev, additionalInstructions: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        minHeight: '60px',
-                        resize: 'vertical',
-                        backgroundColor: 'var(--surface)',
-                        color: 'var(--text)'
-                      }}
-                      placeholder="Delivery instructions (optional)"
-                    />
-                  </div>
 
                   {addressErrors.general && (
                     <div style={{ color: '#dc3545', fontSize: '14px' }}>
@@ -876,18 +840,6 @@ export default function AccountPage() {
                         setAddressLoading(true)
 
                         // Client-side validation
-                        if (!addressFormData.fullName || addressFormData.fullName.length < 2) {
-                          setAddressErrors({ general: 'Full name must be at least 2 characters long' })
-                          setAddressLoading(false)
-                          return
-                        }
-
-                        if (!addressFormData.phone || !/^(\+254|254|0)[17]\d{8}$/.test(addressFormData.phone)) {
-                          setAddressErrors({ general: 'Please enter a valid Kenyan phone number (e.g., 0712345678)' })
-                          setAddressLoading(false)
-                          return
-                        }
-
                         if (!addressFormData.street || addressFormData.street.length < 5) {
                           setAddressErrors({ general: 'Street address must be at least 5 characters long' })
                           setAddressLoading(false)
@@ -1097,8 +1049,23 @@ export default function AccountPage() {
                     <div>
                       <strong>Email:</strong> {profileData.email}
                     </div>
-                    <div>
-                      <strong>Phone:</strong> {profileData.phone}
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      backgroundColor: 'rgba(34, 197, 94, 0.1)', 
+                      borderRadius: '6px',
+                      border: '1px solid rgba(34, 197, 94, 0.3)'
+                    }}>
+                      <div>
+                        <strong>Phone:</strong> {profileData.phone}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: 'white', 
+                        marginTop: '4px',
+                        fontWeight: '500'
+                      }}>
+                        💳 Primary Payment Number - Used for all M-Pesa transactions
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1926,7 +1893,7 @@ export default function AccountPage() {
                     opacity: withdrawalLoading ? 0.6 : 1
                   }}
                 >
-                  ← Back
+                  Back
                 </button>
               )}
               <button

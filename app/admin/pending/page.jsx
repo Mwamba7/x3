@@ -32,7 +32,7 @@ export default async function PendingProductsPage() {
   const rejectedCount = serializedProducts.filter(p => p.status === 'rejected').length
 
   return (
-    <main className="container" style={{ padding: '24px 0' }}>
+    <main className="container" style={{ padding: '32px 8px', maxWidth: '1400px', marginLeft: '2px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h2 style={{ marginTop: 0, marginBottom: 4 }}>🔔 Product Submissions ({totalCount})</h2>
@@ -42,7 +42,7 @@ export default async function PendingProductsPage() {
             <span>❌ Rejected: {rejectedCount}</span>
           </div>
         </div>
-        <a href="/admin" className="btn">← Back to Dashboard</a>
+        <a href="/admin" className="btn">Back to Dashboard</a>
       </div>
 
       {totalCount === 0 ? (

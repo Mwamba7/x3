@@ -12,15 +12,16 @@ export default function ProductActions({ product, onPopupStateChange }) {
   useEffect(() => {
     setMounted(true)
     
-    // Check deposit payment status
-    const checkPayment = () => {
+    // Check deposit payment status (now async)
+    const checkPayment = async () => {
       if (checkDepositPaymentStatus) {
-        setHasDepositPaid(checkDepositPaymentStatus())
+        const hasDeposit = await checkDepositPaymentStatus()
+        setHasDepositPaid(hasDeposit)
       }
     }
     
     checkPayment()
-    const interval = setInterval(checkPayment, 1000) // Check every second
+    const interval = setInterval(checkPayment, 5000) // Check every 5 seconds instead of 1
     
     return () => {
       clearInterval(interval)
@@ -29,8 +30,23 @@ export default function ProductActions({ product, onPopupStateChange }) {
 
   const disabled = String(product?.status || '').toLowerCase() === 'sold'
   const isInCart = mounted ? !!items[product.id] : false
-  const isLockedOut = mounted && (hasDepositPaid || isCartLocked) && !lockedCartItems[product.id] && !isInCart
+  
+  // Only lock if cart is actually locked AND has items in it
+  const hasValidLockedCart = mounted && isCartLocked && Object.keys(lockedCartItems).length > 0
+  const isLockedOut = mounted && hasValidLockedCart && !lockedCartItems[product.id] && !isInCart
   const buttonDisabled = disabled || isLockedOut
+
+  // Debug logging
+  console.log('🔍 ProductActions Debug:', {
+    productName: product.name,
+    isCartLocked,
+    lockedCartItemsCount: Object.keys(lockedCartItems).length,
+    hasValidLockedCart,
+    isLockedOut,
+    buttonDisabled,
+    hasDepositPaid,
+    currentItemsCount: Object.keys(items).length
+  })
 
   return (
     <div className="product-actions-container" style={{ position: 'relative' }}>
@@ -49,8 +65,18 @@ export default function ProductActions({ product, onPopupStateChange }) {
           ...(isLockedOut ? { backgroundColor: '#6c757d', color: 'white', cursor: 'not-allowed' } : {})
         }}
         onClick={() => {
-          // Completely prevent any action if cart is locked
-          if (isCartLocked || isLockedOut) {
+          // Debug logging before check
+          console.log('🔍 ProductActions Click Debug:', {
+            productName: product.name,
+            hasValidLockedCart,
+            isCartLocked,
+            lockedCartItemsCount: Object.keys(lockedCartItems).length,
+            willDispatchEvent: hasValidLockedCart
+          })
+          
+          // Only prevent action if cart is actually locked AND has items
+          if (hasValidLockedCart) {
+            console.log('🚫 Dispatching cartLockError event for:', product.name)
             // Trigger the same notification as on home page
             window.dispatchEvent(new CustomEvent('cartLockError', {
               detail: {
@@ -73,7 +99,14 @@ export default function ProductActions({ product, onPopupStateChange }) {
               if (onPopupStateChange) onPopupStateChange(endState);
             }, 2000);
           } else {
-            addItem(product, 1);
+            addItem({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image: product.image,
+              condition: product.condition || 'unknown',
+              category: product.category || 'unknown'
+            }, 1);
             // Show popup on image
             const newState = { show: true, action: 'added' };
             setPopupState(newState);

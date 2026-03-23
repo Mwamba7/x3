@@ -28,8 +28,14 @@ export async function POST(request) {
         hasItems: !!orderData.items,
         hasTotalAmount: !!orderData.totalAmount
       })
+      
+      let errorMessage = 'Missing required order data'
+      if (!orderData.customer) errorMessage = 'Customer information is required'
+      else if (!orderData.items) errorMessage = 'Order items are required'
+      else if (!orderData.totalAmount) errorMessage = 'Order total amount is required'
+      
       return NextResponse.json(
-        { error: 'Missing required order data' },
+        { error: errorMessage },
         { status: 400 }
       )
     }
@@ -50,9 +56,21 @@ export async function POST(request) {
     if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
       console.log('❌ Invalid items array:', orderData.items)
       return NextResponse.json(
-        { error: 'Items must be a non-empty array' },
+        { error: 'Order must contain at least one item' },
         { status: 400 }
       )
+    }
+    
+    // Validate each item has required fields
+    for (let i = 0; i < orderData.items.length; i++) {
+      const item = orderData.items[i]
+      if (!item.id || !item.name || !item.price || !item.qty) {
+        console.log(`❌ Invalid item at index ${i}:`, item)
+        return NextResponse.json(
+          { error: `Item "${item.name || 'Unknown'}" is missing required information` },
+          { status: 400 }
+        )
+      }
     }
 
     // Calculate deposit amount (20% of total)
@@ -105,7 +123,7 @@ export async function POST(request) {
         method: orderData.delivery?.method || 'delivery',
         estimatedDate: orderData.delivery?.estimatedDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
       },
-      status: 'confirmed',
+      status: 'processing',
       whatsappSentAt: new Date(),
       notes: orderData.notes || '',
       source: 'website'

@@ -10,7 +10,7 @@ export async function GET(request) {
     await connectDB()
     
     // Get token from cookies
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     
     if (!token) {
       return NextResponse.json({

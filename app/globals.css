@@ -1,3 +1,60 @@
+/* Hide scrollbar while maintaining scroll functionality */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: none;
+}
+
+/* For IE and Edge */
+body {
+  -ms-overflow-style: none;
+}
+
+/* Additional mobile-specific scrollbar hiding */
+@media (max-width: 768px) {
+  /* Hide scrollbar on mobile devices */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  html {
+    scrollbar-width: none !important;
+  }
+  
+  body {
+    -ms-overflow-style: none !important;
+    overflow: -moz-scrollbars-none !important;
+  }
+  
+  /* iOS Safari specific */
+  body::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  /* Chrome mobile specific */
+  body::-webkit-scrollbar-track {
+    display: none !important;
+  }
+  
+  body::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+}
+
+/* Small screens (tablets and small desktops) */
+@media (max-width: 1024px) {
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  html {
+    scrollbar-width: none !important;
+  }
+}
+
 /* Admin-only typography adjustments */
 .admin-root {
   font-size: 0.95em; /* slightly smaller base font in admin */
@@ -332,16 +389,21 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 /* Mobile-specific header and navigation adjustments */
 @media (max-width: 767px) {
   .site-header {
-    min-height: 56px; /* slightly smaller on mobile */
+    min-height: 64px; /* increased height for mobile */
   }
   
   .header-inner {
-    padding: 10px 0;
-    min-height: 44px;
+    padding: 12px 0;
+    min-height: 48px; /* increased height for mobile */
+  }
+  
+  .brand-title {
+    font-size: 16px; /* increased font size for Super Twice Resellers on mobile */
   }
   
   .page-content {
-    padding-top: 66px; /* adjusted for mobile header height */
+    padding-top: 74px; /* adjusted for increased mobile header height */
+    padding-bottom: 100px; /* adjusted for mobile bottom nav */
   }
   
   .nav {
@@ -356,7 +418,18 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
   .nav a::after {
     bottom: -3px; /* even tighter on mobile to prevent overlap */
   }
-  
+
+  .bottom-nav {
+    padding: 6px 0;
+  }
+
+  .nav-icon {
+    font-size: 16px;
+  }
+
+  .nav-label {
+    font-size: 9px;
+  }
 }
 
 /* Tablet adjustments */
@@ -437,10 +510,90 @@ a[href^="mailto:"]:hover, a[href^="tel:"]:hover { text-decoration: none; color: 
 @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
 
 /* Footer */
-.site-footer { border-top: 1px solid #223; padding: 0; color: var(--muted); }
-.footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; font-size: 13px; }
+.site-footer { 
+  border-top: 1px solid #223; 
+  padding: 0; 
+  color: var(--muted); 
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(14, 17, 22, 0.95);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+}
+.footer-inner { 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center; 
+  flex-wrap: wrap; 
+  gap: 6px 10px; 
+  font-size: 13px; 
+  padding: 8px 0;
+}
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
 .footer-links a { color: var(--muted); text-decoration: none; margin-left: 8px; }
 .footer-links a:hover { color: var(--text); }
+
+/* Bottom Navigation */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 8px 0;
+  border-top: 1px solid #2a3342;
+}
+
+.bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  padding: 4px 8px;
+  min-width: 60px;
+}
+
+.bottom-nav-link:hover {
+  color: var(--text);
+}
+
+.bottom-nav-link.active {
+  color: var(--primary);
+}
+
+.nav-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.nav-label {
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Adjust page content to account for fixed bottom nav */
+.page-content { 
+  flex: 1 0 auto; 
+  padding-top: 70px; /* increased offset for fixed header to prevent overlap */
+  padding-bottom: 120px; /* add padding for fixed bottom nav */
+  min-height: calc(100vh - 70px); /* ensure content takes full height minus header */
+}
 
 /* Product page gallery sizing (removed) */
 

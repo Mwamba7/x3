@@ -18,11 +18,11 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ emailOrPhone: username, password }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login failed')
-      router.push('/admin/products')
+      router.push('/admin')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -35,8 +35,8 @@ export default function AdminLoginPage() {
       <h2 style={{ marginTop: 0, marginBottom: 12 }}>Admin Login</h2>
       <form onSubmit={onSubmit} className="sell-form" style={{ display: 'grid', gap: 12 }}>
         <div>
-          <label className="form-label" htmlFor="username">Username</label>
-          <input className="form-control" id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
+          <label className="form-label" htmlFor="username">Email</label>
+          <input className="form-control" id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="admin@supertwiceresellers.com" />
         </div>
         <div>
           <label className="form-label" htmlFor="password">Password</label>

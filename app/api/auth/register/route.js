@@ -179,7 +179,7 @@ export async function POST(request) {
     })
 
     // Set HTTP-only cookie
-    response.cookies.set('auth-token', token, {
+    response.cookies.set('tt_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

@@ -29,6 +29,12 @@ export default function CartProtectionNotification() {
     const handleCartLockError = (event) => {
       const { message, productName } = event.detail
       
+      console.log('🚫 CartProtectionNotification received cartLockError:', {
+        message,
+        productName,
+        timestamp: new Date().toISOString()
+      })
+      
       setNotification({
         type: 'error',
         message: 'You need to first complete the products paid for. Your cart is locked because you have made a deposit payment. Please complete your current order before adding new items.',

@@ -9,7 +9,7 @@ export async function GET(request) {
   try {
     await connectDB()
     
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -34,7 +34,7 @@ export async function PUT(request) {
     console.log('Profile update request received')
     await connectDB()
     
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('tt_session')?.value
     if (!token) {
       console.log('No auth token found')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })

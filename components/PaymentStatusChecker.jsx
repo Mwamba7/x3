@@ -28,14 +28,18 @@ export default function PaymentStatusChecker() {
         // Check each recent payment attempt
         for (const attempt of recentPayments) {
           if (attempt.checkoutRequestId) {
-            const response = await fetch(`/api/mpesa/status?checkoutRequestId=${attempt.checkoutRequestId}`)
+            const response = await fetch(`/api/paystack/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference: attempt.checkoutRequestId })
+      })
             const result = await response.json()
             
             if (result.success && result.found && result.payment.depositPaid) {
               console.log('✅ Payment detected!', result)
               
               // Update localStorage with payment record
-              localStorage.setItem('mpesaPayment', JSON.stringify(result.paymentRecord))
+              localStorage.setItem('paystackPayment', JSON.stringify(result.paymentRecord))
               
               // Lock the cart
               lockCart(true)
@@ -55,12 +59,16 @@ export default function PaymentStatusChecker() {
         const cartId = Object.keys(cartData).length > 0 ? 'cart-' + Date.now() : null
         
         if (cartId && recentPayments.length === 0) {
-          const response = await fetch(`/api/mpesa/status?cartId=${cartId}`)
+          const response = await fetch(`/api/paystack/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference: cartId })
+          })
           const result = await response.json()
           
           if (result.success && result.found && result.payment.depositPaid) {
             console.log('✅ Payment detected by cart ID!', result)
-            localStorage.setItem('mpesaPayment', JSON.stringify(result.paymentRecord))
+            localStorage.setItem('paystackPayment', JSON.stringify(result.paymentRecord))
             lockCart(true)
           }
         }

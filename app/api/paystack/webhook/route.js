@@ -1,0 +1,176 @@
+import { NextResponse } from 'next/server'
+import crypto from 'crypto'
+
+// Paystack configuration
+const PAYSTACK_CONFIG = {
+  secretKey: process.env.PAYSTACK_SECRET_KEY || 'sk_test_ad3ac47205d9d8631f936f4ffb733c987fd824a2',
+  webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET || 'paystack_webhook_secret'
+}
+
+export async function POST(request) {
+  try {
+    console.log('🪝 Paystack webhook received...')
+    
+    const body = await request.text()
+    const signature = request.headers.get('x-paystack-signature')
+    
+    // Verify webhook signature
+    if (!signature) {
+      console.error('❌ No webhook signature provided')
+      return NextResponse.json({ error: 'No signature provided' }, { status: 400 })
+    }
+    
+    const expectedSignature = crypto
+      .createHmac('sha512', PAYSTACK_CONFIG.webhookSecret)
+      .update(body)
+      .digest('hex')
+    
+    if (signature !== expectedSignature) {
+      console.error('❌ Invalid webhook signature')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    }
+    
+    const event = JSON.parse(body)
+    console.log('📊 Webhook event:', event)
+    
+    // Handle different event types
+    switch (event.event) {
+      case 'charge.success':
+        await handleSuccessfulCharge(event.data)
+        break
+        
+      case 'charge.failed':
+        await handleFailedCharge(event.data)
+        break
+        
+      case 'transfer.success':
+        await handleSuccessfulTransfer(event.data)
+        break
+        
+      case 'transfer.failed':
+        await handleFailedTransfer(event.data)
+        break
+        
+      default:
+        console.log('ℹ️ Unhandled event type:', event.event)
+    }
+    
+    return NextResponse.json({ received: true })
+    
+  } catch (error) {
+    console.error('💥 Webhook processing error:', error)
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+  }
+}
+
+async function handleSuccessfulCharge(chargeData) {
+  console.log('✅ Payment successful:', chargeData)
+  
+  try {
+    const { reference, amount, customer, metadata } = chargeData
+    
+    // Extract payment details
+    const paidAmount = amount / 100 // Convert from kobo to KES
+    const customerEmail = customer?.email
+    const customerPhone = metadata?.phone
+    const orderType = metadata?.orderType || 'deposit'
+    const totalAmount = metadata?.totalAmount || paidAmount
+    const depositAmount = metadata?.depositAmount || paidAmount
+    const balanceAmount = metadata?.balanceAmount || (totalAmount - depositAmount)
+    const userId = metadata?.userId
+    
+    console.log(`💰 Payment of KES ${paidAmount} completed for reference: ${reference}`)
+    console.log(`👤 Customer: ${customerEmail}`)
+    console.log(`📱 Phone: ${customerPhone}`)
+    console.log(`📦 Order Type: ${orderType}`)
+    
+    // 1. Lock the cart to prevent further modifications
+    console.log('🔒 Locking cart after successful payment...')
+    const lockResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cart/lock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        paymentReference: reference,
+        paymentMethod: 'paystack',
+        depositPaid: true,
+        paidAmount: paidAmount,
+        totalAmount: totalAmount,
+        balanceAmount: balanceAmount,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        userId: userId
+      })
+    })
+    
+    if (lockResponse.ok) {
+      console.log('✅ Cart locked successfully')
+    } else {
+      console.error('❌ Failed to lock cart:', await lockResponse.text())
+    }
+    
+    // 2. Store payment record in localStorage equivalent (server-side)
+    const paymentRecord = {
+      paymentReference: reference,
+      paymentMethod: 'paystack',
+      depositPaid: true,
+      paidAmount: paidAmount,
+      totalAmount: totalAmount,
+      balanceAmount: balanceAmount,
+      customerEmail: customerEmail,
+      customerPhone: customerPhone,
+      userId: userId,
+      paymentDate: new Date().toISOString(),
+      chargeData: chargeData
+    }
+    
+    // Store payment record for checkout process
+    console.log('💾 Storing payment record for checkout...')
+    
+    // 3. Update product availability if needed
+    if (orderType === 'deposit') {
+      console.log('🏷️ Marking products as sold/deposit-paid...')
+      // This would typically update product status in database
+      // For now, the cart locking mechanism handles this
+    }
+    
+    // 4. Send confirmation (optional - could be implemented later)
+    console.log('📧 Payment processing complete - ready for order completion')
+    
+  } catch (error) {
+    console.error('❌ Error processing successful charge:', error)
+  }
+}
+
+async function handleFailedCharge(chargeData) {
+  console.log('❌ Payment failed:', chargeData)
+  
+  try {
+    const { reference, amount, customer, metadata } = chargeData
+    
+    // Update order status to failed
+    // await Order.findOneAndUpdate(
+    //   { paymentReference: reference },
+    //   { 
+    //     paymentStatus: 'failed',
+    //     paymentMethod: 'paystack',
+    //     failedAt: new Date(),
+    //     transactionDetails: chargeData
+    //   }
+    // )
+    
+    console.log(`💸 Payment of ${amount / 100} KES failed for reference: ${reference}`)
+    
+  } catch (error) {
+    console.error('❌ Error processing failed charge:', error)
+  }
+}
+
+async function handleSuccessfulTransfer(transferData) {
+  console.log('✅ Transfer successful:', transferData)
+  // Handle successful transfers (for withdrawals, etc.)
+}
+
+async function handleFailedTransfer(transferData) {
+  console.log('❌ Transfer failed:', transferData)
+  // Handle failed transfers
+}

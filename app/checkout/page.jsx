@@ -1084,18 +1084,25 @@ export default function CheckoutPage() {
               totalCount={totalCount}
               paymentCompleted={paymentCompleted}
               savedPaymentPhone={paymentPhoneNumber}
-              onPaymentComplete={(completed, phoneNumber) => {
-                setPaymentCompleted(completed)
-                if (completed && phoneNumber) {
-                  // Save the phone number used for payment
-                  setPaymentPhoneNumber(phoneNumber)
+              onPaymentComplete={(paymentData) => {
+                if (paymentData && paymentData.depositPaid && !orderCompleted) {
+                  setPaymentCompleted(true)
                   
-                  // Generate order ID immediately after payment
-                  const timestamp = Date.now().toString(36)
-                  const random = Math.random().toString(36).substr(2, 5)
-                  const orderId = `ORD-${timestamp}-${random}`.toUpperCase()
-                  setCompletedOrderId(orderId)
-                  setOrderCompleted(true)
+                  // Save the phone number used for payment if available
+                  if (paymentData.phoneNumber) {
+                    setPaymentPhoneNumber(paymentData.phoneNumber)
+                  }
+
+                  // Persist transaction/reference for order saving
+                  try {
+                    const txId = paymentData.transactionId || paymentData.reference || paymentData.id
+                    if (txId) {
+                      localStorage.setItem('lastPaymentId', String(txId))
+                    }
+                  } catch {}
+                  
+                  // Show completion section, but do NOT mark order as completed yet.
+                  // completeOrder() (useEffect) will save to DB and then set orderCompleted.
                   setShowWhatsAppSection(true)
                 }
               }}

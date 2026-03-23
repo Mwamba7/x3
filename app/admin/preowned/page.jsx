@@ -29,26 +29,9 @@ export default async function PreownedAdminPage() {
   }))
 
   return (
-    <main className="container" style={{ padding: '24px 0' }}>
+    <main className="container" style={{ padding: '32px 8px', maxWidth: '1400px', marginLeft: '2px' }}>
       <h2 style={{ marginTop: 0, marginBottom: 10 }}>Products — Pre-owned</h2>
-      <Controls current="preowned" />
       <AdminProductsClient initial={items} section="preowned" />
     </main>
-  )
-}
-
-function Controls({ current = '' }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-      <a className="btn" href="/admin" title="Admin Dashboard">← Dashboard</a>
-      <a className={`btn${current==='products'?' btn-primary':''}`} href="/admin/products" aria-current={current==='products'?'page':undefined} title={current==='products'?'You are on: Collection':'Go to: Collection'}>Collection</a>
-      <a className={`btn${current==='fashion'?' btn-primary':''}`} href="/admin/fashion" aria-current={current==='fashion'?'page':undefined} title={current==='fashion'?'You are on: Fashion':'Go to: Fashion'}>Fashion</a>
-      <a className={`btn${current==='preowned'?' btn-primary':''}`} href="/admin/preowned" aria-current={current==='preowned'?'page':undefined} title="You are on: Pre-owned">Pre-owned</a>
-      <a className="btn btn-primary" href="/admin/preowned/new" title="Add product to Pre-owned">Add Product</a>
-      <a className="btn" href="/admin/change-password">Change Password</a>
-      <form action="/api/auth/logout" method="post" style={{ display: 'inline' }}>
-        <button className="btn" type="submit">Logout</button>
-      </form>
-    </div>
   )
 }

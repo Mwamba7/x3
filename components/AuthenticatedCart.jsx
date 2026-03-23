@@ -28,7 +28,14 @@ export function useAuthenticatedCart() {
       showAuthRequired('add', product.name)
       return
     }
-    cart.addItem(product)
+    cart.addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      condition: product.condition || 'unknown',
+      category: product.category || 'unknown'
+    })
   }
 
   const setQty = (productId, qty) => {

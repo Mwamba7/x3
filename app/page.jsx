@@ -137,22 +137,6 @@ export default async function Page() {
         <ReusedClient products={reusedProducts} />
 
         <SellPageProductsClient products={communityProducts} />
-
-        <section id="about" className="info-section">
-          <h3>About Super Twice Resellers</h3>
-          <p>We source, test, and refurbish pre‑owned electronics and appliances. Every item is thoroughly inspected and comes with a 30‑day limited warranty.</p>
-          <ul>
-            <li>Environmentally responsible reuse</li>
-            <li>Budget‑friendly pricing</li>
-            <li>Local pickup or affordable delivery</li>
-          </ul>
-        </section>
-
-        <section id="contact" className="info-section">
-          <h3>Contact Us</h3>
-          <p>Email: <a href="mailto:sales@supertwiceresellers.com">sales@supertwiceresellers.com</a></p> 
-          <p>Phone: <a href="tel:+254718176584">+254718176584</a></p>
-        </section>
       </main>
     </>
   )

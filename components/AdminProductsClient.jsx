@@ -46,14 +46,14 @@ export default function AdminProductsClient({ initial, section = 'products' }) {
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px', fontSize: '16px' }}>
           <thead>
             <tr style={{ textAlign: 'left' }}>
-              <th style={{ padding: '12px 8px', borderBottom: '2px solid #253049', fontWeight: '600' }}>Product</th>
-              <th style={{ padding: '12px 8px', borderBottom: '2px solid #253049', fontWeight: '600' }}>Category</th>
-              <th style={{ padding: '12px 8px', borderBottom: '2px solid #253049', fontWeight: '600' }}>Price</th>
-              <th style={{ padding: '12px 8px', borderBottom: '2px solid #253049', fontWeight: '600' }}>Status</th>
-              <th style={{ padding: '12px 8px', borderBottom: '2px solid #253049', fontWeight: '600', textAlign: 'center' }}>Actions</th>
+              <th style={{ padding: '16px 12px', borderBottom: '2px solid #253049', fontWeight: '600', fontSize: '16px' }}>Product</th>
+              <th style={{ padding: '16px 12px', borderBottom: '2px solid #253049', fontWeight: '600', fontSize: '16px' }}>Category</th>
+              <th style={{ padding: '16px 12px', borderBottom: '2px solid #253049', fontWeight: '600', fontSize: '16px' }}>Price</th>
+              <th style={{ padding: '16px 12px', borderBottom: '2px solid #253049', fontWeight: '600', fontSize: '16px' }}>Status</th>
+              <th style={{ padding: '16px 12px', borderBottom: '2px solid #253049', fontWeight: '600', fontSize: '16px', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -66,45 +66,48 @@ export default function AdminProductsClient({ initial, section = 'products' }) {
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <td style={{ 
-                  padding: '12px 8px', 
+                  padding: '16px 12px', 
                   borderBottom: '1px solid #223',
-                  maxWidth: '200px',
+                  maxWidth: '250px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  fontSize: '16px'
                 }} title={p.name}>
                   <strong>{p.name}</strong>
                 </td>
                 <td style={{ 
-                  padding: '12px 8px', 
+                  padding: '16px 12px', 
                   borderBottom: '1px solid #223',
-                  textTransform: 'capitalize'
+                  textTransform: 'capitalize',
+                  fontSize: '16px'
                 }}>
                   <span style={{
-                    padding: '4px 8px',
+                    padding: '6px 12px',
                     backgroundColor: '#253049',
                     borderRadius: '12px',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500'
                   }}>
                     {p.category}
                   </span>
                 </td>
                 <td style={{ 
-                  padding: '12px 8px', 
+                  padding: '16px 12px', 
                   borderBottom: '1px solid #223',
                   fontWeight: '600',
-                  color: '#4ade80'
+                  color: '#4ade80',
+                  fontSize: '16px'
                 }}>
                   Ksh {Number(p.price).toLocaleString('en-KE')}
                 </td>
-                <td style={{ padding: '12px 8px', borderBottom: '1px solid #223' }}>
+                <td style={{ padding: '16px 12px', borderBottom: '1px solid #223', fontSize: '16px' }}>
                   <span style={{
-                    padding: '4px 12px',
+                    padding: '6px 14px',
                     backgroundColor: p.status === 'available' ? '#065f46' : '#7c2d12',
                     color: p.status === 'available' ? '#10b981' : '#f87171',
                     borderRadius: '16px',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     textTransform: 'uppercase'
                   }}>
@@ -112,9 +115,10 @@ export default function AdminProductsClient({ initial, section = 'products' }) {
                   </span>
                 </td>
                 <td style={{ 
-                  padding: '12px 8px', 
+                  padding: '16px 12px', 
                   borderBottom: '1px solid #223',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  fontSize: '16px'
                 }}>
                   <button 
                     className="btn btn-small" 
@@ -124,16 +128,16 @@ export default function AdminProductsClient({ initial, section = 'products' }) {
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
-                      padding: '6px 12px',
+                      gap: '6px',
+                      padding: '8px 16px',
                       backgroundColor: '#1d4ed8',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
-                      fontSize: '13px',
+                      fontSize: '15px',
                       fontWeight: '500',
                       transition: 'all 0.2s ease',
-                      minWidth: '80px',
+                      minWidth: '100px',
                       justifyContent: 'center',
                       cursor: 'pointer'
                     }}

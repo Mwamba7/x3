@@ -89,9 +89,14 @@ const OrderSchema = new mongoose.Schema({
 // Generate unique order ID before validation
 OrderSchema.pre('validate', function(next) {
   if (!this.orderId) {
-    const timestamp = Date.now().toString(36)
-    const random = Math.random().toString(36).substr(2, 5)
-    this.orderId = `ORD-${timestamp}-${random}`.toUpperCase()
+    const now = new Date()
+    const date = now.getFullYear().toString().slice(-2) + 
+                 (now.getMonth() + 1).toString().padStart(2, '0') + 
+                 now.getDate().toString().padStart(2, '0')
+    const time = now.getHours().toString().padStart(2, '0') + 
+                 now.getMinutes().toString().padStart(2, '0')
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    this.orderId = `ORD-${date}${time}-${random}`
   }
   next()
 })
@@ -99,9 +104,14 @@ OrderSchema.pre('validate', function(next) {
 // Also ensure it's generated before save as backup
 OrderSchema.pre('save', function(next) {
   if (!this.orderId) {
-    const timestamp = Date.now().toString(36)
-    const random = Math.random().toString(36).substr(2, 5)
-    this.orderId = `ORD-${timestamp}-${random}`.toUpperCase()
+    const now = new Date()
+    const date = now.getFullYear().toString().slice(-2) + 
+                 (now.getMonth() + 1).toString().padStart(2, '0') + 
+                 now.getDate().toString().padStart(2, '0')
+    const time = now.getHours().toString().padStart(2, '0') + 
+                 now.getMinutes().toString().padStart(2, '0')
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    this.orderId = `ORD-${date}${time}-${random}`
   }
   next()
 })

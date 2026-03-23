@@ -139,7 +139,7 @@ export async function POST(request) {
       ? 30 * 24 * 60 * 60 * 1000 // 30 days
       : 7 * 24 * 60 * 60 * 1000   // 7 days
 
-    response.cookies.set('auth-token', token, {
+    response.cookies.set('tt_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

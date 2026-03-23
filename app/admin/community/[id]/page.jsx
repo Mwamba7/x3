@@ -44,7 +44,7 @@ export default async function AdminEditCommunityProductPage({ params }) {
   if (!product) redirect('/admin/community')
 
   return (
-    <main className="container" style={{ padding: '24px 0', maxWidth: 720 }}>
+    <main className="container" style={{ padding: '32px 24px 32px 0', maxWidth: 1200 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>📢 Edit Community Product</h2>
@@ -52,7 +52,7 @@ export default async function AdminEditCommunityProductPage({ params }) {
             Product submitted by: {product.metadata?.originalSeller?.name || 'Unknown'}
           </p>
         </div>
-        <a href="/admin/community" className="btn">← Back to Community</a>
+        <a href="/admin/community" className="btn">Back to Community</a>
       </div>
       
       <AdminProductForm 
