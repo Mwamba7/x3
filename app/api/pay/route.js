@@ -17,15 +17,15 @@ export async function POST(request) {
 
     // Paystack configuration
     const PAYSTACK_CONFIG = {
-      secretKey: process.env.PAYSTACK_SECRET_KEY || 'sk_test_ad3ac47205d9d8631f936f4ffb733c987fd824a2',
-      publicKey: process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_afd9d8007310d8b197061be88fb8db9e0c8c736b',
+      secretKey: process.env.PAYSTACK_SECRET_KEY,
+      publicKey: process.env.PAYSTACK_PUBLIC_KEY,
       baseUrl: 'https://api.paystack.co',
-      callbackUrl: process.env.PAYSTACK_CALLBACK_URL || 'https://chainless-unalgebraical-mistie.ngrok-free.dev',
-      webhookUrl: process.env.PAYSTACK_WEBHOOK_URL || 'https://chainless-unalgebraical-mistie.ngrok-free.dev'
+      callbackUrl: process.env.PAYSTACK_CALLBACK_URL,
+      webhookUrl: process.env.PAYSTACK_WEBHOOK_URL
     }
 
     // Validate configuration
-    if (!PAYSTACK_CONFIG.secretKey) {
+    if (!PAYSTACK_CONFIG.secretKey || !PAYSTACK_CONFIG.callbackUrl) {
       console.error('❌ Paystack secret key not configured')
       return NextResponse.json({
         success: false,

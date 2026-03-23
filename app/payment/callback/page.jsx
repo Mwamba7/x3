@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../../components/AuthContext'
 
-export default function PaymentCallback() {
+function PaymentCallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -278,5 +278,13 @@ export default function PaymentCallback() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function PaymentCallback() {
+  return (
+    <Suspense>
+      <PaymentCallbackInner />
+    </Suspense>
   )
 }

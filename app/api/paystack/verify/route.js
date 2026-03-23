@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 // Paystack configuration
 const PAYSTACK_CONFIG = {
-  secretKey: process.env.PAYSTACK_SECRET_KEY || 'sk_test_ad3ac47205d9d8631f936f4ffb733c987fd824a2',
+  secretKey: process.env.PAYSTACK_SECRET_KEY,
   baseUrl: 'https://api.paystack.co'
 }
 

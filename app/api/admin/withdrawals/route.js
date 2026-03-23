@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
-import { connectToDatabase } from '@/lib/mongodb'
+import connectDB from '../../../../lib/mongodb'
+import mongoose from 'mongoose'
 
 // GET - Fetch all withdrawal requests for admin
 export async function GET() {
   try {
-    const { db } = await connectToDatabase()
+    await connectDB()
+    const db = mongoose.connection.db
     
     // Fetch all withdrawal requests sorted by most recent
     const withdrawals = await db.collection('withdrawalRequests').find({})

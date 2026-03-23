@@ -14,11 +14,11 @@ echo Adding Paystack configuration to .env file...
 (
 echo.
 echo # Paystack Payment Configuration
-echo PAYSTACK_SECRET_KEY="sk_test_ad3ac47205d9d8631f936f4ffb733c987fd824a2"
-echo PAYSTACK_PUBLIC_KEY="pk_test_afd9d8007310d8b197061be88fb8db9e0c8c736b"
-echo PAYSTACK_CALLBACK_URL="https://chainless-unalgebraical-mistie.ngrok-free.dev"
-echo PAYSTACK_WEBHOOK_URL="https://chainless-unalgebraical-mistie.ngrok-free.dev"
-echo PAYSTACK_WEBHOOK_SECRET="paystack_webhook_secret"
+echo PAYSTACK_SECRET_KEY=""
+echo PAYSTACK_PUBLIC_KEY=""
+echo PAYSTACK_CALLBACK_URL=""
+echo PAYSTACK_WEBHOOK_URL=""
+echo PAYSTACK_WEBHOOK_SECRET=""
 ) >> .env
 
 echo.
