@@ -20,8 +20,8 @@ Ensure your `.env` file includes:
 # Session secret for JWT tokens
 SESSION_SECRET="your-long-random-secret-here"
 
-# MongoDB connection (already configured)
-MONGODB_URI="mongodb+srv://..."
+# MongoDB connection
+MONGODB_URI=""
 ```
 
 ### 3. Start the Application

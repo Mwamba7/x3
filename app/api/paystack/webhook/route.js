@@ -3,13 +3,18 @@ import crypto from 'crypto'
 
 // Paystack configuration
 const PAYSTACK_CONFIG = {
-  secretKey: process.env.PAYSTACK_SECRET_KEY || 'sk_test_ad3ac47205d9d8631f936f4ffb733c987fd824a2',
-  webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET || 'paystack_webhook_secret'
+  secretKey: process.env.PAYSTACK_SECRET_KEY,
+  webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET
 }
 
 export async function POST(request) {
   try {
     console.log('🪝 Paystack webhook received...')
+
+    if (!PAYSTACK_CONFIG.webhookSecret) {
+      console.error('❌ Paystack webhook secret not configured')
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+    }
     
     const body = await request.text()
     const signature = request.headers.get('x-paystack-signature')
