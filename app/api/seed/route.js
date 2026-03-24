@@ -4,6 +4,8 @@ import Product from '../../../models/Product'
 import User from '../../../models/User'
 import bcrypt from 'bcryptjs'
 
+const IS_PROD = process.env.NODE_ENV === 'production'
+
 const sampleProducts = [
   // Electronics/Collection Products
   {
@@ -182,6 +184,17 @@ const sampleProducts = [
 ]
 
 export async function GET() {
+  if (IS_PROD) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const requiredToken = process.env.SEED_TOKEN
+  if (requiredToken) {
+    return NextResponse.json({
+      error: 'Seed endpoint disabled: use POST with token'
+    }, { status: 405 })
+  }
+
   try {
     await connectDB()
     console.log('Connected to MongoDB')
@@ -231,6 +244,60 @@ export async function GET() {
     return NextResponse.json({ 
       error: 'Failed to seed database', 
       details: error.message 
+    }, { status: 500 })
+  }
+}
+
+export async function POST(req) {
+  if (IS_PROD) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const requiredToken = process.env.SEED_TOKEN
+  if (!requiredToken) {
+    return NextResponse.json({
+      error: 'Seed endpoint disabled: missing SEED_TOKEN'
+    }, { status: 403 })
+  }
+
+  let body = {}
+  try { body = await req.json() } catch {}
+  if (body?.token !== requiredToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    await connectDB()
+
+    // Clear existing data
+    await Product.deleteMany({})
+    await User.deleteMany({})
+
+    // Create admin user
+    const hashedPassword = await bcrypt.hash('admin123', 12)
+    const adminUser = await User.create({
+      email: 'admin@supertwiceresellers.com',
+      password: hashedPassword,
+      role: 'admin'
+    })
+
+    // Create sample products
+    const products = await Product.insertMany(sampleProducts)
+
+    return NextResponse.json({
+      success: true,
+      message: 'Database seeded successfully!',
+      admin: {
+        email: adminUser.email,
+        password: 'admin123'
+      },
+      productsCreated: products.length
+    })
+  } catch (error) {
+    console.error('❌ Error seeding database:', error)
+    return NextResponse.json({
+      error: 'Failed to seed database',
+      details: error.message
     }, { status: 500 })
   }
 }

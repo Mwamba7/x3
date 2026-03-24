@@ -2,8 +2,6 @@ import StoreClient from '../components/StoreClient'
 import FashionClient from '../components/FashionClient'
 import ReusedClient from '../components/ReusedClient'
 import SellPageProductsClient from '../components/SellPageProductsClient'
-import { getProducts as getLocalProducts } from '../lib/products'
-import { getFashionProducts } from '../lib/fashion'
 import Link from 'next/link'
 import connectDB from '../lib/mongodb'
 import Product from '../models/Product'
@@ -34,8 +32,7 @@ export default async function Page() {
       status: r.status || 'available',
     }))
   } catch (e) {
-    // Fallback to local static data (filter to electronics)
-    products = getLocalProducts().filter(p => ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'].includes(p.category))
+    products = []
   }
   let fashionProducts = []
   try {
@@ -60,7 +57,7 @@ export default async function Page() {
       status: r.status || 'available',
     }))
   } catch (e) {
-    fashionProducts = getFashionProducts()
+    fashionProducts = []
   }
   // Pre-owned Products (independent via category isolation)
   let reusedProducts = []
@@ -86,11 +83,7 @@ export default async function Page() {
       status: r.status || 'available',
     }))
   } catch (e) {
-    // Fallback to local data if available
-    try {
-      const local = getLocalProducts()
-      reusedProducts = Array.isArray(local) ? local.filter(p => typeof p.category === 'string' && p.category.toLowerCase().startsWith('preowned')) : []
-    } catch {}
+    reusedProducts = []
   }
 
   // Community Marketplace Products (approved from sell page)

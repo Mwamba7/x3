@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server'
 import connectDB from '../../../../lib/mongodb'
 import Product from '../../../../models/Product'
 
+const IS_PROD = process.env.NODE_ENV === 'production'
+
 export async function POST() {
+  if (IS_PROD) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   try {
     await connectDB()
     

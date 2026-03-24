@@ -25,9 +25,11 @@ export default function ReusedClient({ products = [] }) {
   const formatKsh = (n) => `Ksh ${Number(n).toLocaleString('en-KE')}`
   const { addItem, removeItem, items, isCartLocked } = useCart()
 
+  const safeProducts = Array.isArray(products) ? products : []
+
   // Resolve view fields with preowned overrides when present
   const viewProducts = useMemo(() => {
-    return (Array.isArray(products) ? products : []).map(p => {
+    return safeProducts.map(p => {
       const o = p?.preowned || null
       const baseCat = o?.category ?? p.category
       const normCat = typeof baseCat === 'string' && baseCat.toLowerCase().startsWith('preowned-')
@@ -45,7 +47,7 @@ export default function ReusedClient({ products = [] }) {
         _meta: o?.meta ?? p.meta,
       }
     })
-  }, [products])
+  }, [safeProducts])
 
   // Use same fixed categories as Collection section
   const dynamicCategories = [
@@ -142,6 +144,21 @@ export default function ReusedClient({ products = [] }) {
         </div>
       </div>
 
+      {safeProducts.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 16px',
+          background: '#0b1220',
+          border: '1px solid #1f2a3a',
+          borderRadius: 12,
+          color: '#cbd5e1'
+        }}>
+          <h4 style={{ margin: 0, marginBottom: 8, color: '#e2e8f0' }}>No products available</h4>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>
+            This section will be updated as soon as new items are added.
+          </p>
+        </div>
+      ) : (
       <ul className="product-grid" aria-live="polite">
         {filtered.map(p => {
           const isSold = p._status === 'sold'
@@ -267,6 +284,7 @@ export default function ReusedClient({ products = [] }) {
             </li>
           )})}
       </ul>
+      )}
     </section>
   )
 }

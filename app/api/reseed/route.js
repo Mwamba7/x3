@@ -4,6 +4,8 @@ import Product from '../../../models/Product'
 import User from '../../../models/User'
 import bcrypt from 'bcryptjs'
 
+const IS_PROD = process.env.NODE_ENV === 'production'
+
 const comprehensiveProducts = [
   // Electronics/Collection Products
   {
@@ -242,6 +244,17 @@ const comprehensiveProducts = [
 ]
 
 export async function GET() {
+  if (IS_PROD) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const requiredToken = process.env.SEED_TOKEN
+  if (!requiredToken) {
+    return NextResponse.json({
+      error: 'Reseed endpoint disabled: missing SEED_TOKEN'
+    }, { status: 403 })
+  }
+
   try {
     await connectDB()
     console.log('Connected to MongoDB')

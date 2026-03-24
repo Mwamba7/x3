@@ -1,17 +1,10 @@
 import { notFound } from 'next/navigation'
-import { getFashionProducts } from '../../../lib/fashion'
 import connectDB from '../../../lib/mongodb'
 import Product from '../../../models/Product'
 import mongoose from 'mongoose'
 import FashionProductDetailClient from '../../../components/FashionProductDetailClient'
 
 export const dynamic = 'force-dynamic'
-
-export async function generateStaticParams() {
-  // Keep any local static fashion items, DB items will be handled dynamically
-  const products = getFashionProducts()
-  return products.map(p => ({ id: p.id }))
-}
 
 export async function generateMetadata({ params }) {
   // Try DB first
@@ -32,18 +25,7 @@ export async function generateMetadata({ params }) {
       }
     }
   } catch {}
-  const products = getFashionProducts()
-  const prod = products.find(p => p.id === params.id)
-  if (!prod) return { title: 'Item not found — Super Twice Resellers' }
-  return {
-    title: `${prod.name} — Super Twice Resellers`,
-    description: prod.meta,
-    openGraph: {
-      title: `${prod.name} — Super Twice Resellers`,
-      description: prod.meta,
-      images: [prod.img],
-    },
-  }
+  return { title: 'Item not found — Super Twice Resellers' }
 }
 
 export default async function FashionPage({ params }) {
@@ -68,10 +50,6 @@ export default async function FashionPage({ params }) {
       }
     }
   } catch {}
-  if (!prod) {
-    const products = getFashionProducts()
-    prod = products.find(p => p.id === params.id)
-  }
   if (!prod) return notFound()
   const images = (prod.images && prod.images.length ? prod.images : [prod.img])
   const priceKsh = `Ksh ${Number(prod.price).toLocaleString('en-KE')}`

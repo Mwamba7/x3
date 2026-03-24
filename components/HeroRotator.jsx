@@ -199,7 +199,7 @@ export default function HeroRotator({ products = [], intervalMs = 7000 }) {
         position: 'absolute',
         inset: 0,
         background: 'linear-gradient(0deg, rgba(14,17,22,0.8), rgba(14,17,22,0.3))',
-        display: 'flex',
+        display: isLargeScreen ? 'flex' : 'none',
         alignItems: 'center',
         zIndex: 1
       }}>

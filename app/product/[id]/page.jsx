@@ -1,29 +1,29 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getProducts } from '../../../lib/products'
 import connectDB from '../../../lib/mongodb'
 import Product from '../../../models/Product'
 import ProductDetailClient from '../../../components/ProductDetailClient'
 import mongoose from 'mongoose'
 
-export async function generateStaticParams() {
-  const products = getProducts()
-  return products.map(p => ({ id: p.id }))
-}
-
-export function generateMetadata({ params }) {
-  const products = getProducts()
-  const prod = products.find(p => p.id === params.id)
-  if (!prod) return { title: 'Product not found — Super Twice Resellers' }
-  return {
-    title: `${prod.name} — Super Twice Resellers`,
-    description: prod.meta,
-    openGraph: {
-      title: `${prod.name} — Super Twice Resellers`,
-      description: prod.meta,
-      images: [prod.img],
-    },
-  }
+export async function generateMetadata({ params }) {
+  try {
+    await connectDB()
+    if (mongoose.Types.ObjectId.isValid(params.id)) {
+      const row = await Product.findById(params.id)
+      if (row) {
+        return {
+          title: `${row.name} — Super Twice Resellers`,
+          description: row.meta || '',
+          openGraph: {
+            title: `${row.name} — Super Twice Resellers`,
+            description: row.meta || '',
+            images: [row.img],
+          },
+        }
+      }
+    }
+  } catch {}
+  return { title: 'Product not found — Super Twice Resellers' }
 }
 
 export default async function ProductPage({ params }) {
@@ -49,10 +49,6 @@ export default async function ProductPage({ params }) {
       }
     }
   } catch {}
-  if (!prod) {
-    const products = getProducts()
-    prod = products.find(p => p.id === params.id)
-  }
   if (!prod) return notFound()
   // Hero slides functionality removed for MongoDB migration
   // TODO: Implement HeroSlide model if needed

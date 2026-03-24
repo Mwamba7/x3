@@ -22,6 +22,8 @@ export default function FashionClient({ products }) {
   const [popupState, setPopupState] = useState({ id: null, action: null })
   const [mounted, setMounted] = useState(false)
 
+  const safeProducts = Array.isArray(products) ? products : []
+
   useEffect(() => {
     setMounted(true)
     
@@ -42,7 +44,7 @@ export default function FashionClient({ products }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    let res = products.filter(p => (active === 'all' || p.category === active) && (!q || p.name.toLowerCase().includes(q)))
+    let res = safeProducts.filter(p => (active === 'all' || p.category === active) && (!q || p.name.toLowerCase().includes(q)))
     switch (sort) {
       case 'price-asc': res = res.sort((a, b) => a.price - b.price); break
       case 'price-desc': res = res.sort((a, b) => b.price - a.price); break
@@ -51,7 +53,7 @@ export default function FashionClient({ products }) {
       default: break // featured
     }
     return res
-  }, [products, active, query, sort])
+  }, [safeProducts, active, query, sort])
 
   return (
     <section className="products-section fashion-section" aria-label="Outfits, Fashion & Sneakers" style={{ paddingTop: 0, paddingBottom: 0 }}>
@@ -95,6 +97,21 @@ export default function FashionClient({ products }) {
         </div>
       </div>
 
+      {safeProducts.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 16px',
+          background: '#0b1220',
+          border: '1px solid #1f2a3a',
+          borderRadius: 12,
+          color: '#cbd5e1'
+        }}>
+          <h4 style={{ margin: 0, marginBottom: 8, color: '#e2e8f0' }}>No products available</h4>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>
+            This section will be updated as soon as new items are added.
+          </p>
+        </div>
+      ) : (
       <ul className="product-grid" aria-live="polite">
         {filtered.map(p => {
           const isSold = String(p.status || '').toLowerCase() === 'sold'
@@ -219,6 +236,7 @@ export default function FashionClient({ products }) {
           </li>
         )})}
       </ul>
+      )}
     </section>
   )
 }
