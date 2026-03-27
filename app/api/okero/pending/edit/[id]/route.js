@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import connectDB from '../../../../lib/mongodb'
-import PendingProduct from '../../../../models/PendingProduct'
-import { requireAdmin } from '../../../../lib/adminAuth'
+import connectDB from '../../../../../lib/mongodb'
+import PendingProduct from '../../../../../models/PendingProduct'
+import { requireAdmin } from '../../../../../lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
