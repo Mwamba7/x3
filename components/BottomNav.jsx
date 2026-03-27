@@ -10,6 +10,7 @@ export default function BottomNav() {
   const { isAuthenticated } = useAuth()
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [clickedLink, setClickedLink] = useState(null)
 
   // Detect mobile device - more aggressive detection
   useEffect(() => {
@@ -142,6 +143,21 @@ export default function BottomNav() {
     return pathname === href
   }
 
+  const handleLinkClick = (href) => {
+    setClickedLink(href)
+  }
+
+  // Clear blinking when pathname changes (section opens)
+  useEffect(() => {
+    if (clickedLink) {
+      // Check if we've navigated to the clicked section
+      if ((clickedLink === '/#collection' && pathname === '/') || 
+          (clickedLink !== '/#collection' && pathname === clickedLink)) {
+        setClickedLink(null)
+      }
+    }
+  }, [pathname, clickedLink])
+
   // Debug logging
   console.log('🎹 BottomNav render - isMobile:', isMobile, 'isKeyboardVisible:', isKeyboardVisible)
 
@@ -154,15 +170,58 @@ export default function BottomNav() {
   return (
     <nav className="bottom-nav">
       {links.map((l) => (
-        <Link 
-          key={l.href} 
-          href={l.href} 
-          className={`bottom-nav-link ${isActive(l.href) ? 'active' : ''}`}
-        >
-          <span className="nav-icon">{l.icon}</span>
-          <span className="nav-label">{l.label}</span>
-        </Link>
+        <div key={l.href} className="nav-item-container">
+          <Link 
+            href={l.href} 
+            className={`bottom-nav-link ${isActive(l.href) ? 'active' : ''}`}
+            onClick={() => handleLinkClick(l.href)}
+          >
+            <span className="nav-icon">{l.icon}</span>
+            <span className="nav-label">{l.label}</span>
+          </Link>
+          
+          {/* Hover circular container */}
+          {clickedLink === l.href && (
+            <div className="nav-hover-circle" />
+          )}
+        </div>
       ))}
+      
+      {/* CSS for hover circular containers */}
+      <style jsx>{`
+        .nav-item-container {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .nav-hover-circle {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: rgba(16, 185, 129, 0.2);
+          border: 2px solid #10b981;
+          pointer-events: none;
+          animation: blink 1s ease-in-out infinite;
+          z-index: -1;
+        }
+        
+        @keyframes blink {
+          0%, 100% {
+            opacity: 0.3;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.05);
+          }
+        }
+      `}</style>
     </nav>
   )
 }

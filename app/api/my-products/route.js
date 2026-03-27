@@ -14,16 +14,17 @@ export async function GET(request) {
 
     await connectDB()
 
-    // Get pending products
+    // Get pending products (exclude those that are already approved)
     const pendingProducts = await PendingProduct.find({ 
-      sellerPhone: phone 
+      sellerPhone: phone,
+      status: { $ne: 'approved' }  // Exclude approved pending products
     }).sort({ createdAt: -1 })
 
     // Get approved products (from main Product collection)
-    // These would have metadata indicating they came from sell page
+    // These would have metadata indicating they came from sell page or admin approval
     const approvedProducts = await Product.find({
       'metadata.originalSeller.phone': phone,
-      'metadata.source': { $in: ['sell-page', 'sell-page-preowned'] }
+      'metadata.source': { $in: ['sell-page', 'sell-page-preowned', 'admin-panel'] }
     }).sort({ createdAt: -1 })
 
     // Combine and format all products
@@ -49,6 +50,8 @@ export async function GET(request) {
     approvedProducts.forEach(product => {
       // Determine if product is sold based on inStock field or status
       const isSold = !product.inStock || product.status === 'sold' || product.status === 'out-of-stock'
+      // Products sold to admin (admin-panel source) should be marked as sold
+      const soldToAdmin = product.metadata?.source === 'admin-panel'
       
       allProducts.push({
         _id: product._id,
@@ -57,11 +60,12 @@ export async function GET(request) {
         price: product.price,
         description: product.description,
         submissionType: product.metadata?.submissionType || 'unknown',
-        status: isSold ? 'sold' : 'approved',
+        status: (isSold || soldToAdmin) ? 'sold' : 'approved',
         createdAt: product.createdAt,
         source: 'approved',
         inStock: product.inStock,
-        productStatus: product.status // Original product status
+        productStatus: product.status, // Original product status
+        soldToAdmin: soldToAdmin // Flag to indicate sold to admin
       })
     })
 

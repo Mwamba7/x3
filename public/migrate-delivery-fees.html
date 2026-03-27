@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delivery Fees Migration</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin: 10px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚚 Delivery Fees Migration Tool</h1>
+        <p>This tool will add the deliveryFees field to all existing products in the database.</p>
+        
+        <button onclick="checkStatus()">📊 Check Database Status</button>
+        <button onclick="runMigration()">🔄 Run Migration</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">🔍 Checking database status...</div>';
+            
+            try {
+                const response = await fetch('/api/debug/delivery-fees');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Database Status</h3>
+                            <p><strong>Total Products:</strong> ${data.statistics.totalProducts}</p>
+                            <p><strong>Products with deliveryFees:</strong> ${data.statistics.productsWithDeliveryFees}</p>
+                            <p><strong>Products without deliveryFees:</strong> ${data.statistics.productsWithoutDeliveryFees}</p>
+                            <p><strong>Sample Product:</strong> ${data.sampleProduct.name}</p>
+                            <p><strong>Sample has deliveryFees:</strong> ${data.sampleProduct.hasDeliveryFees ? 'Yes' : 'No'}</p>
+                            ${data.sampleProduct.deliveryFees ? `<pre>${JSON.stringify(data.sampleProduct.deliveryFees, null, 2)}</pre>` : ''}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function runMigration() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">🔄 Running migration... This may take a moment.</div>';
+            
+            try {
+                const response = await fetch('/api/debug/migrate-delivery-fees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Migration Completed Successfully!</h3>
+                            <p>${data.message}</p>
+                            <p><strong>Updated Products:</strong> ${data.updatedProducts.length}</p>
+                            <button onclick="checkStatus()">📊 Verify Migration</button>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Migration Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-check status on page load
+        window.onload = checkStatus;
+    </script>
+</body>
+</html>

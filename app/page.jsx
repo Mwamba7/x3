@@ -1,5 +1,4 @@
 import StoreClient from '../components/StoreClient'
-import FashionClient from '../components/FashionClient'
 import ReusedClient from '../components/ReusedClient'
 import SellPageProductsClient from '../components/SellPageProductsClient'
 import Link from 'next/link'
@@ -8,16 +7,17 @@ import Product from '../models/Product'
 import HeroRotator from '../components/HeroRotator'
 import HeroCartButton from '../components/HeroCartButton'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function Page() {
   let products = []
   try {
     await connectDB()
     const rows = await Product.find({
+      section: 'collection',
       category: { $in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] },
-      // Exclude Community Marketplace products - they should only appear in marketplace
-      $nor: [
-        { 'metadata.source': 'sell-page', 'metadata.submissionType': 'public' }
-      ]
+      status: 'available'
     }).sort({ createdAt: -1 })
     
     products = rows.map(r => ({
@@ -26,49 +26,46 @@ export default async function Page() {
       category: r.category,
       price: r.price,
       img: r.img,
-      images: r.imagesJson ? JSON.parse(r.imagesJson) : [],
+      images: r.images || [], // Use images array instead of imagesJson
       meta: r.meta || '',
       condition: r.condition || '',
       status: r.status || 'available',
     }))
   } catch (e) {
-    products = []
+    console.log('❌ Database connection failed for Collection, using mock data:', e.message)
+    // Fallback mock data for Collection section
+    products = [
+      {
+        id: 'mock1',
+        name: 'Sony 55" 4K Smart TV',
+        category: 'tv',
+        price: 19000,
+        img: 'https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400',
+        images: ['https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400'],
+        meta: 'Smart TV, 4K, HDR',
+        condition: 'good',
+        status: 'available',
+      },
+      {
+        id: 'mock2',
+        name: 'Samsung Sound System',
+        category: 'radio',
+        price: 15000,
+        img: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400',
+        images: ['https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400'],
+        meta: 'Sound System, Bluetooth',
+        condition: 'excellent',
+        status: 'available',
+      }
+    ]
   }
-  let fashionProducts = []
-  try {
-    await connectDB()
-    const frows = await Product.find({
-      category: { $in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] },
-      // Exclude Community Marketplace products - they should only appear in marketplace
-      $nor: [
-        { 'metadata.source': 'sell-page', 'metadata.submissionType': 'public' }
-      ]
-    }).sort({ createdAt: -1 })
-    
-    fashionProducts = frows.map(r => ({
-      id: r._id.toString(),
-      name: r.name,
-      category: r.category,
-      price: r.price,
-      img: r.img,
-      images: r.imagesJson ? JSON.parse(r.imagesJson) : [],
-      meta: r.meta || '',
-      condition: r.condition || '',
-      status: r.status || 'available',
-    }))
-  } catch (e) {
-    fashionProducts = []
-  }
-  // Pre-owned Products (independent via category isolation)
+  // Pre-owned Products (independent via section field)
   let reusedProducts = []
   try {
     await connectDB()
     const rrows = await Product.find({
-      category: { $regex: '^preowned', $options: 'i' },
-      // Exclude Community Marketplace products
-      $nor: [
-        { 'metadata.source': 'sell-page', 'metadata.submissionType': 'public' }
-      ]
+      section: 'preowned',
+      status: 'available'
     }).sort({ createdAt: -1 })
     
     reusedProducts = rrows.map(r => ({
@@ -77,13 +74,27 @@ export default async function Page() {
       category: r.category,
       price: r.price,
       img: r.img,
-      images: r.imagesJson ? JSON.parse(r.imagesJson) : [],
+      images: r.images || [], // Use images array instead of imagesJson
       meta: r.meta || '',
       condition: r.condition || '',
       status: r.status || 'available',
     }))
   } catch (e) {
-    reusedProducts = []
+    console.log('❌ Database connection failed for Pre-owned, using mock data:', e.message)
+    // Fallback mock data for Pre-owned section
+    reusedProducts = [
+      {
+        id: 'mock3',
+        name: 'iPhone 12 Pro',
+        category: 'phone',
+        price: 45000,
+        img: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400',
+        images: ['https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400'],
+        meta: 'iPhone, 5G, Pro',
+        condition: 'good',
+        status: 'available',
+      }
+    ]
   }
 
   // Community Marketplace Products (approved from sell page)
@@ -102,7 +113,7 @@ export default async function Page() {
       category: r.category,
       price: r.price,
       img: r.img,
-      images: r.imagesJson ? JSON.parse(r.imagesJson) : (r.images || []),
+      images: r.images || [], // Use images array instead of imagesJson
       meta: r.meta || r.description || '',
       condition: r.condition || 'Used',
       status: r.status || 'available',
@@ -110,26 +121,45 @@ export default async function Page() {
       metadata: r.metadata
     }))
   } catch (e) {
-    console.error('Error fetching community products:', e)
-    communityProducts = []
+    console.log('❌ Database connection failed for Community Marketplace, using mock data:', e.message)
+    // Fallback mock data for Community Marketplace section
+    communityProducts = [
+      {
+        id: 'mock4',
+        name: 'Laptop Stand',
+        category: 'accessory',
+        price: 2500,
+        img: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400',
+        images: ['https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400'],
+        meta: 'Laptop Stand, Aluminum',
+        condition: 'excellent',
+        status: 'available',
+        createdAt: new Date().toISOString(),
+        metadata: { source: 'sell-page', submissionType: 'public' }
+      }
+    ]
   }
   return (
     <>
       <section className="hero" aria-label="Featured promotions" style={{ position: 'relative' }}>
         <HeroCartButton />
-        {/* Background: auto-rotating products from All Products + Fashion + Pre-owned */}
-        <HeroRotator products={[...products, ...fashionProducts, ...reusedProducts, ...communityProducts]} intervalMs={10000} />
+        {/* Background: auto-rotating products from All Products + Pre-owned + Community */}
+        <HeroRotator products={[...products, ...reusedProducts, ...communityProducts]} intervalMs={10000} />
       </section>
 
 
       <main className="container">
-        <StoreClient products={products} />
+        <section id="collection">
+          <StoreClient products={products} />
+        </section>
 
-        <FashionClient products={fashionProducts} />
+        <section id="preowned">
+          <ReusedClient products={reusedProducts} />
+        </section>
 
-        <ReusedClient products={reusedProducts} />
-
-        <SellPageProductsClient products={communityProducts} />
+        <section id="marketplace">
+          <SellPageProductsClient products={communityProducts} />
+        </section>
       </main>
     </>
   )

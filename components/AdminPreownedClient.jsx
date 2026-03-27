@@ -141,10 +141,28 @@ export default function AdminPreownedClient({ items = [] }) {
           return (
             <li className="product-card" key={r.id} data-category={r.category} data-name={r.name} data-price={r.price}>
               <div className="product-link" style={{ display: 'grid', gridTemplateColumns: '1fr' }}>
-                <div className="media">
-                  <img src={r.img} alt={r.name} style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }} />
+                <div className="media" style={{ 
+                      position: 'relative', 
+                      overflow: 'hidden',
+                      margin: 0,
+                      padding: 0,
+                      lineHeight: 0,
+                      fontSize: 0
+                    }}>
+                  <img src={r.img} alt={r.name} style={{ 
+                      width: '100%', 
+                      height: '150px', 
+                      objectFit: 'cover', 
+                      objectPosition: 'center',
+                      display: 'block',
+                      margin: 0,
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: '0',
+                      verticalAlign: 'top'
+                    }} />
                   <span className="badge condition">{r.condition}</span>
-                  <span className="badge" style={{ position: 'absolute', right: 10, top: 10, background: 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', fontSize: 11, padding: '6px 8px', borderRadius: 999 }}>{isSold ? 'Sold' : 'Available'}</span>
+                  <span className={`badge ${isSold ? 'sold-badge' : ''}`}>{isSold ? 'Sold' : 'Available'}</span>
                 </div>
                 <div className="info">
                   <h4 className="name" style={{ marginBottom: 6 }}>{r.name}</h4>

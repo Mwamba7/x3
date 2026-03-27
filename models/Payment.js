@@ -4,8 +4,7 @@ const PaymentSchema = new mongoose.Schema({
   checkoutRequestId: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   merchantRequestId: {
     type: String,

@@ -123,7 +123,7 @@ export default function AdminProductsClient({ initial, section = 'products' }) {
                   <button 
                     className="btn btn-small" 
                     onClick={() => {
-                      router.push(`/admin/${section}/${p.id}`);
+                      router.push(`/okero/${section}/${p.id}`);
                     }}
                     style={{
                       display: 'inline-flex',

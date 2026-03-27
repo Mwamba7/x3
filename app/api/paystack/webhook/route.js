@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
+import connectDB from '../../../lib/mongodb'
+import Order from '../../../models/Order'
 
 // Paystack configuration
 const PAYSTACK_CONFIG = {
@@ -89,29 +91,35 @@ async function handleSuccessfulCharge(chargeData) {
     console.log(`📱 Phone: ${customerPhone}`)
     console.log(`📦 Order Type: ${orderType}`)
     
-    // 1. Lock the cart to prevent further modifications
+    // 1. Lock the cart directly in database (no authentication needed)
     console.log('🔒 Locking cart after successful payment...')
-    const lockResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cart/lock`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        paymentReference: reference,
-        paymentMethod: 'paystack',
-        depositPaid: true,
-        paidAmount: paidAmount,
-        totalAmount: totalAmount,
-        balanceAmount: balanceAmount,
-        customerEmail: customerEmail,
-        customerPhone: customerPhone,
-        userId: userId
-      })
-    })
+    await connectDB()
     
-    if (lockResponse.ok) {
-      console.log('✅ Cart locked successfully')
-    } else {
-      console.error('❌ Failed to lock cart:', await lockResponse.text())
-    }
+    // Create a temporary order record to indicate cart is locked
+    const tempOrder = new Order({
+      orderId: `TEMP-${Date.now()}`,
+      userId: userId,
+      customer: {
+        name: metadata?.customerName || 'Pending',
+        phone: customerPhone || '',
+        email: customerEmail || ''
+      },
+      items: [], // Will be populated from cart during order completion
+      totalAmount: totalAmount || 0,
+      payment: {
+        depositAmount: paidAmount || 0,
+        depositPaid: true,
+        remainingAmount: balanceAmount || 0,
+        paymentMethod: 'paystack',
+        transactionId: reference
+      },
+      status: 'payment_received',
+      source: 'payment_lock',
+      notes: 'Temporary order created for cart locking after deposit payment'
+    })
+
+    await tempOrder.save()
+    console.log('✅ Cart locked successfully with temporary order:', tempOrder.orderId)
     
     // 2. Store payment record in localStorage equivalent (server-side)
     const paymentRecord = {

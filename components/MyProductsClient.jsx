@@ -22,76 +22,34 @@ export default function MyProductsClient() {
   const [withdrawalStatuses, setWithdrawalStatuses] = useState({})
 
   useEffect(() => {
-    // Get user phone from permanent tracking info first
-    let userTrackingInfo = localStorage.getItem('userTrackingInfo')
-    
-    if (userTrackingInfo) {
-      try {
-        const trackingData = JSON.parse(userTrackingInfo)
-        if (trackingData.phone) {
-          setUserPhone(trackingData.phone)
-          setUserName(trackingData.name || '')
-          fetchUserProducts(trackingData.phone)
-          return
-        }
-      } catch (error) {
-        console.error('Error parsing tracking info:', error)
-      }
-    }
-    
-    // Fallback: Get user phone from current form data
-    const savedData = localStorage.getItem('sellFormData')
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData)
-        if (data.phone) {
-          setUserPhone(data.phone)
-          fetchUserProducts(data.phone)
-          
-          // Save to permanent tracking if not already saved
-          if (!userTrackingInfo && data.fullName) {
-            const userInfo = {
-              phone: data.phone,
-              name: data.fullName,
-              email: data.email || '',
-              lastSubmission: Date.now()
-            }
-            localStorage.setItem('userTrackingInfo', JSON.stringify(userInfo))
-          }
-          return
-        }
-      } catch (error) {
-        console.error('Error parsing form data:', error)
-      }
-    }
-    
-    // No user data found
-    setLoading(false)
-    setError('No phone number found. Please submit a product first to track your submissions.')
+    fetchUserProducts()
   }, [])
 
-  async function fetchUserProducts(phone) {
+  async function fetchUserProducts() {
     try {
-      const response = await fetch(`/api/my-products?phone=${encodeURIComponent(phone)}`)
-      const data = await response.json()
+      setLoading(true)
+      setError('')
       
-      if (response.ok) {
-        const products = data.products || []
-        setProducts(products)
-        setAllProducts(products)
-        setFilteredProducts(products)
-        
-        // Check withdrawal status for sold products
-        const soldProducts = products.filter(p => p.status === 'sold')
-        if (soldProducts.length > 0) {
-          checkWithdrawalStatuses(soldProducts)
-        }
-      } else {
-        setError(data.error || 'Failed to fetch products')
+      // Get current user from session (database-first)
+      const currentUser = await getCurrentUser()
+      
+      if (!currentUser || !currentUser.phone) {
+        setError('User not authenticated')
+        setLoading(false)
+        return
       }
+      
+      setUserPhone(currentUser.phone)
+      
+      // Fetch sales from database
+      const userSales = await getUserSales(currentUser.phone)
+      
+      setSales(userSales)
+      setLoading(false)
+      
     } catch (error) {
-      setError('Network error. Please try again.')
-    } finally {
+      console.error('Error fetching user products:', error)
+      setError('Failed to load products')
       setLoading(false)
     }
   }
@@ -123,24 +81,27 @@ export default function MyProductsClient() {
     }
   }
 
-  function getStatusBadge(status) {
+  function getStatusBadge(status, product) {
+    // Don't show badge for pending products (both admin and marketplace)
+    if (status === 'pending') {
+      return null
+    }
+    
     const styles = {
       pending: { background: '#ffc107', color: '#000' },
-      approved: { background: '#28a745', color: '#fff' },
+      approved: { background: 'transparent', color: '#28a745' },
       rejected: { background: '#dc3545', color: '#fff' },
-      sold: { background: '#6f42c1', color: '#fff' }
+      sold: { background: 'transparent', color: product?.soldToAdmin ? '#dc3545' : '#6f42c1' }
     }
     
     return (
       <span style={{
         ...styles[status],
-        padding: '4px 8px',
-        borderRadius: 4,
+        padding: (status === 'sold' || status === 'approved') ? '0' : '4px 8px',
+        borderRadius: (status === 'sold' || status === 'approved') ? '0' : '4px',
         fontSize: 12,
         fontWeight: 'bold',
         textTransform: 'capitalize',
-        minWidth: '70px',
-        textAlign: 'center'
       }}>
         {status}
       </span>
@@ -265,23 +226,9 @@ export default function MyProductsClient() {
     setSelectedProductName('')
   }
 
-  async function openWithdrawalModal(product) {
-    setSelectedProduct(product)
-    setShowWithdrawalModal(true)
-    
-    // Pre-fill with user data if available
-    const userInfo = localStorage.getItem('userTrackingInfo')
-    if (userInfo) {
-      try {
-        const data = JSON.parse(userInfo)
-        setWithdrawalForm({
-          name: data.name || '',
-          phone: data.phone || userPhone
-        })
-      } catch (e) {
-        setWithdrawalForm({ name: '', phone: userPhone })
-      }
-    }
+  function navigateToWithdrawal(product) {
+    // Navigate to withdrawal page with product ID
+    window.location.href = `/withdrawal?product=${product._id}`
   }
 
   function closeWithdrawalModal() {
@@ -464,6 +411,11 @@ export default function MyProductsClient() {
             to { transform: rotate(360deg); }
           }
           
+          @keyframes blink-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+          
           .filter-buttons-container {
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* Internet Explorer 10+ */
@@ -557,7 +509,7 @@ export default function MyProductsClient() {
                   {product.name}
                 </h4>
                 <p style={{ margin: 0, fontSize: 14, color: 'white' }}>
-                  {product.category} • Ksh {Number(product.price).toLocaleString('en-KE')}
+                  {product.category}
                 </p>
                 {product.status === 'pending' && (
                   <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#ffc107', fontWeight: 'bold' }}>
@@ -575,20 +527,33 @@ export default function MyProductsClient() {
                   </p>
                 )}
                 {product.status === 'sold' && (
-                  <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#6f42c1', fontWeight: 'bold' }}>
-                    💰 Product has been sold
+                  <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#dc3545', fontWeight: 'bold' }}>
+                    {product.soldToAdmin ? '🔴 Sold to Admin' : '💰 Product has been sold'}
                   </p>
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                {getStatusBadge(product.status)}
-                {product.status === 'pending' && (
+                {getStatusBadge(product.status, product)}
+                {product.status === 'pending' && product.submissionType !== 'direct_to_admin' && (
                   <span style={{ fontSize: 11, color: 'white' }}>Pending Review</span>
                 )}
                 {product.status === 'approved' && product.submissionType !== 'direct_to_admin' && (
-                  <span style={{ fontSize: 11, color: 'white' }}>Live on Site</span>
+                  <span style={{ fontSize: 11, color: 'white' }}>
+                    <span 
+                      style={{
+                        display: 'inline-block',
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#28a745',
+                        borderRadius: '50%',
+                        marginRight: '6px',
+                        animation: 'blink-dot 1.5s ease-in-out infinite'
+                      }}
+                    />
+                    Live on Site
+                  </span>
                 )}
-                {product.status === 'sold' && (
+                {product.status === 'sold' && !product.soldToAdmin && (
                   <span style={{ fontSize: 11, color: 'white' }}>Sold Out</span>
                 )}
                 {product.status === 'rejected' && (
@@ -599,12 +564,21 @@ export default function MyProductsClient() {
             
             <div style={{ marginBottom: 12 }}>
               <p style={{ margin: 0, fontSize: 14, color: 'white' }}>
-                <strong>Submission Type:</strong> {getSubmissionTypeDisplay(product.submissionType)}
+                <strong style={{ color: '#28a745' }}>Submission Type:</strong> {getSubmissionTypeDisplay(product.submissionType)}
               </p>
               {product.description && (
-                <p style={{ margin: '8px 0 0 0', fontSize: 14, color: 'white' }}>
-                  <strong>Description:</strong> {product.description.substring(0, 100)}
-                  {product.description.length > 100 ? '...' : ''}
+                <p style={{ 
+                  margin: '8px 0 0 0', 
+                  fontSize: 14, 
+                  color: 'white',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  lineHeight: '1.4'
+                }}>
+                  <strong style={{ color: '#28a745' }}>Description:</strong> {product.description}
                 </p>
               )}
             </div>
@@ -639,9 +613,9 @@ export default function MyProductsClient() {
                   Click to review
                 </button>
               )}
-              {product.status === 'sold' && (
+              {product.status === 'sold' && !product.soldToAdmin && (
                 <button
-                  onClick={() => openWithdrawalModal(product)}
+                  onClick={() => navigateToWithdrawal(product)}
                   style={{
                     background: withdrawalStatuses[product._id]?.hasWithdrawal ? '#6c757d' : '#28a745',
                     color: 'white',
@@ -695,7 +669,7 @@ export default function MyProductsClient() {
         </div>
       )}
       
-      <div style={{ marginTop: 24, textAlign: 'center' }}>
+      <div style={{ marginTop: 24, textAlign: 'left' }}>
         <a 
           href="/sell" 
           style={{

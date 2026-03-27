@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { jsPDF } from 'jspdf'
 
 export default function RemainingPayment({ order, onPaymentSuccess, onDelivered }) {
-  const [phone, setPhone] = useState(order.customer.phone || '')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [paid, setPaid] = useState(order.payment.remainingPaid || false)
@@ -16,11 +15,6 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
   const depositAmount = order.payment.depositAmount
 
   const handlePayment = async () => {
-    if (!phone) {
-      setMessage('Please enter your phone number')
-      return
-    }
-
     setLoading(true)
     setMessage('🔄 Initializing payment...')
 
@@ -30,7 +24,7 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: order.customer.email || 'customer@example.com',
-          phone: phone,
+          phone: order.customer.phone || '254700000000', // Use customer phone or default
           amount: remainingAmount,
           reference: `REM-${order.orderId}-${Date.now()}`,
           metadata: {
@@ -293,19 +287,16 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
   if (paid) {
     return (
       <div style={{
-        border: '1px solid #253049',
-        borderRadius: 8,
         padding: 20,
-        backgroundColor: 'var(--card)',
         marginTop: 16
       }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--primary)' }}>
-          💰 Complete Payment & Delivery
+        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'white', textAlign: 'left' }}>
+          Complete Payment & Delivery
         </h3>
 
         {/* Payment Breakdown - Same as checkout */}
         <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '12px', backgroundColor: 'var(--surface)', marginBottom: '16px' }}>
-          <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 Paystack Payment (Remaining Balance)</h4>
+          <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>Remaining Balance</h4>
           
           {/* Payment Breakdown */}
           <div style={{
@@ -326,31 +317,6 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
               <span>Balance (on delivery):</span>
               <span><strong>Ksh {remainingAmount.toLocaleString()}</strong></span>
             </div>
-          </div>
-
-          {/* Phone Number - Locked */}
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 4, color: 'var(--muted)' }}>
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              readOnly
-              disabled
-              style={{
-                width: '100%',
-                padding: '10px 8px',
-                borderRadius: 4,
-                border: '1px solid #3a465c',
-                background: '#374151',
-                color: '#9ca3af',
-                fontSize: '12px',
-                boxSizing: 'border-box',
-                opacity: 0.7,
-                cursor: 'not-allowed'
-              }}
-            />
           </div>
 
           {/* Success Message */}
@@ -498,18 +464,15 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
   // Payment form - same style as checkout
   return (
     <div style={{
-      border: '1px solid #253049',
-      borderRadius: 8,
       padding: 20,
-      backgroundColor: 'var(--card)',
       marginTop: 16
     }}>
-      <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--primary)' }}>
-        💰 Complete Payment & Delivery
+      <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'white', textAlign: 'left' }}>
+        Complete Payment & Delivery
       </h3>
 
       <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '12px', backgroundColor: 'var(--surface)' }}>
-        <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 Paystack Payment (Remaining Balance)</h4>
+        <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>Remaining Balance</h4>
         
         {/* Payment Breakdown */}
         <div style={{
@@ -532,90 +495,67 @@ export default function RemainingPayment({ order, onPaymentSuccess, onDelivered 
           </div>
         </div>
 
-        {/* Horizontal Layout: Phone Number Left, Pay Now Button Right */}
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-          
-          {/* Left Side - Phone Number */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 4, color: 'var(--muted)' }}>
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter phone number"
-                style={{
-                  width: '100%',
-                  padding: '10px 8px',
-                  borderRadius: 4,
-                  border: '1px solid #3a465c',
-                  background: 'var(--bg)',
-                  color: 'var(--text)',
-                  fontSize: '12px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
+        {/* Message Display */}
+        {message && (
+          <div style={{
+            padding: '6px',
+            borderRadius: 4,
+            marginBottom: 12,
+            backgroundColor: message.includes('sent') || message.includes('successful') ? '#d4edda' : '#f8d7da',
+            border: `1px solid ${message.includes('sent') || message.includes('successful') ? '#c3e6cb' : '#f5c6cb'}`,
+            color: message.includes('sent') || message.includes('successful') ? '#155724' : '#721c24',
+            fontSize: 11
+          }}>
+            {message}
+          </div>
+        )}
 
-            {message && (
-              <div style={{
-                padding: '6px',
-                borderRadius: 4,
-                marginBottom: 8,
-                backgroundColor: message.includes('sent') || message.includes('successful') ? '#d4edda' : '#f8d7da',
-                border: `1px solid ${message.includes('sent') || message.includes('successful') ? '#c3e6cb' : '#f5c6cb'}`,
-                color: message.includes('sent') || message.includes('successful') ? '#155724' : '#721c24',
-                fontSize: 11
-              }}>
-                {message}
-              </div>
+        {/* Pay Now Button - Centered */}
+        <div style={{ textAlign: 'center' }}>
+          <button
+            onClick={handlePayment}
+            disabled={loading}
+            className="btn"
+            style={{
+              padding: '8px 40px',
+              fontSize: 13,
+              fontWeight: 600,
+              opacity: loading ? 0.5 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              width: 'auto',
+              minWidth: '200px',
+              backgroundColor: '#10b981',
+              border: 'none',
+              color: 'white'
+            }}
+          >
+            {loading ? (
+              <>
+                <span>Processing...</span>
+                <span style={{ fontSize: '12px' }}>⏳</span>
+              </>
+            ) : (
+              <>
+                <span>Pay Now</span>
+                <span style={{ fontSize: '12px' }}>💳</span>
+              </>
             )}
+          </button>
+        </div>
 
-            <div style={{ 
-              fontSize: 10, 
-              color: 'var(--muted)', 
-              lineHeight: 1.3
-            }}>
-              You will be redirected to a secure payment page
-            </div>
-          </div>
-
-          {/* Right Side - Pay Now Button */}
-          <div style={{ flexShrink: 0, alignSelf: 'flex-start', marginTop: '18px' }}>
-            <button
-              onClick={handlePayment}
-              disabled={loading || !phone}
-              className="btn"
-              style={{
-                padding: '10px 12px',
-                fontSize: 12,
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                opacity: loading || !phone ? 0.5 : 1,
-                cursor: loading || !phone ? 'not-allowed' : 'pointer',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                boxSizing: 'border-box'
-              }}
-            >
-              {loading ? (
-                <>
-                  <span style={{ fontSize: '10px' }}>⏳</span>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <span style={{ fontSize: '10px' }}>💳</span>
-                  <span>Pay Now</span>
-                </>
-              )}
-            </button>
-          </div>
+        {/* Note */}
+        <div style={{ 
+          fontSize: 10, 
+          color: 'var(--muted)', 
+          lineHeight: 1.3,
+          textAlign: 'center',
+          marginTop: 12
+        }}>
+          You will be redirected to a secure payment page
         </div>
       </div>
     </div>

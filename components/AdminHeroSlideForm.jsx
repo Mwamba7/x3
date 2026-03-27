@@ -90,7 +90,7 @@ export default function AdminHeroSlideForm({ initial, products: productsProp = [
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Save failed')
-      router.push('/admin/hero-slides')
+      router.push('/okero/hero-slides')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -107,7 +107,7 @@ export default function AdminHeroSlideForm({ initial, products: productsProp = [
       const res = await fetch(`/api/hero-slides/${initial.id}`, { method: 'DELETE' })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Delete failed')
-      router.push('/admin/hero-slides')
+      router.push('/okero/hero-slides')
     } catch (err) {
       setError(err.message)
     } finally {

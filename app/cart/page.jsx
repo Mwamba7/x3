@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useCart } from '../../components/CartContext'
+import { useRouter } from 'next/navigation'
 import QuantitySelector from '../../components/QuantitySelector'
 import Link from 'next/link'
 
 export default function CartPage() {
+  const router = useRouter()
   const { items, setQty, removeItem, clear, totalAmount, totalCount, maxQtyForCondition, isCartLocked, lockedCartItems } = useCart()
   const list = Object.values(items || {})
   const [clickedRemoveItems, setClickedRemoveItems] = useState(new Set())
@@ -38,11 +40,11 @@ export default function CartPage() {
   if (!isClient) {
     return (
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, padding: '24px 16px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, padding: '16px 14px 0' }}>
           <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Your Cart</h1>
           <Link href="/#collection" className="btn" style={{ padding: '10px 16px', fontSize: '15px' }}>Continue Shopping</Link>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', color: 'var(--muted)', padding: '48px 16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', color: 'var(--muted)', padding: '24px 16px' }}>
           <p style={{ margin: 0, fontSize: 16 }}>Loading cart...</p>
         </div>
       </div>
@@ -52,7 +54,7 @@ export default function CartPage() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, padding: '18px 14px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '12px 14px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <h1 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Your Cart</h1>
           {isCartLocked && showLockMessage && (
@@ -178,19 +180,20 @@ export default function CartPage() {
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <Link 
-              href="/checkout" 
+            <button 
+              onClick={() => router.push('/checkout')}
               className="btn btn-primary" 
               style={{ 
                 padding: '10px 20px', 
                 fontSize: 14, 
                 fontWeight: 500, 
                 textAlign: 'center',
-                flex: 1
+                flex: 1,
+                cursor: 'pointer'
               }}
             >
               Continue to Checkout
-            </Link>
+            </button>
             
             <button 
               onClick={handleClearCart}
@@ -256,12 +259,12 @@ export default function CartPage() {
                 onClick={confirmClearCart}
                 className="btn"
                 style={{ 
-                  padding: '10px 20px', 
-                  fontSize: 14, 
-                  minWidth: '100px',
-                  backgroundColor: '#dc2626',
-                  borderColor: '#dc2626',
-                  color: 'white'
+                  padding: '10px 8px !important', 
+                  fontSize: '14px !important', 
+                  minWidth: '70px !important',
+                  backgroundColor: 'transparent !important',
+                  borderColor: 'transparent !important',
+                  color: '#dc2626 !important'
                 }}
               >
                 Yes, Clear Cart

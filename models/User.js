@@ -118,8 +118,8 @@ UserSchema.virtual('isLocked').get(function() {
 })
 
 // Index for performance
-UserSchema.index({ email: 1 })
-UserSchema.index({ phone: 1 })
+// Email field already has unique index from unique: true, no need for duplicate
+// Phone field already has unique index from unique: true, no need for duplicate
 UserSchema.index({ createdAt: -1 })
 
 export default mongoose.models.User || mongoose.model('User', UserSchema)

@@ -5,6 +5,7 @@ import mongoose from 'mongoose'
 import FashionProductDetailClient from '../../../components/FashionProductDetailClient'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function generateMetadata({ params }) {
   // Try DB first
@@ -41,7 +42,8 @@ export default async function FashionPage({ params }) {
           category: row.category,
           price: row.price,
           img: row.img,
-          images: row.imagesJson ? JSON.parse(row.imagesJson) : [],
+          images: row.imagesJson ? JSON.parse(row.imagesJson) : (row.images || []), // Handle both imagesJson and images array
+          description: row.description || '', // Include description field
           special: row.special || '',
           meta: row.meta || '',
           condition: row.condition || '',

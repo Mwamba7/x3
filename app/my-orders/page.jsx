@@ -180,11 +180,8 @@ export default function MyOrdersPage() {
       <style dangerouslySetInnerHTML={{ __html: spinKeyframes }} />
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>📦 My Orders</h1>
-        <Link href="/" className="btn" style={{ padding: '8px 12px', fontSize: '13px' }}>
-          Back to Home
-        </Link>
       </div>
 
 
@@ -467,7 +464,7 @@ export default function MyOrdersPage() {
                         color: '#22c55e',
                         fontWeight: 600
                       }}>
-                        • Deposit Paid ✓
+                        • Deposit Ksh {Number(order.payment?.depositAmount || 0).toLocaleString('en-KE')} ✓
                       </span>
                     )}
                   </div>
@@ -476,7 +473,7 @@ export default function MyOrdersPage() {
                     fontWeight: 600, 
                     color: 'var(--primary)' 
                   }}>
-                    Total: Ksh {Number(order.totalAmount).toLocaleString('en-KE')}
+                    Remaining: Ksh {Number(order.payment?.remainingAmount || order.totalAmount).toLocaleString('en-KE')}
                   </div>
                 </div>
               </div>

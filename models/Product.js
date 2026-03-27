@@ -9,6 +9,11 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  section: {
+    type: String,
+    enum: ['collection', 'fashion', 'preowned', 'marketplace'],
+    default: 'collection',
+  },
   price: {
     type: Number,
     required: true,
@@ -57,6 +62,40 @@ const ProductSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: null,
   },
+  adminContact: {
+    type: String,
+    default: '',
+  },
+  deliveryFees: {
+    nairobiStandard: {
+      type: Number,
+      default: 100,
+    },
+    nairobiExpress: {
+      type: Number,
+      default: 250,
+    },
+    surroundingStandard: {
+      type: Number,
+      default: 300,
+    },
+    surroundingExpress: {
+      type: Number,
+      default: 500,
+    },
+    otherStandard: {
+      type: Number,
+      default: 350,
+    },
+    otherExpress: {
+      type: Number,
+      default: 600,
+    },
+    freeDeliveryThreshold: {
+      type: Number,
+      default: 5000,
+    },
+  },
   saleInfo: {
     soldAt: Date,
     salePrice: Number,
@@ -81,5 +120,8 @@ const ProductSchema = new mongoose.Schema({
 ProductSchema.index({ category: 1 })
 ProductSchema.index({ status: 1 })
 ProductSchema.index({ createdAt: -1 })
+// Temporarily commented out section indexes to debug performance
+// ProductSchema.index({ section: 1 })
+// ProductSchema.index({ section: 1, category: 1 }) // Compound index for section+category queries
 
 export default mongoose.models.Product || mongoose.model('Product', ProductSchema)

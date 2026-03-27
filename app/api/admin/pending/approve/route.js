@@ -2,25 +2,19 @@ import { NextResponse } from 'next/server'
 import connectDB from '../../../../../lib/mongodb'
 import PendingProduct from '../../../../../models/PendingProduct'
 import Product from '../../../../../models/Product'
-import { requireAdmin } from '../../../../../lib/adminAuth'
+import { getAdminSession } from '../../../../../lib/adminAuth'
 
 export async function POST(request) {
   try {
-    // Check admin authentication
-    console.log('Checking admin authentication...')
-    const user = await requireAdmin()
-    console.log('User from requireAdmin:', user)
-    if (!user) {
-      console.log('No user found, unauthorized')
+    // Verify admin session
+    const session = await getAdminSession()
+    if (!session || !session.isAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
-    console.log('User authenticated successfully')
 
-    await connectDB()
-    
     const { productId } = await request.json()
     
     if (!productId) {
@@ -30,154 +24,71 @@ export async function POST(request) {
       )
     }
 
-    // Find the pending product
-    console.log('Looking for pending product with ID:', productId)
-    const pendingProduct = await PendingProduct.findById(productId)
+    await connectDB()
     
+    // Find the pending product
+    const pendingProduct = await PendingProduct.findById(productId)
     if (!pendingProduct) {
-      console.log('Pending product not found for ID:', productId)
       return NextResponse.json(
         { error: 'Pending product not found' },
         { status: 404 }
       )
     }
 
-    console.log('Found pending product:', {
-      id: pendingProduct._id,
+    // Determine the correct section based on submission type
+    // ALL products sold to admin (direct_to_admin) go to preowned section
+    const productSection = pendingProduct.submissionType === 'direct_to_admin' ? 'preowned' : 'marketplace'
+
+    // Create a new product from the pending product
+    const newProduct = new Product({
       name: pendingProduct.name,
-      submissionType: pendingProduct.submissionType,
-      status: pendingProduct.status
-    })
-
-    if (pendingProduct.status !== 'pending') {
-      console.log('Product already reviewed. Status:', pendingProduct.status)
-      return NextResponse.json(
-        { error: 'Product has already been reviewed' },
-        { status: 400 }
-      )
-    }
-
-    // Create a new product in the main products collection
-    // Different handling based on submission type
-    const isDirectToAdmin = pendingProduct.submissionType === 'direct_to_admin'
-    
-    const productData = {
-      name: pendingProduct.name || 'Untitled Product',
-      category: pendingProduct.category || 'others',
-      price: pendingProduct.price || 0,
-      description: pendingProduct.description || '',
-      img: pendingProduct.images && pendingProduct.images.length > 0 ? pendingProduct.images[0] : '/placeholder.jpg',
+      price: pendingProduct.price,
+      category: pendingProduct.category,
+      description: pendingProduct.description,
+      condition: pendingProduct.condition || 'good',
+      img: pendingProduct.coverImage || (pendingProduct.images && pendingProduct.images.length > 0 ? pendingProduct.images[0] : ''), // Use cover image as main image
       images: pendingProduct.images || [],
-      imagesJson: pendingProduct.images ? JSON.stringify(pendingProduct.images) : null,
-      meta: pendingProduct.description || '',
-      condition: 'Good', // Default condition since PendingProduct doesn't have this field
-      inStock: true,
-      featured: false,
+      section: productSection,  // Set correct section based on submission type
+      seller: {
+        name: pendingProduct.sellerName,
+        phone: pendingProduct.sellerPhone,
+        email: pendingProduct.sellerEmail
+      },
       status: 'available',
-      sellerId: pendingProduct.sellerId // Add sellerId for easier querying
-    }
-
-    if (isDirectToAdmin) {
-      // For direct-to-admin submissions, create as pre-owned product
-      // Modify the category to have preowned prefix
-      productData.category = `preowned-${pendingProduct.category || 'others'}`
-      productData.condition = 'Good' // Default condition for pre-owned items
-      productData.metadata = {
+      metadata: {
+        source: pendingProduct.submissionType === 'direct_to_admin' ? 'admin-panel' : 'sell-page',
+        submissionType: pendingProduct.submissionType,
         originalSeller: {
           name: pendingProduct.sellerName,
           phone: pendingProduct.sellerPhone,
           email: pendingProduct.sellerEmail
         },
-        submissionType: pendingProduct.submissionType,
-        approvedBy: user.username,
+        approvedBy: session.username,
         approvedAt: new Date(),
-        source: 'sell-page-preowned'
+        originalPendingId: pendingProduct._id,
+        coverImageIndex: pendingProduct.coverImage ? pendingProduct.images.indexOf(pendingProduct.coverImage) : 0
       }
-    } else {
-      // For public submissions, create as community marketplace product
-      productData.metadata = {
-        originalSeller: {
-          name: pendingProduct.sellerName,
-          phone: pendingProduct.sellerPhone,
-          email: pendingProduct.sellerEmail
-        },
-        submissionType: pendingProduct.submissionType,
-        approvedBy: user.username,
-        approvedAt: new Date(),
-        source: 'sell-page'
-      }
-    }
-
-    console.log('Creating product with data:', JSON.stringify(productData, null, 2))
-    
-    const newProduct = new Product(productData)
-    console.log('Product instance created, attempting to save...')
+    })
 
     await newProduct.save()
-    console.log('Product saved successfully with ID:', newProduct._id)
 
     // Update the pending product status
-    console.log('Updating pending product status...')
     await PendingProduct.findByIdAndUpdate(productId, {
       status: 'approved',
-      reviewedBy: user.username,
-      reviewedAt: new Date()
+      reviewedAt: new Date(),
+      reviewedBy: session.username
     })
-    console.log('Pending product status updated successfully')
-
-    // Send approval notification to seller (optional)
-    try {
-      const sectionName = isDirectToAdmin ? 'Pre-owned section' : 'Community Marketplace'
-      const approvalMessage = [
-        '✅ Product Approved!',
-        '',
-        `Your product "${pendingProduct.name}" has been approved and published in the ${sectionName}.`,
-        '',
-        `💰 Price: ${pendingProduct.price ? `Ksh ${pendingProduct.price}` : 'Not specified'}`,
-        `📍 Section: ${sectionName}`,
-        '',
-        'Thank you for using our platform!'
-      ].join('\n')
-
-      // Call WhatsApp notification API
-      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/whatsapp/notify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: approvalMessage,
-          phoneNumber: pendingProduct.sellerPhone
-        })
-      })
-
-      // Mark seller as notified
-      await PendingProduct.findByIdAndUpdate(productId, { sellerNotified: true })
-
-    } catch (notificationError) {
-      console.error('Failed to send approval notification:', notificationError)
-      // Don't fail the approval if notification fails
-    }
 
     return NextResponse.json({
       success: true,
-      message: `Product approved and published to ${isDirectToAdmin ? 'Pre-owned section' : 'Community Marketplace'} successfully`,
-      productId: newProduct._id,
-      section: isDirectToAdmin ? 'preowned' : 'community'
+      message: 'Product approved and published successfully',
+      productId: newProduct._id
     })
 
   } catch (error) {
-    console.error('Error approving product:', error)
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    })
+    console.error('Approve pending product error:', error)
     return NextResponse.json(
-      { 
-        error: 'Failed to approve product. Please try again.',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
+      { error: 'Failed to approve product: ' + error.message },
       { status: 500 }
     )
   }

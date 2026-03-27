@@ -27,64 +27,198 @@ const checkoutStyles = `
       padding-right: 16px !important;
     }
   }
-  @media (min-width: 1024px) {
-    .checkout-container {
-      padding-left: 16px !important;
-      padding-right: 16px !important;
-    }
-    .checkout-header {
-      padding-left: 16px !important;
-      padding-right: 16px !important;
+  
+  /* Order completion modal styles */
+  .order-modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+  }
+  
+  .order-modal-content {
+    background-color: var(--card) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    max-width: 400px !important;
+    width: 100% !important;
+    text-align: center !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  }
+  
+  @media (max-width: 640px) {
+    .order-modal-content {
+      padding: 12px !important;
+      max-width: 320px !important;
     }
   }
-  @media (min-width: 1200px) {
-    .checkout-container {
-      padding-left: 16px !important;
-      padding-right: 16px !important;
+  
+  .order-modal-emoji {
+    font-size: clamp(32px, 8vw, 48px) !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .order-modal-title {
+    margin: 0 0 6px !important;
+    font-size: clamp(16px, 4vw, 18px) !important;
+    font-weight: 600 !important;
+    color: #10b981 !important;
+  }
+  
+  .order-modal-order-id {
+    margin: 0 0 8px !important;
+    font-size: clamp(12px, 3vw, 14px) !important;
+    color: white !important;
+  }
+  
+  .order-modal-description {
+    margin: 0 0 16px !important;
+    font-size: clamp(11px, 2.5vw, 13px) !important;
+    color: white !important;
+    line-height: 1.4 !important;
+  }
+  
+  .order-modal-buttons {
+    display: flex !important;
+    gap: 8px !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    flex-direction: column !important;
+  }
+  
+  @media (min-width: 640px) {
+    .order-modal-buttons {
+      flex-direction: row !important;
     }
-    .checkout-header {
-      padding-left: 16px !important;
-      padding-right: 16px !important;
+  }
+  
+  .order-modal-button {
+    padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 20px) !important;
+    font-size: clamp(12px, 3vw, 14px) !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+  }
+  
+  @media (min-width: 640px) {
+    .order-modal-button {
+      width: auto !important;
     }
   }
 `
 
 export default function CheckoutPage() {
-  const { items, totalAmount, totalCount, isCartLocked, unlockCart, clear } = useCart()
-  const { isAuthenticated, user, loading } = useAuth()
-  const router = useRouter()
+  const { items, totalAmount, totalCount, unlockCart, clear } = useCart()
   const list = Object.values(items || {})
-  const [isClient, setIsClient] = useState(false)
+  const { user, isAuthenticated, loading } = useAuth()
+  const router = useRouter()
   const [paymentCompleted, setPaymentCompleted] = useState(false)
-  const [orderProcessing, setOrderProcessing] = useState(false)
   const [orderCompleted, setOrderCompleted] = useState(false)
+  const [paymentPhoneNumber, setPaymentPhoneNumber] = useState('')
+  const [promoCode, setPromoCode] = useState('')
+  const [promoError, setPromoError] = useState('')
+  const [promoApplied, setPromoApplied] = useState(false)
+  const [promoDiscount, setPromoDiscount] = useState(0)
+
+  // Initialize delivery details with user's saved delivery address or empty values
+  const initializeDeliveryDetails = () => {
+    if (user?.deliveryAddress) {
+      return {
+        fulfillmentType: 'delivery',
+        customerName: user.deliveryAddress.fullName || user.name || '',
+        phone: user.deliveryAddress.phone || user.phone || '',
+        street: user.deliveryAddress.street || '',
+        city: user.deliveryAddress.city || '',
+        region: user.deliveryAddress.region || '',
+        deliveryOption: 'standard',
+        deliveryInstructions: user.deliveryAddress.additionalInstructions || ''
+      }
+    } else {
+      return {
+        fulfillmentType: 'delivery',
+        customerName: user?.name || '',
+        phone: user?.phone || '',
+        street: '',
+        city: '',
+        region: '',
+        deliveryOption: 'standard',
+        deliveryInstructions: ''
+      }
+    }
+  }
+
+  const [deliveryDetails, setDeliveryDetails] = useState(initializeDeliveryDetails)
+
+  const [isClient, setIsClient] = useState(false)
+  const [orderProcessing, setOrderProcessing] = useState(false)
   const [completedOrderId, setCompletedOrderId] = useState(null)
   const [showWhatsAppSection, setShowWhatsAppSection] = useState(false)
   const [receiptDownloaded, setReceiptDownloaded] = useState(false)
-  const [paymentPhoneNumber, setPaymentPhoneNumber] = useState('')
   const [whatsappSent, setWhatsappSent] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
-  
-  const [deliveryDetails, setDeliveryDetails] = useState({
-    fulfillmentType: 'pickup',
-    customerName: '',
-    address: '',
-    street: '',
-    city: '',
-    region: '',
-    phone: '',
-    altPhone: '',
-    deliveryOption: 'standard',
-    instructions: ''
-  })
-  
-  const [savedAddress, setSavedAddress] = useState(null)
-  const [loadingAddress, setLoadingAddress] = useState(false)
-  const [showAddressOptions, setShowAddressOptions] = useState(false)
   
   // Debug log to check default state
   console.log('🔍 Current fulfillmentType:', deliveryDetails.fulfillmentType)
   
+
+  // Fetch delivery address from API
+  const fetchDeliveryAddress = async () => {
+    try {
+      console.log('🔄 Fetching delivery address from database...')
+      const response = await fetch('/api/user/delivery-address')
+      
+      if (response.ok) {
+        const data = await response.json()
+        const address = data.deliveryAddress
+        
+        if (address) {
+          const addressInfo = {
+            fulfillmentType: 'delivery',
+            customerName: address.fullName || user?.name || '',
+            phone: address.phone || user?.phone || '',
+            street: address.street || '',
+            city: address.city || '',
+            region: address.region || '',
+            deliveryOption: 'standard',
+            deliveryInstructions: address.additionalInstructions || ''
+          }
+          
+          setDeliveryDetails(addressInfo)
+          console.log('📍 Delivery address loaded and set:', addressInfo)
+        }
+      } else {
+        console.log('No delivery address found, using user basic info')
+        // Fall back to basic user info
+        setDeliveryDetails(prev => ({
+          ...prev,
+          customerName: user?.name || '',
+          phone: user?.phone || ''
+        }))
+      }
+    } catch (error) {
+      console.error('❌ Error fetching delivery address:', error)
+      // Fall back to basic user info
+      setDeliveryDetails(prev => ({
+        ...prev,
+        customerName: user?.name || '',
+        phone: user?.phone || ''
+      }))
+    }
+  }
+
+  // Update delivery details when user data changes
+  useEffect(() => {
+    if (user) {
+      fetchDeliveryAddress()
+    }
+  }, [user])
 
   // Authentication check
   useEffect(() => {
@@ -92,50 +226,6 @@ export default function CheckoutPage() {
       router.push('/login')
     }
   }, [isAuthenticated, loading, router])
-
-  // Fetch saved delivery address
-  const fetchSavedAddress = async () => {
-    if (!isAuthenticated) return
-    
-    setLoadingAddress(true)
-    try {
-      const response = await fetch('/api/user/delivery-address')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.deliveryAddress && data.deliveryAddress.fullName) {
-          setSavedAddress(data.deliveryAddress)
-          console.log('📍 Saved address loaded:', data.deliveryAddress)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching saved address:', error)
-    } finally {
-      setLoadingAddress(false)
-    }
-  }
-
-  // Use saved address to populate delivery details
-  const useSavedAddress = () => {
-    if (!savedAddress) return
-    
-    // Populate both the combined address and individual fields
-    const fullAddress = `${savedAddress.street}, ${savedAddress.city}, ${savedAddress.region}${savedAddress.additionalInstructions ? '\n' + savedAddress.additionalInstructions : ''}`
-    
-    setDeliveryDetails(prev => ({
-      ...prev,
-      customerName: savedAddress.fullName,
-      phone: savedAddress.phone,
-      address: fullAddress, // Keep for backward compatibility
-      street: savedAddress.street,
-      city: savedAddress.city,
-      region: savedAddress.region,
-      instructions: savedAddress.additionalInstructions || '',
-      fulfillmentType: 'delivery' // Switch to delivery when using saved address
-    }))
-    
-    setShowAddressOptions(false)
-    console.log('✅ Used saved address for delivery:', savedAddress)
-  }
 
   // Auto-populate user information from auth context
   useEffect(() => {
@@ -148,13 +238,6 @@ export default function CheckoutPage() {
       console.log('👤 Auto-populated user info from auth context')
     }
   }, [user, deliveryDetails.customerName, deliveryDetails.phone])
-
-  // Fetch saved address when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchSavedAddress()
-    }
-  }, [isAuthenticated, user])
 
   useEffect(() => {
     setIsClient(true)
@@ -336,6 +419,32 @@ export default function CheckoutPage() {
       autoCompleteOrder()
     }
   }, [showWhatsAppSection, orderCompleted])
+
+  // Prevent body scrolling when modal is shown
+  useEffect(() => {
+    if (showWhatsAppSection) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = '0'
+      document.body.style.left = '0'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.width = ''
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.width = ''
+    }
+  }, [showWhatsAppSection])
 
   // Function to complete order and unlock cart
   const completeOrder = async () => {
@@ -566,6 +675,10 @@ export default function CheckoutPage() {
     clear(true) // Force override to bypass cart lock protection
     console.log('🛒 Cart cleared immediately after receipt download')
     
+    // Auto-close modal immediately after download starts
+    setShowWhatsAppSection(false)
+    console.log('🎉 Order completion modal closed after receipt download')
+    
     // Clear all checkout states after receipt download
     setTimeout(() => {
       // Reset all order states
@@ -600,10 +713,56 @@ export default function CheckoutPage() {
     }, 1000) // Small delay to ensure download starts first
   }
 
-  // Calculate totals
-  const deliveryFee = deliveryDetails.fulfillmentType === 'delivery' ? 
-    (deliveryDetails.deliveryOption === 'express' ? 300 : 100) : 0
+  // Get hardcoded delivery fees (since admin configuration is removed)
+  const getDeliveryFees = () => {
+    return {
+      nairobiStandard: 100,
+      nairobiExpress: 250,
+      surroundingStandard: 300,
+      surroundingExpress: 500,
+      otherStandard: 350,
+      otherExpress: 600,
+      freeDeliveryThreshold: 5000
+    }
+  }
+
+  // Location-based delivery fee calculation using hardcoded fees
+  const calculateDeliveryFee = () => {
+    if (deliveryDetails.fulfillmentType === 'pickup') {
+      return 0
+    }
+    
+    const region = deliveryDetails.region?.toLowerCase()
+    const deliveryOption = deliveryDetails.deliveryOption
+    const subtotal = totalAmount
+    
+    // Get hardcoded delivery fees
+    const fees = getDeliveryFees()
+    
+    // Free delivery for orders above threshold
+    if (subtotal >= fees.freeDeliveryThreshold) {
+      return 0
+    }
+    
+    // Location-based delivery fees
+    if (region?.includes('nairobi')) {
+      return deliveryOption === 'express' ? fees.nairobiExpress : fees.nairobiStandard
+    } else if (region?.includes('kiambu') || region?.includes('kajiado') || 
+               region?.includes('machakos') || region?.includes('muranga') || 
+               region?.includes('nyandarua')) {
+      return deliveryOption === 'express' ? fees.surroundingExpress : fees.surroundingStandard
+    } else {
+      // Naivasha and all other regions are treated as Other Regions
+      return deliveryOption === 'express' ? fees.otherExpress : fees.otherStandard
+    }
+  }
+  
+  const deliveryFee = calculateDeliveryFee()
   const finalTotal = totalAmount + deliveryFee
+  const isFreeDelivery = deliveryFee === 0 && deliveryDetails.fulfillmentType === 'delivery'
+  
+  // Get current fees for display
+  const currentFees = getDeliveryFees()
 
   // Check if all required delivery fields are filled
   const isDeliveryComplete = () => {
@@ -623,7 +782,7 @@ export default function CheckoutPage() {
 
   const deliveryFieldsComplete = isDeliveryComplete()
 
-  if (!isClient || list.length === 0) {
+  if (!isClient || !list || list.length === 0) {
     return (
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
         <h1>Checkout</h1>
@@ -674,7 +833,7 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, fulfillmentType: e.target.value }))}
                         disabled={paymentCompleted}
                       />
-                      🏪 Store Pickup <span className="hide-on-mobile">(Free)</span>
+                      Store Pickup <span className="hide-on-mobile">(Free)</span>
                     </label>
                   </div>
                   <div style={{ 
@@ -697,37 +856,126 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, fulfillmentType: e.target.value }))}
                         disabled={paymentCompleted}
                       />
-                      🚚 Home Delivery
+                      Home Delivery
                     </label>
                   </div>
                 </div>
               </div>
 
+              {/* Delivery Speed Options - Only show when delivery is selected */}
+              {deliveryDetails.fulfillmentType === 'delivery' && (
+                <>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--primary)' }}>Delivery Speed</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div 
+                      style={{ 
+                        border: deliveryDetails.deliveryOption === 'standard' ? '2px solid var(--primary)' : '1px solid #2a3342', 
+                        borderRadius: 4, 
+                        padding: '8px', 
+                        backgroundColor: deliveryDetails.deliveryOption === 'standard' ? 'rgba(57, 217, 138, 0.1)' : 'var(--surface)',
+                        cursor: paymentCompleted ? 'not-allowed' : 'pointer'
+                      }}
+                      onClick={() => !paymentCompleted && setDeliveryDetails(prev => ({ ...prev, deliveryOption: 'standard' }))}
+                    >
+                      <div style={{ fontSize: 12, cursor: paymentCompleted ? 'not-allowed' : 'pointer' }}>
+                        <strong>Standard</strong> - {isFreeDelivery ? 'FREE' : `Ksh ${calculateDeliveryFee().toLocaleString('en-KE')}`}
+                      </div>
+                    </div>
+                    <div 
+                      style={{ 
+                        border: deliveryDetails.deliveryOption === 'express' ? '2px solid var(--primary)' : '1px solid #2a3342', 
+                        borderRadius: 4, 
+                        padding: '8px', 
+                        backgroundColor: deliveryDetails.deliveryOption === 'express' ? 'rgba(57, 217, 138, 0.1)' : 'var(--surface)',
+                        cursor: paymentCompleted ? 'not-allowed' : 'pointer'
+                      }}
+                      onClick={() => !paymentCompleted && setDeliveryDetails(prev => ({ ...prev, deliveryOption: 'express' }))}
+                    >
+                      <div style={{ fontSize: 12, cursor: paymentCompleted ? 'not-allowed' : 'pointer' }}>
+                        <strong>Express</strong> - Ksh {calculateDeliveryFee() > 0 ? 
+                          (deliveryDetails.region?.toLowerCase().includes('nairobi') ? 
+                            (deliveryDetails.region?.toLowerCase().includes('karen') || deliveryDetails.region?.toLowerCase().includes('embakasi') ? 300 : 250) :
+                            deliveryDetails.region?.toLowerCase().includes('kiambu') || deliveryDetails.region?.toLowerCase().includes('kajiado') ? 450 : 600) : 0}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Free Delivery Progress Indicator */}
+                  {!isFreeDelivery && (
+                    <div style={{ marginTop: '8px', padding: '6px', backgroundColor: '#1e293b', borderRadius: '4px', border: '1px solid #374151' }}>
+                      <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '2px' }}>
+                        Add Ksh {(currentFees.freeDeliveryThreshold - totalAmount).toLocaleString('en-KE')} more for FREE delivery
+                      </div>
+                      <div style={{ 
+                        width: '100%', 
+                        height: '4px', 
+                        backgroundColor: '#374151', 
+                        borderRadius: '2px', 
+                        overflow: 'hidden' 
+                      }}>
+                        <div style={{ 
+                          width: `${Math.min((totalAmount / currentFees.freeDeliveryThreshold) * 100, 100)}%`, 
+                          height: '100%', 
+                          backgroundColor: '#10b981', 
+                          transition: 'width 0.3s ease' 
+                        }} />
+                      </div>
+                      <div style={{ fontSize: '9px', color: '#6b7280', marginTop: '1px', textAlign: 'right' }}>
+                        {Math.round((totalAmount / currentFees.freeDeliveryThreshold) * 100)}% to free delivery
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
               {/* Delivery Options Explanation - Only show when delivery is selected */}
               {deliveryDetails.fulfillmentType === 'delivery' && (
-                <div style={{ 
-                  marginTop: '16px', 
-                  padding: '16px', 
-                  backgroundColor: 'var(--card)', 
-                  borderRadius: 8, 
-                  border: '1px solid #253049',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                }}>
-                  <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>📋 Delivery Information</h3>
+                <>
+                  <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'white' }}>📋 Delivery Information</h3>
                   
                   <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
                     <p style={{ margin: '0 0 12px', fontWeight: 600 }}>
-                      <strong style={{ color: 'var(--primary)' }}>🚚 Home Delivery Selected</strong>
+                      <strong style={{ color: 'var(--primary)' }}>Home Delivery Selected</strong>
                     </p>
-                    <ul style={{ margin: '0', paddingLeft: '20px', listStyleType: 'disc' }}>
-                      <li style={{ marginBottom: '6px' }}><strong>Standard Delivery (Ksh 100):</strong> 2-3 business days delivery within Nairobi and surrounding areas</li>
-                      <li style={{ marginBottom: '6px' }}><strong>Express Delivery (Ksh 300):</strong> Same day delivery for urgent orders</li>
-                      <li style={{ marginBottom: '6px' }}>Delivery hours: Monday-Saturday, 9:00 AM - 6:00 PM</li>
-                      <li style={{ marginBottom: '6px' }}>You'll receive SMS/WhatsApp updates on delivery status</li>
-                      <li>Someone must be available to receive the package</li>
-                    </ul>
+                    {isFreeDelivery ? (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: '#065f46', 
+                        border: '1px solid #10b981', 
+                        borderRadius: '6px', 
+                        marginBottom: '12px' 
+                      }}>
+                        <strong style={{ color: '#10b981' }}>🎉 FREE Delivery!</strong>
+                        <div style={{ color: '#86efac', fontSize: '12px', marginTop: '4px' }}>
+                          Your order qualifies for free delivery (Orders above Ksh {currentFees.freeDeliveryThreshold})
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ 
+                          padding: '8px', 
+                          backgroundColor: '#1e293b', 
+                          border: '1px solid #374151', 
+                          borderRadius: '6px', 
+                          marginBottom: '12px' 
+                        }}>
+                          <strong>Current Delivery Fee: Ksh {deliveryFee.toLocaleString('en-KE')}</strong>
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                            Based on your location: {deliveryDetails.region || 'Select region to see exact fee'}
+                          </div>
+                        </div>
+                        <ul style={{ margin: '0', paddingLeft: '20px', listStyleType: 'disc' }}>
+                          <li style={{ marginBottom: '6px' }}><strong>Nairobi Regions:</strong> Ksh {currentFees.nairobiStandard} (Standard), Ksh {currentFees.nairobiExpress} (Express)</li>
+                          <li style={{ marginBottom: '6px' }}><strong>Other Regions:</strong> Ksh {currentFees.otherStandard} (Standard), Ksh {currentFees.otherExpress} (Express)</li>
+                          <li style={{ marginBottom: '6px' }}><strong>FREE Delivery:</strong> Orders above Ksh {currentFees.freeDeliveryThreshold}</li>
+                          <li style={{ marginBottom: '6px' }}>Delivery hours: Monday-Saturday, 9:00 AM - 6:00 PM</li>
+                          <li style={{ marginBottom: '6px' }}>You'll receive SMS/WhatsApp updates on delivery status</li>
+                          <li>Someone must be available to receive the package</li>
+                        </ul>
+                      </>
+                    )}
                   </div>
-                </div>
+                </>
               )}
 
               {deliveryDetails.fulfillmentType === 'pickup' && (
@@ -741,16 +989,17 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, customerName: e.target.value }))}
                         placeholder="Enter your full name"
                         disabled={paymentCompleted}
+                        readOnly
                         style={{ 
                           width: '100%', 
                           padding: '12px 10px', 
                           borderRadius: 4, 
                           border: '1px solid #3a465c', 
-                          background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                          color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                          background: paymentCompleted ? '#374151' : '#374151', 
+                          color: 'white', 
                           fontSize: '13px', 
                           boxSizing: 'border-box',
-                          cursor: paymentCompleted ? 'not-allowed' : 'text'
+                          cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -762,16 +1011,17 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, phone: e.target.value }))}
                         placeholder="0712345678"
                         disabled={paymentCompleted}
+                        readOnly
                         style={{ 
                           width: '100%', 
                           padding: '12px 10px', 
                           borderRadius: 4, 
                           border: '1px solid #3a465c', 
-                          background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                          color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                          background: paymentCompleted ? '#374151' : '#374151', 
+                          color: 'white', 
                           fontSize: '13px', 
                           boxSizing: 'border-box',
-                          cursor: paymentCompleted ? 'not-allowed' : 'text'
+                          cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -781,92 +1031,23 @@ export default function CheckoutPage() {
 
               {deliveryDetails.fulfillmentType === 'delivery' && (
                 <>
-                  {/* Saved Address Option */}
-                  {savedAddress && (
-                    <div style={{ 
-                      marginTop: '12px', 
-                      padding: '8px', 
-                      backgroundColor: 'rgba(34, 197, 94, 0.1)', 
-                      border: '1px solid rgba(34, 197, 94, 0.3)', 
-                      borderRadius: '6px' 
-                    }}>
-                      <div>
-                        <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#22c55e' }}>
-                          📍 Saved Delivery Address
-                        </h4>
-                        <div style={{ fontSize: '12px', color: 'var(--text)', lineHeight: '1.4', marginBottom: '6px' }}>
-                          <div><strong>{savedAddress.fullName}</strong> • {savedAddress.phone}</div>
-                          <div>{savedAddress.street}</div>
-                          <div>{savedAddress.city}, {savedAddress.region}</div>
-                          {savedAddress.additionalInstructions && (
-                            <div style={{ fontStyle: 'italic', marginTop: '4px' }}>
-                              Note: {savedAddress.additionalInstructions}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={useSavedAddress}
-                            disabled={paymentCompleted}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#22c55e',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: paymentCompleted ? 'not-allowed' : 'pointer',
-                              opacity: paymentCompleted ? 0.6 : 1,
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            Use This Address
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* No Saved Address - Encourage to save */}
-                  {!savedAddress && !loadingAddress && (
-                    <div style={{ 
-                      marginTop: '12px', 
-                      padding: '8px 12px', 
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                      border: '1px solid rgba(59, 130, 246, 0.3)', 
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      color: 'var(--text)'
-                    }}>
-                      💡 <Link href="/account" style={{ color: '#3b82f6', textDecoration: 'none' }}>
-                        Save your delivery address
-                      </Link> in your account to speed up future checkouts
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: '12px' }}>
-                    <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Delivery Speed</label>
-                    <select 
-                      value={deliveryDetails.deliveryOption}
-                      onChange={(e) => setDeliveryDetails(prev => ({ ...prev, deliveryOption: e.target.value }))}
-                      disabled={paymentCompleted}
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px 10px', 
-                        borderRadius: 4, 
-                        border: '1px solid #2a3342', 
-                        background: paymentCompleted ? '#374151' : 'var(--card)', 
-                        color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
-                        fontSize: '13px',
-                        cursor: paymentCompleted ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      <option value="standard">Standard - Ksh 100 (2-3 days)</option>
-                      <option value="express">Express - Ksh 300 (Same day)</option>
-                    </select>
+                  {/* Account-based Delivery Info */}
+                  <div style={{ 
+                    marginTop: '12px', 
+                    padding: '12px', 
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)', 
+                    border: '1px solid rgba(34, 197, 94, 0.3)', 
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    color: 'var(--text)'
+                  }}>
+                    ✅ <strong>Delivery information from your account profile</strong> - All delivery details are fetched from your account settings. 
+                    <Link href="/account" style={{ color: '#22c55e', textDecoration: 'none', marginLeft: '4px' }}>
+                      Update your information in account settings
+                    </Link>
                   </div>
 
+                  
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: '12px' }}>
                     <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '8px', backgroundColor: 'var(--surface)' }}>
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--primary)' }}>Full Name <span style={{ color: '#dc3545' }}>*</span></label>
@@ -876,16 +1057,17 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, customerName: e.target.value }))}
                         placeholder="Enter your full name"
                         disabled={paymentCompleted}
+                        readOnly
                         style={{ 
                           width: '100%', 
                           padding: '8px 10px', 
                           borderRadius: 4, 
                           border: '1px solid #3a465c', 
-                          background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                          color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                          background: paymentCompleted ? '#374151' : '#374151', 
+                          color: 'white', 
                           fontSize: '13px', 
                           boxSizing: 'border-box',
-                          cursor: paymentCompleted ? 'not-allowed' : 'text'
+                          cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -897,16 +1079,17 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, phone: e.target.value }))}
                         placeholder="0712345678"
                         disabled={paymentCompleted}
+                        readOnly
                         style={{ 
                           width: '100%', 
-                          padding: '12px 10px', 
+                          padding: '8px 10px', 
                           borderRadius: 4, 
                           border: '1px solid #3a465c', 
-                          background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                          color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                          background: paymentCompleted ? '#374151' : '#374151', 
+                          color: 'white', 
                           fontSize: '13px', 
                           boxSizing: 'border-box',
-                          cursor: paymentCompleted ? 'not-allowed' : 'text'
+                          cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -921,16 +1104,17 @@ export default function CheckoutPage() {
                       onChange={(e) => setDeliveryDetails(prev => ({ ...prev, street: e.target.value }))}
                       placeholder="Enter street address"
                       disabled={paymentCompleted}
+                      readOnly
                       style={{ 
                         width: '100%', 
                         padding: '8px 10px', 
                         borderRadius: 4, 
                         border: '1px solid #3a465c', 
-                        background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                        color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                        background: paymentCompleted ? '#374151' : '#374151', 
+                        color: 'white', 
                         fontSize: '13px', 
                         boxSizing: 'border-box',
-                        cursor: paymentCompleted ? 'not-allowed' : 'text'
+                        cursor: 'not-allowed'
                       }}
                     />
                   </div>
@@ -945,16 +1129,17 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, city: e.target.value }))}
                         placeholder="Enter city"
                         disabled={paymentCompleted}
+                        readOnly
                         style={{ 
                           width: '100%', 
                           padding: '8px 10px', 
                           borderRadius: 4, 
                           border: '1px solid #3a465c', 
-                          background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                          color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                          background: paymentCompleted ? '#374151' : '#374151', 
+                          color: 'white', 
                           fontSize: '13px', 
                           boxSizing: 'border-box',
-                          cursor: paymentCompleted ? 'not-allowed' : 'text'
+                          cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -966,16 +1151,17 @@ export default function CheckoutPage() {
                         onChange={(e) => setDeliveryDetails(prev => ({ ...prev, region: e.target.value }))}
                         placeholder="Enter region"
                         disabled={paymentCompleted}
+                        readOnly
                         style={{ 
                           width: '100%', 
                           padding: '8px 10px', 
                           borderRadius: 4, 
                           border: '1px solid #3a465c', 
-                          background: paymentCompleted ? '#374151' : 'var(--bg)', 
-                          color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
+                          background: paymentCompleted ? '#374151' : '#374151', 
+                          color: 'white', 
                           fontSize: '13px', 
                           boxSizing: 'border-box',
-                          cursor: paymentCompleted ? 'not-allowed' : 'text'
+                          cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -984,22 +1170,24 @@ export default function CheckoutPage() {
                   {/* Delivery Instructions */}
                   <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '8px', backgroundColor: 'var(--surface)', marginTop: '12px' }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--primary)' }}>Delivery Instructions</label>
-                    <input 
-                      type="text"
-                      value={deliveryDetails.instructions}
-                      onChange={(e) => setDeliveryDetails(prev => ({ ...prev, instructions: e.target.value }))}
+                    <textarea 
+                      value={deliveryDetails.deliveryInstructions}
+                      onChange={(e) => setDeliveryDetails(prev => ({ ...prev, deliveryInstructions: e.target.value }))}
                       placeholder="Special instructions (optional)"
                       disabled={paymentCompleted}
                       style={{ 
                         width: '100%', 
-                        padding: '8px 10px', 
+                        padding: '10px', 
                         borderRadius: 4, 
                         border: '1px solid #3a465c', 
                         background: paymentCompleted ? '#374151' : 'var(--bg)', 
                         color: paymentCompleted ? '#9ca3af' : 'var(--text)', 
                         fontSize: '13px', 
                         boxSizing: 'border-box',
-                        cursor: paymentCompleted ? 'not-allowed' : 'text'
+                        cursor: paymentCompleted ? 'not-allowed' : 'text',
+                        minHeight: '80px',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
                       }}
                     />
                   </div>
@@ -1073,25 +1261,26 @@ export default function CheckoutPage() {
             </div>
           )}
           
-          <div style={{ 
-            opacity: deliveryFieldsComplete ? 1 : 0.5,
-            pointerEvents: deliveryFieldsComplete ? 'auto' : 'none'
-          }}>
-            <SimplePayment 
-              totalAmount={finalTotal}
-              subtotalAmount={totalAmount}
-              deliveryFee={deliveryFee}
-              totalCount={totalCount}
-              paymentCompleted={paymentCompleted}
-              savedPaymentPhone={paymentPhoneNumber}
-              onPaymentComplete={(paymentData) => {
-                if (paymentData && paymentData.depositPaid && !orderCompleted) {
-                  setPaymentCompleted(true)
-                  
-                  // Save the phone number used for payment if available
-                  if (paymentData.phoneNumber) {
-                    setPaymentPhoneNumber(paymentData.phoneNumber)
-                  }
+          {!orderCompleted && (
+            <div style={{ 
+              opacity: deliveryFieldsComplete ? 1 : 0.5,
+              pointerEvents: deliveryFieldsComplete ? 'auto' : 'none'
+            }}>
+              <SimplePayment 
+                totalAmount={finalTotal}
+                subtotalAmount={totalAmount}
+                deliveryFee={deliveryFee}
+                totalCount={totalCount}
+                paymentCompleted={paymentCompleted}
+                savedPaymentPhone={paymentPhoneNumber}
+                onPaymentComplete={(paymentData) => {
+                  if (paymentData && paymentData.depositPaid && !orderCompleted) {
+                    setPaymentCompleted(true)
+                    
+                    // Save the phone number used for payment if available
+                    if (paymentData.phoneNumber) {
+                      setPaymentPhoneNumber(paymentData.phoneNumber)
+                    }
 
                   // Persist transaction/reference for order saving
                   try {
@@ -1109,42 +1298,44 @@ export default function CheckoutPage() {
               disabled={!deliveryFieldsComplete}
             />
           </div>
+          )}
 
 
-          {/* Order Completion Section */}
+          {/* Order Completion Modal */}
           {showWhatsAppSection && (
-            <div style={{ 
-              marginTop: '16px',
-              padding: '16px',
-              backgroundColor: '#d1fae5',
-              border: '1px solid #10b981',
-              borderRadius: 8,
-              textAlign: 'center'
-            }}>
-              <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#065f46' }}>
-                🎉 Order Completed Successfully!
-              </h3>
-              <p style={{ margin: '0 0 12px', fontSize: 14, color: '#047857' }}>
-                Order ID: <strong>{completedOrderId || 'Processing...'}</strong>
-              </p>
-              <p style={{ margin: '0 0 16px', fontSize: 13, color: '#065f46' }}>
-                Your order has been successfully processed and submitted. Please download your receipt for your records.
-              </p>
-              
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button
-                  onClick={(e) => {
-                    // Prevent any default behavior and event propagation
-                    e.preventDefault()
-                    e.stopPropagation()
-                    
-                    try {
-                      // Only generate message and open WhatsApp - no state changes
-                      const currentDate = new Date()
-                      const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`
-                      const formattedTime = `${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}:${currentDate.getSeconds().toString().padStart(2, '0')}`
-                      
-                      const orderDetails = `🆕 *NEW ORDER REQUEST*
+            <>
+              {/* Background overlay */}
+              <div className="order-modal-overlay">
+                {/* Modal content */}
+                <div className="order-modal-content">
+                  <div style={{ marginBottom: 12 }}>
+                    <div className="order-modal-emoji">🎉</div>
+                    <h3 className="order-modal-title">
+                      Order Completed Successfully!
+                    </h3>
+                  </div>
+                  
+                  <p className="order-modal-order-id">
+                    Order ID: <strong>{completedOrderId || 'Processing...'}</strong>
+                  </p>
+                  <p className="order-modal-description">
+                    Your order has been successfully processed and submitted. Please download your receipt for your records.
+                  </p>
+                  
+                  <div className="order-modal-buttons">
+                    <button
+                      onClick={(e) => {
+                        // Prevent any default behavior and event propagation
+                        e.preventDefault()
+                        e.stopPropagation()
+                        
+                        try {
+                          // Only generate message and open WhatsApp - no state changes
+                          const currentDate = new Date()
+                          const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`
+                          const formattedTime = `${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}:${currentDate.getSeconds().toString().padStart(2, '0')}`
+                          
+                          const orderDetails = `🆕 *NEW ORDER REQUEST*
 📋 *Order ID:* ${completedOrderId}
 
 👤 *CUSTOMER DETAILS:*
@@ -1168,59 +1359,55 @@ Remaining: Ksh ${(finalTotal - Math.round(finalTotal * 0.2)).toLocaleString('en-
 
 ⚡ *PRIORITY REVIEW REQUESTED*`
 
-                      const whatsappUrl = `https://wa.me/254718176584?text=${encodeURIComponent(orderDetails)}`
-                      
-                      // Only open WhatsApp - no other actions
-                      window.open(whatsappUrl, '_blank')
-                      
-                      // Mark WhatsApp as sent to enable download button
-                      setWhatsappSent(true)
-                      
-                      console.log('📱 WhatsApp message sent to admin - download button now enabled')
-                    } catch (error) {
-                      console.error('Error opening WhatsApp:', error)
-                      // Fail silently - don't affect page state
-                    }
-                  }}
-                  className="btn"
-                  style={{ 
-                    padding: '8px 16px', 
-                    fontSize: 13, 
-                    fontWeight: 600,
-                    backgroundColor: '#25d366',
-                    borderColor: '#25d366',
-                    color: 'white'
-                  }}
-                >
-                  📱 Send to Admin
-                </button>
-                
-                <button
-                  onClick={(e) => {
-                    console.log('Download button clicked, whatsappSent:', whatsappSent)
-                    if (!whatsappSent) {
-                      e.preventDefault()
-                      console.log('Setting popup to true')
-                      setShowPopup(true)
-                      return
-                    }
-                    downloadReceiptAsPDF()
-                  }}
-                  className="btn"
-                  style={{ 
-                    padding: '8px 16px', 
-                    fontSize: 13, 
-                    fontWeight: 600,
-                    backgroundColor: whatsappSent ? '#dc2626' : '#9ca3af',
-                    borderColor: whatsappSent ? '#dc2626' : '#9ca3af',
-                    cursor: whatsappSent ? 'pointer' : 'not-allowed',
-                    opacity: whatsappSent ? 1 : 0.6
-                  }}
-                >
-                  📄 Download Receipt
-                </button>
+                          const whatsappUrl = `https://wa.me/254718176584?text=${encodeURIComponent(orderDetails)}`
+                          
+                          // Only open WhatsApp - no other actions
+                          window.open(whatsappUrl, '_blank')
+                          
+                          // Mark WhatsApp as sent to enable download button
+                          setWhatsappSent(true)
+                          
+                          console.log('📱 WhatsApp message sent to admin - download button now enabled')
+                        } catch (error) {
+                          console.error('Error opening WhatsApp:', error)
+                          // Fail silently - don't affect page state
+                        }
+                      }}
+                      className="btn order-modal-button"
+                      style={{
+                        backgroundColor: '#25d366',
+                        borderColor: '#25d366',
+                        color: 'white'
+                      }}
+                    >
+                      📱 Send to Admin
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        console.log('Download button clicked, whatsappSent:', whatsappSent)
+                        if (!whatsappSent) {
+                          e.preventDefault()
+                          console.log('Setting popup to true')
+                          setShowPopup(true)
+                          return
+                        }
+                        downloadReceiptAsPDF()
+                      }}
+                      className="btn order-modal-button"
+                      style={{
+                        backgroundColor: whatsappSent ? '#dc2626' : '#9ca3af',
+                        borderColor: whatsappSent ? '#dc2626' : '#9ca3af',
+                        cursor: whatsappSent ? 'pointer' : 'not-allowed',
+                        opacity: whatsappSent ? 1 : 0.6
+                      }}
+                    >
+                      📄 Download Receipt
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Custom Popup Modal */}

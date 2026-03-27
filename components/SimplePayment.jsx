@@ -134,35 +134,7 @@ export default function SimplePayment({ totalAmount, subtotalAmount, deliveryFee
   }
 
   if (paid) {
-    return (
-      <div style={{ border: '1px solid #2a3342', borderRadius: 4, padding: '12px', backgroundColor: 'var(--surface)', marginTop: '12px' }}>
-        <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--primary)' }}>💳 Paystack Payment (20% Deposit)</h3>
-        
-        <div style={{ display: 'grid', gap: '8px', fontSize: '13px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--muted)' }}>Total Amount:</span>
-            <span style={{ fontWeight: '500' }}>Ksh {totalAmount.toLocaleString('en-KE')}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--muted)' }}>Deposit (20%):</span>
-            <span style={{ fontWeight: '500', color: 'var(--primary)' }}>Ksh {depositAmount.toLocaleString('en-KE')}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--muted)' }}>Balance (on delivery):</span>
-            <span style={{ fontWeight: '500' }}>Ksh {balanceAmount.toLocaleString('en-KE')}</span>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '12px', padding: '8px', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-          <div style={{ fontSize: '11px', color: '#059669', fontWeight: '500' }}>
-            ✅ Deposit payment completed successfully
-          </div>
-          <div style={{ fontSize: '10px', color: '#059669', marginTop: '4px' }}>
-            Balance of Ksh {balanceAmount.toLocaleString('en-KE')} will be collected on delivery
-          </div>
-        </div>
-      </div>
-    )
+    return null // Don't show anything when payment is completed
   }
 
   return (

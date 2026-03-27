@@ -1,57 +1,58 @@
 import { NextResponse } from 'next/server'
 import connectDB from '../../../../../lib/mongodb'
 import Order from '../../../../../models/Order'
+import { getAdminSession } from '../../../../../lib/adminAuth'
 
 export async function POST(request) {
   try {
-    const { orderId, status } = await request.json()
-
-    if (!orderId || !status) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Order ID and status are required' 
-      }, { status: 400 })
+    // Verify admin session
+    const session = await getAdminSession()
+    if (!session || !session.isAdmin) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    // Validate status
-    const validStatuses = ['processing', 'in_transit', 'receiving', 'delivered']
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
-      }, { status: 400 })
+    const { orderId, status } = await request.json()
+    
+    if (!orderId || !status) {
+      return NextResponse.json(
+        { error: 'Order ID and status are required' },
+        { status: 400 }
+      )
     }
 
     await connectDB()
     
-    // Update the order status
+    // Update order status by orderId field (not _id)
     const updatedOrder = await Order.findOneAndUpdate(
-      { orderId: orderId },
+      { orderId: orderId }, // Find by orderId field, not _id
       { 
         status: status,
         updatedAt: new Date()
       },
       { new: true }
-    )
+    ).lean()
     
     if (!updatedOrder) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Order not found' 
-      }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
     }
-
-    return NextResponse.json({ 
-      success: true, 
-      order: updatedOrder,
-      message: `Order status updated to ${status}`
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Order status updated successfully',
+      order: updatedOrder
     })
-
+    
   } catch (error) {
-    console.error('Error updating order status:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to update order status' 
-    }, { status: 500 })
+    console.error('Order status update error:', error)
+    return NextResponse.json(
+      { error: 'Failed to update order status: ' + error.message },
+      { status: 500 }
+    )
   }
 }

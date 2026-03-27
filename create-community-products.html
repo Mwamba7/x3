@@ -42,7 +42,7 @@
                             ${data.products.map(p => `<li>${p.name} - Ksh ${p.price.toLocaleString()}</li>`).join('')}
                         </ul>
                         <p><a href="/">View Community Marketplace on main page</a></p>
-                        <p><a href="/admin/community">View in Admin Panel</a></p>
+                        <p><a href="/okero/community">View in Admin Panel</a></p>
                     `;
                 } else {
                     throw new Error(data.error || 'Failed to create products');

@@ -25,7 +25,19 @@ export async function GET(request) {
       createdAt: { $gte: twoHoursAgo }
     }).sort({ createdAt: -1 }).limit(1)
 
-    if (recentOrders.length === 0) {
+    // Also check for temporary payment lock orders
+    const tempOrders = await Order.find({
+      userId: userId,
+      'payment.depositPaid': true,
+      source: 'payment_lock',
+      status: 'payment_received',
+      createdAt: { $gte: twoHoursAgo }
+    }).sort({ createdAt: -1 }).limit(1)
+
+    // Combine both types of orders
+    const allRelevantOrders = [...recentOrders, ...tempOrders]
+    
+    if (allRelevantOrders.length === 0) {
       return NextResponse.json({
         success: true,
         hasDepositPayment: false,
@@ -34,8 +46,8 @@ export async function GET(request) {
       })
     }
 
-    const order = recentOrders[0]
-    const hasValidLockedCart = order.items && order.items.length > 0
+    const order = allRelevantOrders[0] // Get the most recent one
+    const hasValidLockedCart = order.source === 'payment_lock' || (order.items && order.items.length > 0)
 
     console.log('💳 Deposit status check:', {
       userId,

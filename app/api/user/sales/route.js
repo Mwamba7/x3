@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import Order from '../../../../models/Order'
+import Product from '../../../../models/Product'
 import connectDB from '../../../../lib/mongodb'
 
 export async function GET(request) {
@@ -60,6 +61,56 @@ export async function GET(request) {
     console.error('❌ Error fetching user sales:', error)
     return NextResponse.json({
       error: 'Failed to fetch sales'
+    }, { status: 500 })
+  }
+}
+
+export async function POST(request) {
+  try {
+    await connectDB()
+    const { userPhone } = await request.json()
+    
+    if (!userPhone) {
+      return NextResponse.json({ sales: [] })
+    }
+    
+    // Get all user products (sales) from database
+    const products = await Product.find({ 
+      $or: [
+        { 'originalSeller.phone': userPhone },
+        { 'metadata.sellerPhone': userPhone }
+      ]
+    }).sort({ createdAt: -1 })
+    
+    const sales = products.map(product => ({
+      id: product._id,
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      section: product.section,
+      status: product.status,
+      images: product.images || [product.img],
+      condition: product.condition,
+      description: product.meta || product.description,
+      approvedBy: product.approvedBy,
+      approvedAt: product.approvedAt,
+      originalSeller: product.originalSeller,
+      metadata: product.metadata,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt
+    }))
+    
+    return NextResponse.json({ 
+      success: true,
+      sales: sales
+    })
+    
+  } catch (error) {
+    console.error('Error fetching user sales:', error)
+    return NextResponse.json({ 
+      success: false,
+      error: error.message,
+      sales: []
     }, { status: 500 })
   }
 }

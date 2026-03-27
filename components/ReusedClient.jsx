@@ -27,24 +27,24 @@ export default function ReusedClient({ products = [] }) {
 
   const safeProducts = Array.isArray(products) ? products : []
 
-  // Resolve view fields with preowned overrides when present
+  // Resolve view fields for pre-owned products
   const viewProducts = useMemo(() => {
     return safeProducts.map(p => {
-      const o = p?.preowned || null
-      const baseCat = o?.category ?? p.category
+      // For pre-owned products, use the product data directly
+      const baseCat = p.category
       const normCat = typeof baseCat === 'string' && baseCat.toLowerCase().startsWith('preowned-')
         ? baseCat.slice('preowned-'.length)
         : baseCat
       return {
         ...p,
-        _name: o?.name ?? p.name,
+        _name: p.name,
         _category: baseCat,
         _catKey: normCat,
-        _price: o?.price ?? p.price,
-        _status: o?.status ?? p.status,
-        _img: o?.img ?? p.img,
-        _images: Array.isArray(o?.images) ? o.images : (p.images || []),
-        _meta: o?.meta ?? p.meta,
+        _price: p.price,
+        _status: p.status,
+        _img: p.img,
+        _images: Array.isArray(p.images) ? p.images : [],
+        _condition: p.condition || '',
       }
     })
   }, [safeProducts])
@@ -163,7 +163,7 @@ export default function ReusedClient({ products = [] }) {
         {filtered.map(p => {
           const isSold = p._status === 'sold'
           const isInCart = mounted ? !!items[p.id] : false
-          const condition = p.condition || p?.preowned?.condition || ''
+          const condition = p.condition || p._condition || ''
           return (
             <li className="product-card" key={p.id} data-category={p._catKey} data-name={p._name} data-price={p._price}>
               <Link
@@ -182,17 +182,35 @@ export default function ReusedClient({ products = [] }) {
               }}
                 style={isSold ? { cursor: 'not-allowed', opacity: 0.85 } : undefined}
               >
-                <div className="media" style={{ position: 'relative' }}>
+                <div className="media" style={{ 
+                      position: 'relative', 
+                      overflow: 'hidden',
+                      margin: 0,
+                      padding: 0,
+                      lineHeight: 0,
+                      fontSize: 0
+                    }}>
                   <img
                     loading="lazy"
                     src={p._img}
                     srcSet={buildSrcSet(p._img)}
                     sizes="(min-width:1536px) 14vw, (min-width:1280px) 18vw, (min-width:1024px) 22vw, (min-width:640px) 28vw, 60vw"
                     alt={p._name}
-                    style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }}
+                    style={{ 
+                      width: '100%', 
+                      height: '150px', 
+                      objectFit: 'cover', 
+                      objectPosition: 'center',
+                      display: 'block',
+                      margin: 0,
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: '0',
+                      verticalAlign: 'top'
+                    }}
                   />
                   <span className="badge condition">{condition}</span>
-                  <span className={`badge ${isSold ? 'sold-badge' : ''}`} style={{ position: 'absolute', right: 10, top: 10, background: 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', fontSize: 10, padding: '4px 6px', borderRadius: 999, color: isSold ? '#ef4444' : '#3b82f6' }}>{isSold ? 'Sold' : 'Available'}</span>
+                  <span className={`badge ${isSold ? 'sold-badge' : ''}`}>{isSold ? 'Sold' : 'Available'}</span>
                   {showSoldOverlay === p.id && (
                     <div className="sold-overlay visible">
                       <span className="emoji" role="img" aria-label="Lock">🔒</span>
@@ -201,18 +219,11 @@ export default function ReusedClient({ products = [] }) {
                   )}
                   {/* Unified Action Popup */}
                   {popupState.id === p.id && (
-                    <div style={{
+                    <div className="cart-popup" data-action={popupState.action} style={{
                       position: 'absolute',
                       top: '60%',
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
-                      background: popupState.action === 'added' ? 'rgba(10, 16, 26, 0.85)' : 
-                                   popupState.action === 'blocked' ? '#ff6b35' : '#dc3545',
-                      color: popupState.action === 'added' ? 'var(--primary)' : 'white',
-                      fontWeight: '600',
-                      fontSize: '11px',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
                       zIndex: 3,
                       pointerEvents: 'none',
                       opacity: 1,

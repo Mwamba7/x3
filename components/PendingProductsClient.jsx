@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function PendingProductsClient({ products: initialProducts }) {
   const [products, setProducts] = useState(initialProducts)
+  const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState({})
   const [showRejectModal, setShowRejectModal] = useState(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const router = useRouter()
 
   const handleApprove = async (productId) => {
     setLoading(prev => ({ ...prev, [productId]: 'approving' }))
@@ -84,7 +87,7 @@ export default function PendingProductsClient({ products: initialProducts }) {
     
     try {
       const response = await fetch('/api/admin/pending/delete', {
-        method: 'DELETE',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId })
       })
@@ -92,9 +95,9 @@ export default function PendingProductsClient({ products: initialProducts }) {
       const result = await response.json()
 
       if (response.ok) {
-        // Remove from list
+        // Remove product from state
         setProducts(prev => prev.filter(p => p._id !== productId))
-        alert('🗑️ Product submission deleted successfully.')
+        alert('✅ Product deleted successfully!')
       } else {
         alert(`❌ Error: ${result.error}`)
       }
@@ -104,6 +107,14 @@ export default function PendingProductsClient({ products: initialProducts }) {
     } finally {
       setLoading(prev => ({ ...prev, [productId]: null }))
     }
+  }
+
+  const handleEdit = (product) => {
+    // Navigate to edit page with product data
+    console.log('Edit button clicked for product:', product._id)
+    const editUrl = `/okero/pending/edit/${product._id}`
+    console.log('Navigating to:', editUrl)
+    router.push(editUrl)
   }
 
   const handleWhatsAppNotify = (product) => {
@@ -132,10 +143,50 @@ export default function PendingProductsClient({ products: initialProducts }) {
     })
   }
 
+  // Filter products based on search term
+  const filteredProducts = products.filter(product => {
+    return searchTerm === '' || 
+      product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sellerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sellerPhone?.includes(searchTerm) ||
+      product.price?.toString().includes(searchTerm) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
   return (
     <div>
+      {/* Search Bar */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ position: 'relative', maxWidth: 500 }}>
+          <input
+            type="text"
+            placeholder="Search by Product Name, Seller Name, Phone, Price, or Category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: '1px solid #253049',
+              borderRadius: '8px',
+              fontSize: '14px',
+              backgroundColor: '#0f1521',
+              color: '#e2e8f0',
+              outline: 'none',
+              transition: 'border-color 0.2s ease'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+            onBlur={(e) => e.target.style.borderColor = '#253049'}
+          />
+        </div>
+        {searchTerm && (
+          <div style={{ marginTop: 8, fontSize: '14px', color: '#64748b' }}>
+            Found {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} matching "{searchTerm}"
+          </div>
+        )}
+      </div>
+
       <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
-        {products.map(product => (
+        {filteredProducts.map(product => (
           <div key={product._id} className="product-card" style={{ border: '1px solid #253049', borderRadius: 12, overflow: 'hidden' }}>
             {/* Product Images */}
             {product.images && product.images.length > 0 && (
@@ -308,6 +359,18 @@ export default function PendingProductsClient({ products: initialProducts }) {
                   }}
                 >
                   📞 WhatsApp
+                </button>
+
+                <button
+                  className="btn"
+                  onClick={() => handleEdit(product)}
+                  style={{ 
+                    background: '#3498db',
+                    color: 'white',
+                    padding: '8px 12px'
+                  }}
+                >
+                  ✏️ Edit
                 </button>
 
                 <button

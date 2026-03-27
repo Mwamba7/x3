@@ -182,21 +182,28 @@ function PaymentCallbackInner() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      width: '100vw',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'var(--bg)',
-      padding: '20px'
+      overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      margin: 0,
+      padding: 0
     }}>
       <div style={{
-        backgroundColor: 'var(--surface)',
         padding: '40px',
-        borderRadius: '12px',
-        border: '1px solid var(--border)',
         textAlign: 'center',
         maxWidth: '400px',
-        width: '100%'
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>
           {getStatusIcon()}
@@ -206,7 +213,9 @@ function PaymentCallbackInner() {
           margin: '0 0 16px 0',
           fontSize: '24px',
           fontWeight: '600',
-          color: 'var(--text)'
+          color: 'var(--text)',
+          textAlign: 'center',
+          alignSelf: 'center'
         }}>
           Payment Status
         </h1>
@@ -215,7 +224,9 @@ function PaymentCallbackInner() {
           fontSize: '16px',
           color: getStatusColor(),
           marginBottom: '16px',
-          fontWeight: '500'
+          fontWeight: '500',
+          textAlign: 'center',
+          alignSelf: 'center'
         }}>
           {message}
         </div>
@@ -224,7 +235,9 @@ function PaymentCallbackInner() {
           <div style={{
             fontSize: '12px',
             color: 'var(--muted)',
-            marginBottom: '24px'
+            marginBottom: '24px',
+            textAlign: 'center',
+            alignSelf: 'center'
           }}>
             Reference: {reference}
           </div>
@@ -246,7 +259,9 @@ function PaymentCallbackInner() {
           <div style={{
             fontSize: '12px',
             color: 'var(--muted)',
-            lineHeight: 1.4
+            lineHeight: 1.4,
+            textAlign: 'center',
+            alignSelf: 'center'
           }}>
             Redirecting you back to checkout...
           </div>
@@ -263,7 +278,8 @@ function PaymentCallbackInner() {
               borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '500'
+              fontWeight: '500',
+              alignSelf: 'center'
             }}
           >
             Return to Checkout

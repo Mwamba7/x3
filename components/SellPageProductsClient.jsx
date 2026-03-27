@@ -28,6 +28,15 @@ function titleCase(s = '') {
   return CATEGORY_LABELS[s] || s.replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
 }
 
+// Helper to build responsive srcset for images
+function buildSrcSet(src, baseQuality = 75) {
+  if (!src || typeof src !== 'string') return ''
+  // For data URLs or external URLs, return as-is
+  if (src.startsWith('data:') || src.startsWith('http')) return src
+  // For local images, build srcset (adjust paths as needed for your setup)
+  return `${src} 1x`
+}
+
 export default function SellPageProductsClient({ products = [] }) {
   const formatKsh = (n) => `Ksh ${Number(n).toLocaleString('en-KE')}`
   const { addItem, removeItem, items, isCartLocked } = useCart()
@@ -167,11 +176,12 @@ export default function SellPageProductsClient({ products = [] }) {
     )
   }
 
+  {/* Community Marketplace - Updated: ${new Date().toISOString()} - Gap: 2px */}
   return (
     <section id="community-marketplace" className="products-section">
-      <header className="products-header">
+      <header className="products-header" style={{ marginBottom: 0 }}>
         <h3>Community Marketplace</h3>
-        <div className="filters" role="tablist" aria-label="Community product categories">
+        <div className="filters" role="tablist" aria-label="Community product categories" style={{ paddingBottom: 0 }}>
           {dynamicCategories.map(cat => (
             <button
               key={cat.key}
@@ -187,7 +197,7 @@ export default function SellPageProductsClient({ products = [] }) {
         </div>
       </header>
 
-      <div className="toolbar">
+      <div className="toolbar" style={{ marginTop: '2px', paddingTop: '0', borderTop: 'none' }}>
         <label className="search" style={{ flex: 1 }}>
           <span className="visually-hidden">Search community products</span>
           <input
@@ -210,11 +220,11 @@ export default function SellPageProductsClient({ products = [] }) {
       </div>
 
       <ul className="product-grid" aria-live="polite">
-        {filtered.map(p => {
+        {Array.isArray(filtered) && filtered.map(p => {
           const isSold = p._status === 'sold'
           const isInCart = mounted ? !!items[p.id] : false
           return (
-            <li className="product-card" key={p.id} data-category={p._catKey} data-name={p._name} data-price={p._price}>
+            <li className="product-card" key={p.id} data-category={p._catKey} data-name={p._name} data-price={p._price} style={{ marginBottom: '16px' }}>
               <Link
                 className="product-link"
                 href={`/product/${p.id}`}
@@ -231,29 +241,35 @@ export default function SellPageProductsClient({ products = [] }) {
                 }}
                 style={isSold ? { cursor: 'not-allowed', opacity: 0.85 } : undefined}
               >
-                <div className="media" style={{ position: 'relative' }}>
+                <div className="media" style={{ 
+                      position: 'relative', 
+                      overflow: 'hidden',
+                      margin: 0,
+                      padding: 0,
+                      lineHeight: 0,
+                      fontSize: 0
+                    }}>
                   <img
                     loading="lazy"
                     src={p._img}
                     srcSet={buildSrcSet(p._img)}
                     sizes="(min-width:1536px) 14vw, (min-width:1280px) 18vw, (min-width:1024px) 22vw, (min-width:640px) 28vw, 60vw"
                     alt={p._name}
-                    style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }}
+                    style={{ 
+                      width: '100%', 
+                      height: '150px', 
+                      objectFit: 'cover', 
+                      objectPosition: 'center',
+                      display: 'block',
+                      margin: 0,
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: '0',
+                      verticalAlign: 'top'
+                    }}
                   />
                   <span className="badge condition">{p._condition}</span>
-                  <span className={`badge ${isSold ? 'sold-badge' : ''}`} style={{ 
-                    position: 'absolute', 
-                    right: 10, 
-                    top: 10, 
-                    background: 'rgba(10,16,26,0.7)', 
-                    border: '1px solid #2a3342', 
-                    fontSize: 10, 
-                    padding: '4px 6px', 
-                    borderRadius: 999, 
-                    color: isSold ? '#ef4444' : '#3b82f6' 
-                  }}>
-                    {isSold ? 'Sold' : 'Available'}
-                  </span>
+                  <span className={`badge ${isSold ? 'sold-badge' : ''}`}>{isSold ? 'Sold' : 'Available'}</span>
                   {showSoldOverlay === p.id && (
                     <div className="sold-overlay visible">
                       <span className="emoji" role="img" aria-label="Lock">🔒</span>
@@ -262,25 +278,18 @@ export default function SellPageProductsClient({ products = [] }) {
                   )}
                   {/* Unified Action Popup */}
                   {popupState.id === p.id && (
-                    <div style={{
+                    <div className="cart-popup" data-action={popupState.action} style={{
                       position: 'absolute',
                       top: '60%',
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
-                      background: popupState.action === 'added' ? 'rgba(10, 16, 26, 0.85)' : 
-                                   popupState.action === 'blocked' ? '#ff6b35' : '#dc3545',
-                      color: popupState.action === 'added' ? 'var(--primary)' : 'white',
-                      fontWeight: '600',
-                      fontSize: '11px',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
                       zIndex: 3,
                       pointerEvents: 'none',
                       opacity: 1,
                       transition: 'opacity 0.3s ease'
                     }}>
                       {popupState.action === 'added' ? 'Added!' : 
-                       popupState.action === 'blocked' ? '🔒 Blocked!' : 'Removed!'}
+                       popupState.action === 'blocked' ? '🔒 blocked!' : 'Removed!'}
                     </div>
                   )}
                 </div>
@@ -332,7 +341,7 @@ export default function SellPageProductsClient({ products = [] }) {
         })}
       </ul>
       
-      {filtered.length >= 8 && (
+      {Array.isArray(filtered) && filtered.length >= 8 && (
         <div style={{ textAlign: 'left', marginTop: 20 }}>
           <p style={{ color: 'var(--muted)', fontSize: 14 }}>
             Want to sell your items? <a href="/sell" style={{ textDecoration: 'none', color: 'var(--muted)' }}><span style={{ color: 'var(--primary)' }}>click</span> to submit your product for sell on community marketplace</a>.

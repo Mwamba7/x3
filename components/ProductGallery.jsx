@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 const galleryStyles = `
   .product-gallery-image {
@@ -28,24 +28,78 @@ const galleryStyles = `
   }
 `
 
-export default function ProductGallery({ images = [], name, popupState }) {
+export default function ProductGallery({ images = [], name, popupState, coverImageIndex = 0, mainImage = null, condition = '', status = 'available', isSold = false }) {
   const [active, setActive] = useState(0)
   const [mounted, setMounted] = useState(false)
-  // Use images directly instead of storing in state to ensure updates
-  const list = images || []
+  
+  // Use mainImage as first image if provided, otherwise use reordered images
+  const galleryImages = useMemo(() => {
+    // More strict filtering to remove ALL invalid images
+    const isValidImage = (img) => {
+      return img && 
+             typeof img === 'string' && 
+             img.trim() !== '' && 
+             img !== 'null' && 
+             img !== 'undefined' &&
+             !img.includes('data:,'); // Remove empty data URLs
+    }
+    
+    const validImages = (images || []).filter(isValidImage)
+    
+    // If no valid images, return empty array to prevent blank images
+    if (validImages.length === 0) {
+      return []
+    }
+    
+    if (mainImage && isValidImage(mainImage)) {
+      // Check if mainImage is already in the images array
+      const mainImageIndex = validImages.indexOf(mainImage)
+      
+      if (mainImageIndex === 0) {
+        // mainImage is already first, return as-is
+        return validImages
+      } else if (mainImageIndex > 0) {
+        // mainImage is in the array but not first, move it to front
+        const result = [...validImages]
+        const [mainImg] = result.splice(mainImageIndex, 1)
+        result.unshift(mainImg)
+        return result
+      } else {
+        // mainImage is not in the array, add it first
+        return [mainImage, ...validImages]
+      }
+    }
+    
+    // Fallback to reordering logic
+    if (validImages.length <= 1) return validImages
+    
+    const imageArray = [...validImages]
+    if (coverImageIndex > 0 && coverImageIndex < imageArray.length) {
+      // Move cover image to first position
+      const [coverImage] = imageArray.splice(coverImageIndex, 1)
+      imageArray.unshift(coverImage)
+    }
+    return imageArray
+  }, [images, coverImageIndex, mainImage])
+  
+  // Use galleryImages for display
+  const list = galleryImages || []
   const main = list[active] || list[0]
   
   // Reset active image when images change and handle mounting
   useEffect(() => {
     setActive(0)
     setMounted(true)
-  }, [images])
+  }, [galleryImages])
 
   // Debug: Log images to console (remove in production)
   if (images.length > 1) {
     console.log('ProductGallery: Multiple images detected', { 
       count: images.length, 
-      images: images.slice(0, 3), // Show first 3 URLs
+      coverImageIndex,
+      mainImage,
+      originalImages: images.slice(0, 3),
+      galleryImages: galleryImages.slice(0, 3),
       mainImage: main 
     })
   }
@@ -71,15 +125,24 @@ export default function ProductGallery({ images = [], name, popupState }) {
         }}
       >
         {main ? (
-          <img
-            src={main}
-            alt={name}
-            className="product-gallery-image"
-            onError={(e) => {
-              console.error('Image failed to load:', main);
-              e.target.style.display = 'none';
-            }}
-          />
+          <>
+            <img
+              src={main}
+              alt={name}
+              className="product-gallery-image"
+              onError={(e) => {
+                console.error('Image failed to load:', main);
+                e.target.style.display = 'none';
+              }}
+            />
+            {/* Badges */}
+            {condition && (
+              <span className="badge condition">{condition}</span>
+            )}
+            <span className={`badge ${isSold ? 'sold-badge' : ''}`}>
+              {isSold ? 'Sold' : 'Available'}
+            </span>
+          </>
         ) : (
           <div style={{
             width: '100%',
@@ -97,23 +160,16 @@ export default function ProductGallery({ images = [], name, popupState }) {
         )}
         
         {/* Action Popup - positioned at bottom center of image */}
-        {mounted && popupState && popupState.show && (
-          <div style={{
+        {mounted && popupState && popupState.id && (
+          <div className="cart-popup" data-action={popupState.action} style={{
             position: 'absolute',
             bottom: '20px',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: popupState.action === 'added' ? 'rgba(10, 16, 26, 0.85)' : '#dc3545',
-            color: popupState.action === 'added' ? 'var(--primary)' : 'white',
-            fontWeight: '600',
-            fontSize: '14px',
-            padding: '8px 16px',
-            borderRadius: '8px',
             zIndex: 10,
             pointerEvents: 'none',
             opacity: 1,
-            transition: 'opacity 0.3s ease',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+            transition: 'opacity 0.3s ease'
           }}>
             {popupState.action === 'added' ? '✓ Added to Cart!' : '✓ Removed from Cart!'}
           </div>
@@ -123,7 +179,13 @@ export default function ProductGallery({ images = [], name, popupState }) {
       {/* Horizontal thumbnails with snap scroll */}
       {list.length > 1 && (
         <div className="thumbs" style={{ width: '100%', maxWidth: '100%', display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(72px, 88px)', gap: 8, overflowX: 'auto', paddingBottom: 3, scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', margin: '0 auto' }}>
-          {list.map((src, i) => (
+          {list.map((src, i) => {
+            // Additional safety check - don't render if src is invalid
+            if (!src || src.trim() === '' || src === 'null' || src === 'undefined') {
+              return null
+            }
+            
+            return (
             <button
               key={i}
               onClick={() => setActive(i)}
@@ -150,7 +212,8 @@ export default function ProductGallery({ images = [], name, popupState }) {
                 }}
               />
             </button>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

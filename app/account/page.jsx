@@ -34,6 +34,9 @@ export default function AccountPage() {
   const [showOrdersModal, setShowOrdersModal] = useState(false)
   const [showSalesModal, setShowSalesModal] = useState(false)
   const [showRecentModal, setShowRecentModal] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [clickedButton, setClickedButton] = useState(null) // Track clicked button for blinking animation
   
   // Account management states
   const [editingProfile, setEditingProfile] = useState(false)
@@ -80,6 +83,19 @@ export default function AccountPage() {
   const { user, isAuthenticated, logout, checkAuthStatus } = useAuth()
   const router = useRouter()
   
+  // Detect mobile screen size
+  useEffect(() => {
+    setIsClient(true)
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   // Handle mounting to prevent SSR issues
   useEffect(() => {
     setMounted(true)
@@ -222,6 +238,16 @@ export default function AccountPage() {
       })
     }
   }, [user])
+
+  // Clear blinking containers after a delay to allow animation to be visible
+  useEffect(() => {
+    if (clickedButton) {
+      const timer = setTimeout(() => {
+        setClickedButton(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [clickedButton])
 
   const fetchUserOrders = async () => {
     try {
@@ -372,13 +398,26 @@ export default function AccountPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      logout()
-      router.push('/')
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        logout()
+        router.push('/')
+      }
     } catch (error) {
       console.error('Logout error:', error)
-      logout()
-      router.push('/')
+    }
+  }
+
+  const handleButtonClick = (buttonId, action) => {
+    setClickedButton(buttonId)
+    if (action) {
+      action()
     }
   }
 
@@ -399,26 +438,100 @@ export default function AccountPage() {
   }
 
   // Show loading until component is mounted and auth is checked
-  if (!mounted || !isAuthenticated || loading) {
+  const [showLoading, setShowLoading] = useState(true)
+  
+  // Ensure minimum loading time for visibility
+  useEffect(() => {
+    if (mounted && isAuthenticated && !loading) {
+      const timer = setTimeout(() => {
+        setShowLoading(false)
+      }, 2000) // Show for at least 2 seconds
+      return () => clearTimeout(timer)
+    } else {
+      setShowLoading(true)
+    }
+  }, [mounted, isAuthenticated, loading])
+  
+  if (showLoading) {
+    console.log('🔄 Loading state:', { mounted, isAuthenticated, loading, showLoading })
     return (
       <div style={{ 
-        minHeight: '100vh',
+        position: 'fixed',
+        top: '60px', /* Account for header height */
+        left: 0,
+        right: 0,
+        bottom: '60px', /* Account for footer height */
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)', /* Dark background for visibility */
+        zIndex: 1000
       }}>
-        <div>Loading...</div>
+        <div style={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '15px'
+        }}>
+          {/* Loading spinner */}
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid rgba(34, 197, 94, 0.3)',
+            borderTop: '4px solid #22c55e',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            WebkitAnimation: 'spin 1s linear infinite',
+            MozAnimation: 'spin 1s linear infinite',
+            boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)'
+          }}></div>
+          <div style={{ 
+            fontSize: '16px', 
+            color: '#ffffff', 
+            fontWeight: '500',
+            marginTop: '10px',
+            textShadow: '0 1px 3px rgba(0,0,0,0.7)'
+          }}>Loading your account...</div>
+        </div>
       </div>
     )
   }
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: 'auto', /* Allow dynamic height */
       backgroundColor: 'var(--bg)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.6; }
+          100% { opacity: 1; }
+        }
+        .loading-spinner {
+          width: 30px;
+          height: 30px;
+          border: 3px solid rgba(34, 197, 94, 0.15);
+          borderTop: 3px solid #22c55e;
+          borderRight: 3px solid #22c55e;
+          borderRadius: 50%;
+          animation: spin 1s linear infinite;
+          -webkit-animation: spin 1s linear infinite;
+          -moz-animation: spin 1s linear infinite;
+          box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+        }
+        .loading-text {
+          font-size: 14px;
+          color: #ffffff !important;
+          font-weight: 400;
+          animation: pulse 1.5s ease-in-out infinite;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
         .blink-icon {
           animation: blink 1.5s ease-in-out infinite alternate;
         }
@@ -485,65 +598,170 @@ export default function AccountPage() {
           }}>
             {/* Overview Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
-              <button
-                onClick={() => setShowRecentModal(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📊</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Recent</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('recent', () => {
+                    // Navigate to recent-activity page
+                    window.location.href = '/recent-activity'
+                  })}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>📊</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Recent</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'recent' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
               
-              <button
-                onClick={() => {
-                  // Navigate to orders page - no phone storage needed for account-based system
-                  window.location.href = '/my-orders'
-                }}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📋</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Orders</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('orders', () => {
+                    // Navigate to orders page - no phone storage needed for account-based system
+                    window.location.href = '/my-orders'
+                  })}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>📋</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Orders</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'orders' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
               
               
-              <button
-                onClick={() => setShowProductsModal(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>📦</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Products ({products.length})</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('products', () => {
+                    // Navigate to my-products page
+                    window.location.href = '/my-products'
+                  })}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>📦</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Products</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'products' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
               
-              <button
-                onClick={() => setShowSalesModal(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>💰</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Sales ({sales.length})</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('sales', () => {
+                    // Navigate to my-sales page
+                    window.location.href = '/my-sales'
+                  })}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>💰</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Sales</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'sales' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -560,61 +778,157 @@ export default function AccountPage() {
           }}>
             {/* Services Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
-              <button
-                onClick={() => setShowAccountManagement(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>🏠</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Address</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('address', () => setShowAccountManagement(true))}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>🏠</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Address</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'address' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
               
-              <button
-                onClick={() => setShowSettings(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>👤</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Profile</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('profile', () => setShowSettings(true))}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>👤</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Profile</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'profile' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
               
-              <button
-                onClick={() => setShowLogoutConfirm(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>🚪</div>
-                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Log Out</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('logout', () => setShowLogoutConfirm(true))}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>🚪</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Log Out</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'logout' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
               
-              <button
-                onClick={() => setShowDeleteAccount(true)}
-                style={{ 
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  padding: '8px'
-                }}
-              >
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>🗑️</div>
-                <div style={{ fontSize: '12px', color: '#dc3545', fontWeight: '500' }}>Account</div>
-              </button>
+              <div className="nav-item-container">
+                <button
+                  onClick={() => handleButtonClick('account', () => setShowDeleteAccount(true))}
+                  style={{ 
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>🗑️</div>
+                  <div style={{ fontSize: '12px', color: '#dc3545', fontWeight: '500' }}>Account</div>
+                </button>
+                
+                {/* Blinking circular container */}
+                {clickedButton === 'account' && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      border: '2px solid #10b981',
+                      pointerEvents: 'none',
+                      animation: 'blink 1s ease-in-out infinite',
+                      zIndex: -1
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -754,27 +1068,6 @@ export default function AccountPage() {
                     </div>
                   </div>
                   
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
-                      Street Address *
-                    </label>
-                    <input
-                      type="text"
-                      value={addressFormData.street}
-                      onChange={(e) => setAddressFormData(prev => ({ ...prev, street: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        backgroundColor: 'var(--surface)',
-                        color: 'var(--text)'
-                      }}
-                      placeholder="Enter street address"
-                    />
-                  </div>
-                  
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '20px', alignItems: 'end' }}>
                     <div>
                       <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
@@ -806,11 +1099,10 @@ export default function AccountPage() {
                     }}></div>
                     
                     <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: 'var(--text)', fontSize: '14px' }}>
                         Region *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={addressFormData.region}
                         onChange={(e) => setAddressFormData(prev => ({ ...prev, region: e.target.value }))}
                         style={{
@@ -820,11 +1112,58 @@ export default function AccountPage() {
                           borderRadius: '4px',
                           fontSize: '14px',
                           backgroundColor: 'var(--surface)',
-                          color: 'var(--text)'
+                          color: 'var(--text)',
+                          cursor: 'pointer',
+                          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                          outline: 'none',
+                          // Hide dropdown icon on all devices
+                          appearance: 'none',
+                          // Hide custom dropdown icon on all devices
+                          backgroundImage: 'none',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'none',
+                          backgroundSize: 'none',
+                          paddingRight: '12px'
                         }}
-                        placeholder="Region"
-                      />
+                        onFocus={(e) => {
+                          e.target.style.borderColor = 'var(--primary)'
+                          if (!isMobile) {
+                            e.target.style.boxShadow = '0 0 0 3px rgba(57, 217, 138, 0.1)'
+                          }
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'var(--border)'
+                          if (!isMobile) {
+                            e.target.style.boxShadow = 'none'
+                          }
+                        }}
+                      >
+                        <option value="" style={{ color: '#999', fontStyle: 'italic' }}>Select Region</option>
+                        <option value="Nairobi">Nairobi</option>
+                        <option value="Naivasha">Naivasha</option>
+                      </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', color: 'var(--text)' }}>
+                      Street Address *
+                    </label>
+                    <input
+                      type="text"
+                      value={addressFormData.street}
+                      onChange={(e) => setAddressFormData(prev => ({ ...prev, street: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid var(--border)',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        backgroundColor: 'var(--surface)',
+                        color: 'var(--text)'
+                      }}
+                      placeholder="Enter street address"
+                    />
                   </div>
 
                   {addressErrors.general && (
@@ -2938,6 +3277,42 @@ export default function AccountPage() {
           </div>
         </div>
       )}
+      
+      {/* CSS for blinking circular containers */}
+      <style jsx>{`
+        .nav-item-container {
+          position: relative !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
+        .nav-hover-circle {
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          width: 60px !important;
+          height: 60px !important;
+          border-radius: 50% !important;
+          background: rgba(16, 185, 129, 0.2) !important;
+          border: 2px solid #10b981 !important;
+          pointer-events: none !important;
+          animation: blink 1s ease-in-out infinite !important;
+          z-index: -1 !important;
+        }
+        
+        @keyframes blink {
+          0%, 100% {
+            opacity: 0.3;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.05);
+          }
+        }
+      `}</style>
     </div>
   )
 }

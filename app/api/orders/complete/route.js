@@ -129,6 +129,15 @@ export async function POST(request) {
       source: 'website'
     })
 
+    // Remove any existing temporary payment lock orders for this user
+    console.log('🧹 Removing any existing temporary payment lock orders...')
+    await Order.deleteMany({
+      userId: authResult.user.id,
+      source: 'payment_lock',
+      status: 'payment_received'
+    })
+    console.log('✅ Temporary payment lock orders removed')
+
     // Save order to database
     console.log('💾 Attempting to save order...')
     console.log('📋 Order object before save:', JSON.stringify(order.toObject(), null, 2))

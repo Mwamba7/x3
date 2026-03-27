@@ -4,6 +4,9 @@ import connectDB from '../../lib/mongodb'
 import Product from '../../models/Product'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function MarketplacePage() {
   let products = []
   let fashionProducts = []
@@ -14,9 +17,16 @@ export default async function MarketplacePage() {
     // Get Community Marketplace electronics products
     const rows = await Product.find({
       category: { $in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] },
+      section: 'marketplace', // Only marketplace section products
       // Only Community Marketplace products
       'metadata.source': 'sell-page',
-      'metadata.submissionType': 'public'
+      'metadata.submissionType': 'public',
+      // Exclude products that are in other sections
+      $nor: [
+        { section: 'fashion' },
+        { section: 'preowned' },
+        { section: 'collection' }
+      ]
     }).sort({ createdAt: -1 })
     
     products = rows.map(r => ({
@@ -34,9 +44,16 @@ export default async function MarketplacePage() {
     // Get Community Marketplace fashion products
     const frows = await Product.find({
       category: { $in: ['outfits', 'hoodie', 'shoes', 'sneakers', 'ladies', 'men'] },
+      section: 'marketplace', // Only marketplace section products
       // Only Community Marketplace products
       'metadata.source': 'sell-page',
-      'metadata.submissionType': 'public'
+      'metadata.submissionType': 'public',
+      // Exclude products that are in other sections
+      $nor: [
+        { section: 'fashion' },
+        { section: 'preowned' },
+        { section: 'collection' }
+      ]
     }).sort({ createdAt: -1 })
     
     fashionProducts = frows.map(r => ({

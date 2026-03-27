@@ -5,6 +5,9 @@ import Product from '../../../models/Product'
 import ProductDetailClient from '../../../components/ProductDetailClient'
 import mongoose from 'mongoose'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function generateMetadata({ params }) {
   try {
     await connectDB()
@@ -40,11 +43,13 @@ export default async function ProductPage({ params }) {
           category: row.category,
           price: row.price,
           img: row.img,
-          images: row.imagesJson ? JSON.parse(row.imagesJson) : [],
+          images: row.images || [], // Use images array instead of imagesJson
+          description: row.description || row.meta || '', // Include description, fallback to meta
           special: row.special || '',
           meta: row.meta || '',
           condition: row.condition || '',
           status: row.status || 'available',
+          section: row.section || 'collection', // Include section info
         }
       }
     }

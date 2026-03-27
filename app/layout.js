@@ -3,6 +3,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import Nav from '../components/Nav'
 import BottomNav from '../components/BottomNav'
 import { CartProvider } from '../components/CartContext'
@@ -18,6 +19,10 @@ const inter = Inter({ subsets: ['latin'] })
 export default function RootLayout({ children }) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const pathname = usePathname()
+  
+  // Check if current page is an admin page
+  const isAdminPage = pathname?.startsWith('/okero')
 
   // Detect mobile device
   useEffect(() => {
@@ -108,6 +113,9 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           <CartProvider>
@@ -115,7 +123,7 @@ export default function RootLayout({ children }) {
               <div className="container header-inner">
                 <div className="brand">
                   <span className="logo" aria-hidden="true">♻️</span>
-                  <h1 className="brand-title"><Link href="/">Super Twice EN<br/>Resellers</Link></h1>
+                  <h1 className="brand-title"><Link href="/">EN Super Twice<br/>Resellers</Link></h1>
                 </div>
                 <Nav />
               </div>
@@ -135,7 +143,8 @@ export default function RootLayout({ children }) {
               <div className="container footer-inner">
                 <div className="footer-content">
                   <ClientFooter />
-                  <BottomNav />
+                  {/* Hide BottomNav only on admin pages */}
+                  {!isAdminPage && <BottomNav />}
                 </div>
               </div>
             </footer>

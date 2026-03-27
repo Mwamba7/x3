@@ -1,29 +1,42 @@
 import { NextResponse } from 'next/server'
-import connectDB from '../../../../lib/mongodb'
-import mongoose from 'mongoose'
+import { getAdminSession } from '../../../../../lib/adminAuth'
+import connectDB from '../../../../../lib/mongodb'
+import WithdrawalRequest from '../../../../../models/WithdrawalRequest'
 
-// GET - Fetch all withdrawal requests for admin
-export async function GET() {
+export async function GET(request) {
   try {
+    // Verify admin session
+    const session = await getAdminSession()
+    if (!session || !session.isAdmin) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     await connectDB()
-    const db = mongoose.connection.db
     
-    // Fetch all withdrawal requests sorted by most recent
-    const withdrawals = await db.collection('withdrawalRequests').find({})
+    // Fetch all withdrawal requests
+    const rawWithdrawals = await WithdrawalRequest.find({})
       .sort({ createdAt: -1 })
-      .toArray()
-    
-    return NextResponse.json({ 
-      success: true, 
-      withdrawals: withdrawals.map(w => ({
-        ...w,
-        _id: w._id.toString()
-      }))
+      .lean()
+
+    // Map _id to id for the client component
+    const withdrawals = rawWithdrawals.map(w => ({
+      ...w,
+      id: w._id.toString(),
+      _id: w._id.toString()
+    }))
+
+    return NextResponse.json({
+      success: true,
+      withdrawals: withdrawals
     })
+    
   } catch (error) {
-    console.error('Error fetching withdrawals:', error)
+    console.error('Error fetching withdrawal requests:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch withdrawals' },
+      { error: 'Failed to fetch withdrawal requests: ' + error.message },
       { status: 500 }
     )
   }

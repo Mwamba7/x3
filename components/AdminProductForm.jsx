@@ -3,9 +3,37 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function AdminProductForm({ initial, section = 'products', backUrl = '/admin/products' }) {
+export default function AdminProductForm({ initial, section = 'collection', backUrl = '/okero/products' }) {
   const router = useRouter()
   const isEdit = Boolean(initial?.id)
+  
+  // Debug: Log initial data to see what's loaded from database
+  console.log('🔍 AdminProductForm - Initial data:', initial)
+  console.log('🔍 AdminProductForm - Initial deliveryFees:', initial?.deliveryFees)
+  console.log('🔍 AdminProductForm - Section:', section)
+  
+  // Debug: Track currentImages initialization in detail
+  console.log('🔍 AdminProductForm - Deep dive into initial images:', {
+    'initial?.images': initial?.images,
+    'initial?.imagesJson': initial?.imagesJson,
+    'typeof initial?.images': typeof initial?.images,
+    'isArray': Array.isArray(initial?.images),
+    'length': initial?.images?.length,
+    'initialImages content': initial?.images?.map((img, idx) => ({
+      idx,
+      content: img,
+      type: typeof img,
+      isEmpty: !img,
+      isBlank: img?.trim() === '',
+      isNull: img === null,
+      isUndefined: img === undefined,
+      isStringNull: img === 'null',
+      isStringUndefined: img === 'undefined',
+      isDataUrl: img?.startsWith?.('data:'),
+      length: img?.length
+    }))
+  })
+  
   const [form, setForm] = useState({
     name: initial?.name || '',
     category: initial?.category || '',
@@ -15,15 +43,69 @@ export default function AdminProductForm({ initial, section = 'products', backUr
     meta: initial?.meta || '',
     condition: initial?.condition || '',
     status: initial?.status || 'available',
+    adminContact: initial?.adminContact || '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
   const [categories, setCategories] = useState([])
   const [imageList, setImageList] = useState([])
   const [newImageUrl, setNewImageUrl] = useState('')
   const [failedImages, setFailedImages] = useState(new Set())
   const [currentImages, setCurrentImages] = useState(() => {
-    return Array.isArray(initial?.images) ? [...initial.images] : []
+    const initialImages = Array.isArray(initial?.images) ? [...initial.images] : []
+    
+    console.log('🔍 AdminProductForm - currentImages initialization:', {
+      'initialImages raw': initialImages,
+      'initialImages length': initialImages.length
+    })
+    
+    // AGGRESSIVE FILTERING - Remove any possible blank images
+    const filteredImages = initialImages.filter((img, idx) => {
+      // Multiple layers of validation
+      if (img === null || img === undefined) {
+        console.log(`🔍 Filtering out null/undefined image at index ${idx}`)
+        return false
+      }
+      
+      if (typeof img !== 'string') {
+        console.log(`🔍 Filtering out non-string image at index ${idx}:`, typeof img)
+        return false
+      }
+      
+      if (img.trim() === '') {
+        console.log(`🔍 Filtering out empty string image at index ${idx}`)
+        return false
+      }
+      
+      if (img === 'null' || img === 'undefined') {
+        console.log(`🔍 Filtering out string null/undefined image at index ${idx}`)
+        return false
+      }
+      
+      if (img.includes('data:,')) {
+        console.log(`🔍 Filtering out empty data URL image at index ${idx}`)
+        return false
+      }
+      
+      if (img.length < 5) {
+        console.log(`🔍 Filtering out too short image at index ${idx}:`, img.length)
+        return false
+      }
+      
+      // Image passed all filters
+      console.log(`✅ Keeping valid image at index ${idx}:`, img.substring(0, 50) + (img.length > 50 ? '...' : ''))
+      return true
+    })
+    
+    console.log('🔍 AdminProductForm - currentImages initialization result:', {
+      initialImages,
+      filteredImages,
+      imagesCount: filteredImages.length,
+      filteredOut: initialImages.length - filteredImages.length
+    })
+    
+    return filteredImages
   })
   const [selectedFiles, setSelectedFiles] = useState([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
@@ -64,36 +146,61 @@ export default function AdminProductForm({ initial, section = 'products', backUr
 
   useEffect(() => {
     if (isEdit) return // do not change categories list on edit; category is locked
-    const fallbackFashion = [
-      { key: 'outfits', label: 'Outfits' },
-      { key: 'hoodie', label: 'Hoodies' },
-      { key: 'shoes', label: 'Shoes' },
-      { key: 'sneakers', label: 'Sneakers' },
-      { key: 'ladies', label: 'Ladies' },
-      { key: 'men', label: 'Men' },
-    ]
-    const fallbackElectronics = [
-      { key: 'tv', label: 'Televisions' },
-      { key: 'radio', label: 'Sound systems' },
-      { key: 'phone', label: 'Mobile phones' },
-      { key: 'electronics', label: 'Electronics' },
-      { key: 'accessory', label: 'Accessories' },
-      { key: 'appliances', label: 'Appliances' },
-    ]
+    
+    // Define categories by section
+    const sectionCategories = {
+      collection: [
+        { key: 'tv', label: 'Televisions' },
+        { key: 'radio', label: 'Sound systems' },
+        { key: 'phone', label: 'Mobile phones' },
+        { key: 'electronics', label: 'Electronics' },
+        { key: 'accessory', label: 'Accessories' },
+        { key: 'appliances', label: 'Appliances' },
+        { key: 'fridge', label: 'Refrigerators' },
+        { key: 'cooler', label: 'Coolers' },
+      ],
+      preowned: [
+        { key: 'preowned-electronics', label: 'Pre-owned Electronics' },
+        { key: 'preowned-fashion', label: 'Pre-owned Fashion' },
+        { key: 'preowned-appliances', label: 'Pre-owned Appliances' },
+        { key: 'preowned-furniture', label: 'Pre-owned Furniture' },
+        { key: 'preowned-other', label: 'Other Pre-owned Items' },
+      ],
+      marketplace: [
+        { key: 'electronics', label: 'Electronics' },
+        { key: 'fashion', label: 'Fashion' },
+        { key: 'appliances', label: 'Appliances' },
+        { key: 'furniture', label: 'Furniture' },
+        { key: 'books', label: 'Books' },
+        { key: 'sports', label: 'Sports & Outdoors' },
+        { key: 'toys', label: 'Toys & Games' },
+        { key: 'accessories', label: 'Accessories' },
+        { key: 'other', label: 'Other Items' },
+      ]
+    }
+    
+    const fallbackCategories = sectionCategories[section] || sectionCategories.collection
+    
     fetch('/api/categories')
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const arr = Array.isArray(data) ? data : []
-        const fashion = new Set(['outfits','hoodie','shoes','sneakers','ladies','men'])
-        const isFashion = fashion.has((initial?.category || form.category || '').toLowerCase())
-        const allow = isFashion
-          ? fashion
-          : new Set(['tv','radio','phone','electronics','accessory','appliances'])
-        const filtered = arr.filter(c => allow.has(c.key))
-        setCategories(filtered.length ? filtered : (isFashion ? fallbackFashion : fallbackElectronics))
+        
+        // Filter categories based on section
+        let allowedCategories = []
+        if (section === 'collection') {
+          allowedCategories = ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler']
+        } else if (section === 'preowned') {
+          allowedCategories = ['preowned-electronics','preowned-fashion','preowned-appliances','preowned-furniture','preowned-other']
+        } else if (section === 'marketplace') {
+          allowedCategories = ['electronics','fashion','appliances','furniture','books','sports','toys','accessories','other']
+        }
+        
+        const filtered = arr.filter(c => allowedCategories.includes(c.key))
+        setCategories(filtered.length ? filtered : fallbackCategories)
       })
-      .catch(() => setCategories([]))
-  }, [initial?.category, form.category, isEdit])
+      .catch(() => setCategories(fallbackCategories))
+  }, [initial?.category, form.category, isEdit, section])
 
   function bind(k) {
     return {
@@ -103,6 +210,15 @@ export default function AdminProductForm({ initial, section = 'products', backUr
         // If editing the images field, sync with imageList
         if (k === 'images') {
           const urls = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+          console.log('🔍 AdminProductForm - Form images field sync:', {
+            fieldName: 'images',
+            rawValue: e.target.value,
+            splitResult: e.target.value.split(','),
+            trimmedUrls: e.target.value.split(',').map(s => s.trim()),
+            filteredUrls: urls,
+            imageListBefore: imageList,
+            imageListAfter: urls
+          })
           setImageList(urls)
         }
       }
@@ -115,7 +231,45 @@ export default function AdminProductForm({ initial, section = 'products', backUr
     if (form.images !== csv) {
       setForm(s => ({ ...s, images: csv }))
     }
-  }, [imageList])
+  }, [imageList, form.images])
+
+  // Monitor currentImages and prevent blank images from being added
+  useEffect(() => {
+    const blankImages = currentImages.filter((img, idx) => {
+      const isBlank = !img || 
+                     typeof img !== 'string' || 
+                     img.trim() === '' || 
+                     img === 'null' || 
+                     img === 'undefined' || 
+                     img.includes('data:,') || 
+                     img.length < 5
+      
+      if (isBlank) {
+        console.log(`🚨 MONITOR - Found blank image at index ${idx}:`, img)
+      }
+      
+      return isBlank
+    })
+    
+    if (blankImages.length > 0) {
+      console.log(`🚨 MONITOR - Detected ${blankImages.length} blank images, removing them...`)
+      setCurrentImages(prev => prev.filter((img, idx) => {
+        const isBlank = !img || 
+                       typeof img !== 'string' || 
+                       img.trim() === '' || 
+                       img === 'null' || 
+                       img === 'undefined' || 
+                       img.includes('data:,') || 
+                       img.length < 5
+        
+        if (!isBlank) {
+          console.log(`✅ MONITOR - Keeping valid image at index ${idx}:`, img.substring(0, 50) + (img.length > 50 ? '...' : ''))
+        }
+        
+        return !isBlank
+      }))
+    }
+  }, [currentImages.length]) // Only check when length changes
 
   function addImage() {
     const url = newImageUrl.trim()
@@ -166,6 +320,10 @@ export default function AdminProductForm({ initial, section = 'products', backUr
     try {
       const base64Images = []
       
+      console.log('📤 Upload Debug - Starting upload:', {
+        selectedFiles: selectedFiles.map(f => ({ name: f.name, size: f.size, type: f.type }))
+      })
+      
       for (const file of selectedFiles) {
         // Check file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
@@ -173,16 +331,43 @@ export default function AdminProductForm({ initial, section = 'products', backUr
           continue
         }
         
+        console.log(`📤 Processing file: ${file.name}`)
         const base64 = await fileToBase64(file)
+        
+        // Check base64 size (should be reasonable)
+        if (base64.length > 10 * 1024 * 1024) { // 10MB base64 limit
+          console.warn(`⚠️ Base64 for ${file.name} is very large: ${base64.length} characters`)
+          alert(`File ${file.name} produces too large base64 data. Please choose a smaller image.`)
+          continue
+        }
+        
         base64Images.push(base64)
+        console.log(`✅ Successfully processed ${file.name}, base64 length: ${base64.length}`)
       }
       
+      console.log('📤 Upload Debug - Processed images:', {
+        totalFiles: selectedFiles.length,
+        successfulImages: base64Images.length,
+        totalBase64Size: base64Images.reduce((sum, img) => sum + img.length, 0)
+      })
+      
       // Add to image list
-      setImageList(list => [...list, ...base64Images])
+      setImageList(list => {
+        const newList = [...list, ...base64Images]
+        console.log('📤 Upload Debug - Updated imageList:', {
+          oldCount: list.length,
+          newCount: newList.length,
+          addedImages: base64Images.length
+        })
+        return newList
+      })
       
       // If no cover image is set and we have uploaded images, set the first one as cover
       if (!form.img && base64Images.length > 0) {
-        setForm(s => ({ ...s, img: base64Images[0] }))
+        setForm(s => {
+          console.log('📤 Upload Debug - Setting cover image to first uploaded image')
+          return { ...s, img: base64Images[0] }
+        })
       }
       
       setSelectedFiles([])
@@ -190,6 +375,8 @@ export default function AdminProductForm({ initial, section = 'products', backUr
       // Clear file input
       const fileInput = document.getElementById('imageFileInput')
       if (fileInput) fileInput.value = ''
+      
+      alert(`Successfully uploaded ${base64Images.length} image(s)!`)
       
     } catch (error) {
       console.error('Error uploading files:', error)
@@ -247,67 +434,164 @@ export default function AdminProductForm({ initial, section = 'products', backUr
 
   async function onSubmit(e) {
     e.preventDefault()
-    setError('')
     setLoading(true)
+    setError('')
+    
+    // SAFEGUARD: Prevent moving marketplace/preowned products to other sections
+    if (isEdit && initial) {
+      const currentSection = initial.section
+      const targetSection = section
+      
+      // Check if product is currently in marketplace or preowned
+      if (currentSection === 'marketplace' || currentSection === 'preowned') {
+        if (currentSection !== targetSection) {
+          setError(`Cannot move product from ${currentSection} to ${targetSection}. Products in marketplace or preowned sections cannot be moved to other sections.`)
+          setLoading(false)
+          return
+        }
+      }
+      
+      // Check if product has marketplace metadata
+      if (initial.metadata && 
+          (initial.metadata.source === 'sell-page' || 
+           initial.metadata.submissionType === 'public')) {
+        if (currentSection !== 'marketplace') {
+          setError('Cannot modify marketplace products. Products uploaded through the marketplace page cannot be moved to other sections.')
+          setLoading(false)
+          return
+        }
+      }
+    }
+    
     try {
-      // Combine images from all sources and filter out empty/invalid ones
-      const commaImages = form.images.trim() ? 
-        form.images.split(',').map(s => s.trim()).filter(url => url && isValidImageUrl(url)) : []
-      const galleryImages = imageList.filter(url => url && isValidImageUrl(url))
-      const newImages = [...new Set([...commaImages, ...galleryImages])] // Remove duplicates
+      // Debug: Check all image sources before processing
+      console.log('🔍 AdminProductForm - Save process - All image sources:', {
+        'form.images': form.images,
+        'form.images.trim()': form.images.trim(),
+        'imageList': imageList,
+        'currentImages': currentImages,
+        'initial.images': initial?.images
+      })
+      
+      // Use currentImages as the primary source - it contains all uploaded images
+      const validCurrentImages = currentImages.filter((img, idx) => {
+        if (img === null || img === undefined) {
+          console.log(`🔧 SAVE - Filtering out null/undefined image at index ${idx}`)
+          return false
+        }
+        
+        if (typeof img !== 'string') {
+          console.log(`� SAVE - Filtering out non-string image at index ${idx}:`, typeof img)
+          return false
+        }
+        
+        if (img.trim() === '') {
+          console.log(`🔧 SAVE - Filtering out empty string image at index ${idx}`)
+          return false
+        }
+        
+        if (img === 'null' || img === 'undefined') {
+          console.log(`🔧 SAVE - Filtering out string null/undefined image at index ${idx}`)
+          return false
+        }
+        
+        if (img.includes('data:,')) {
+          console.log(`🔧 SAVE - Filtering out empty data URL image at index ${idx}`)
+          return false
+        }
+        
+        if (img.length < 5) {
+          console.log(`🔧 SAVE - Filtering out too short image at index ${idx}:`, img.length)
+          return false
+        }
+        
+        console.log(`🔧 SAVE - Keeping valid image at index ${idx}:`, img.substring(0, 50) + (img.length > 50 ? '...' : ''))
+        return true
+      })
+      
+      console.log('🔍 AdminProductForm - Using currentImages as primary source:', {
+        currentImages,
+        validCurrentImages,
+        validCurrentImagesLength: validCurrentImages.length,
+        filteredOut: currentImages.length - validCurrentImages.length
+      })
+      
+      // Set the final images to save
+      const finalImages = validCurrentImages
       
       const payload = {
         name: form.name.trim(),
         category: form.category.trim(),
+        section: section, // Add section to payload
         price: Number(form.price),
         img: form.img.trim(),
         meta: form.meta,
         condition: form.condition,
         status: form.status,
+        adminContact: form.adminContact.trim(),
+        // Use the filtered currentImages
+        images: finalImages,
+        imagesJson: JSON.stringify(finalImages)
       }
       
-      // Handle images based on mode and changes
-      if (isEdit) {
-        // Filter current images to remove any empty/invalid ones and combine with new images
-        const validCurrentImages = currentImages.filter(url => url && isValidImageUrl(url))
-        const finalImages = [...new Set([...validCurrentImages, ...newImages])] // Remove duplicates
-        
-        // Always include images field when editing to handle deletions
-        payload.images = finalImages
-      } else {
-        // Creating new product, use new images only
-        payload.images = newImages
-      }
+      console.log('� Final payload with images:', payload)
+      console.log('� Final images count:', finalImages.length)
       
       // Debug: Log what we're saving
       console.log('AdminProductForm saving:', {
         productName: form.name,
-        commaImages,
-        galleryImages,
-        newImages,
         currentImages,
         finalImages: payload.images,
+        finalImagesLength: finalImages.length,
         isEdit,
         payload
       })
       let res, data
       if (isEdit) {
-        // When editing, keep category unchanged — do not send it in the PATCH body
-        delete payload.category
+        // For editing, use the general products endpoint
         res = await fetch(`/api/products/${initial.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            // Add authentication headers to prevent login redirect
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'include', // Include cookies for authentication
           body: JSON.stringify(payload)
         })
+        
+        // Check if response is HTML (login page) instead of JSON
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('text/html')) {
+          throw new Error('Authentication required. Please log in again.')
+        }
+        
         data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Update failed')
       } else {
-        // Creating new product
-        res = await fetch('/api/products', {
+        // Creating new product - use section-specific endpoint
+        const apiEndpoint = section === 'collection' ? '/api/products/collection' :
+                           section === 'preowned' ? '/api/products/preowned' :
+                           section === 'marketplace' ? '/api/products/marketplace' :
+                           '/api/products'
+        
+        res = await fetch(apiEndpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            // Add authentication headers to prevent login redirect
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'include', // Include cookies for authentication
           body: JSON.stringify(payload)
         })
+        
+        // Check if response is HTML (login page) instead of JSON
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('text/html')) {
+          throw new Error('Authentication required. Please log in again.')
+        }
+        
         data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Create failed')
       }
@@ -324,7 +608,20 @@ export default function AdminProductForm({ initial, section = 'products', backUr
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/products/${initial.id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/products/${initial.id}`, { 
+        method: 'DELETE',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include' // Include cookies for authentication
+      })
+      
+      // Check if response is HTML (login page) instead of JSON
+      const contentType = res.headers.get('content-type')
+      if (contentType && contentType.includes('text/html')) {
+        throw new Error('Authentication required. Please log in again.')
+      }
+      
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Delete failed')
       router.push(backUrl)
@@ -368,6 +665,31 @@ export default function AdminProductForm({ initial, section = 'products', backUr
             <option value="available">Available</option>
             <option value="sold">Sold</option>
           </select>
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
+        <div>
+          <label className="form-label" htmlFor="adminContact">Contact Number</label>
+          <input 
+            className="form-control" 
+            id="adminContact" 
+            type="tel" 
+            placeholder="e.g. +254718176584" 
+            {...bind('adminContact')} 
+          />
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#9ca3af', 
+            marginTop: '4px',
+            fontStyle: 'italic' 
+          }}>
+            💡 Contact number for inquiries about this product (WhatsApp/call)
+          </div>
+        </div>
+        <div>
+          <label className="form-label" htmlFor="condition">Condition</label>
+          <input className="form-control" id="condition" placeholder="e.g. New, Refurbished" {...bind('condition')} />
         </div>
       </div>
 
@@ -435,7 +757,30 @@ export default function AdminProductForm({ initial, section = 'products', backUr
                 overflowY: 'auto'
               }}>
                 {/* Current images */}
-                {currentImages.map((src, i) => (
+                {(() => {
+                  const filteredGalleryImages = currentImages.filter((src) => {
+                    // Aggressive filtering for gallery display
+                    if (!src) return false
+                    if (typeof src !== 'string') return false
+                    if (src.trim() === '') return false
+                    if (src === 'null' || src === 'undefined') return false
+                    if (src.includes('data:,')) return false
+                    if (src.length < 5) return false // Too short to be a valid image URL
+                    return true
+                  })
+                  
+                  console.log('🖼️ Gallery Debug - Current Images:', {
+                    currentImages,
+                    filteredGalleryImages,
+                    galleryCount: filteredGalleryImages.length
+                  })
+                  
+                  // Only render gallery section if there are valid images
+                  if (filteredGalleryImages.length === 0) {
+                    return null // Don't render gallery at all if no valid images
+                  }
+                  
+                  return filteredGalleryImages.map((src, i) => (
                   <div 
                     key={`current-${i}`}
                     onClick={() => selectAsCoverImage(src)}
@@ -479,7 +824,8 @@ export default function AdminProductForm({ initial, section = 'products', backUr
                       </div>
                     )}
                   </div>
-                ))}
+                  ))
+                })()}
                 {/* New uploaded images */}
                 {imageList.map((src, i) => (
                   <div 
@@ -563,8 +909,37 @@ export default function AdminProductForm({ initial, section = 'products', backUr
             gap: '12px',
             marginBottom: '12px'
           }}>
-            {currentImages.map((src, i) => (
-              <div key={i} style={{ 
+            {(() => {
+              const filteredCurrentImages = currentImages.filter((src) => {
+                // Aggressive filtering for current images display
+                if (!src) return false
+                if (typeof src !== 'string') return false
+                if (src.trim() === '') return false
+                if (src === 'null' || src === 'undefined') return false
+                if (src.includes('data:,')) return false
+                if (src.length < 5) return false // Too short to be a valid image URL
+                return true
+              })
+              
+              console.log('📋 Current Images Debug:', {
+                currentImages,
+                filteredCurrentImages,
+                currentImagesCount: filteredCurrentImages.length
+              })
+              
+              // Only render section if there are valid images
+              if (filteredCurrentImages.length === 0) {
+                return (
+                  <div style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>
+                    ℹ️ No product images available.
+                  </div>
+                )
+              }
+              
+              return filteredCurrentImages
+            })().map((src, originalIndex) => {
+              return (
+              <div key={originalIndex} style={{ 
                 border: '1px solid #374151', 
                 borderRadius: '8px', 
                 overflow: 'hidden',
@@ -580,7 +955,7 @@ export default function AdminProductForm({ initial, section = 'products', backUr
                 }}>
                   <img 
                     src={src} 
-                    alt={`Current image ${i + 1}`} 
+                    alt={`Current image ${originalIndex + 1}`} 
                     style={{ 
                       maxWidth: '100%', 
                       maxHeight: '100%', 
@@ -602,11 +977,11 @@ export default function AdminProductForm({ initial, section = 'products', backUr
                     color: '#9ca3af',
                     fontWeight: '500'
                   }}>
-                    Image {i + 1}
+                    Image {originalIndex + 1}
                   </span>
                   <button 
                     type="button" 
-                    onClick={() => removeCurrentImage(i)}
+                    onClick={() => removeCurrentImage(originalIndex)}
                     style={{ 
                       fontSize: '11px',
                       padding: '3px 6px',
@@ -622,7 +997,8 @@ export default function AdminProductForm({ initial, section = 'products', backUr
                   </button>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
           <div style={{ 
             fontSize: '12px', 
@@ -634,7 +1010,7 @@ export default function AdminProductForm({ initial, section = 'products', backUr
         </fieldset>
       )}
 
-      {/* Product Gallery Images */}
+      {/* Product Images Upload Section */}
       <fieldset style={{ 
         border: '1px solid #253049', 
         borderRadius: '8px', 
@@ -646,288 +1022,196 @@ export default function AdminProductForm({ initial, section = 'products', backUr
           fontWeight: '600', 
           color: '#e5e7eb' 
         }}>
-          📸 {isEdit ? 'Add New Images' : 'Product Gallery Images'}
+          📸 Product Images
         </legend>
         
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {/* Add New Images from Files */}
-          <div style={{ 
-            padding: '16px',
-            backgroundColor: '#1a2332',
-            borderRadius: '8px',
-            border: '2px dashed #374151'
-          }}>
-            <div style={{ marginBottom: '12px' }}>
-              <label htmlFor="imageFileInput" style={{ 
-                display: 'block', 
-                marginBottom: '8px', 
-                fontWeight: '600',
-                color: '#e5e7eb'
-              }}>
-                📁 Select Images from Storage
-              </label>
-              <input 
-                id="imageFileInput"
-                type="file" 
-                accept="image/*"
-                multiple
-                onChange={handleFileSelect}
-                style={{ 
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: '#374151',
-                  border: '1px solid #4b5563',
-                  borderRadius: '4px',
-                  color: '#e5e7eb'
-                }}
-              />
-            </div>
-            
-            {selectedFiles.length > 0 && (
-              <div style={{ 
-                marginBottom: '12px',
+        {/* Simple Image Upload */}
+        <div style={{ 
+          padding: '16px',
+          backgroundColor: '#1a2332',
+          borderRadius: '8px',
+          border: '2px dashed #374151',
+          marginBottom: '16px'
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <label htmlFor="simpleImageInput" style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#e5e7eb'
+            }}>
+              📁 Upload Images
+            </label>
+            <input 
+              id="simpleImageInput"
+              type="file" 
+              accept="image/*"
+              multiple
+              onChange={async (e) => {
+                const files = Array.from(e.target.files || [])
+                if (files.length === 0) return
+                
+                console.log('📤 Simple Upload - Processing files:', files.map(f => ({ name: f.name, size: f.size })))
+                
+                const base64Images = []
+                for (const file of files) {
+                  if (file.size > 5 * 1024 * 1024) {
+                    alert(`File ${file.name} is too large. Maximum size is 5MB.`)
+                    continue
+                  }
+                  
+                  const base64 = await fileToBase64(file)
+                  base64Images.push(base64)
+                }
+                
+                if (base64Images.length > 0) {
+                  // Add directly to currentImages - no intermediate imageList
+                  setCurrentImages(prev => {
+                    const newImages = [...prev, ...base64Images]
+                    console.log('📤 Simple Upload - Added to currentImages:', {
+                      previousCount: prev.length,
+                      addedCount: base64Images.length,
+                      totalCount: newImages.length
+                    })
+                    return newImages
+                  })
+                  
+                  // Clear file input
+                  e.target.value = ''
+                  alert(`Successfully uploaded ${base64Images.length} image(s)!`)
+                }
+              }}
+              style={{ 
+                width: '100%',
                 padding: '8px',
-                backgroundColor: '#065f46',
+                backgroundColor: '#374151',
+                border: '1px solid #4b5563',
                 borderRadius: '4px',
-                fontSize: '14px',
-                color: '#10b981'
-              }}>
-                ✅ Selected {selectedFiles.length} file{selectedFiles.length === 1 ? '' : 's'}: {selectedFiles.map(f => f.name).join(', ')}
-              </div>
-            )}
-            
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={uploadSelectedFiles}
-                disabled={selectedFiles.length === 0 || uploadingFiles}
-              >
-                {uploadingFiles ? '⏳ Uploading...' : '📤 Upload Selected Images'}
-              </button>
-              <button 
-                type="button" 
-                className="btn" 
-                onClick={cleanupImages}
-                title="Remove invalid image URLs"
-              >
-                🧹 Clean
-              </button>
+                color: '#e5e7eb'
+              }}
+            />
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#6b7280', 
+              marginTop: '4px' 
+            }}>
+              📋 Supported formats: JPG, PNG, GIF, WebP • Max size: 5MB per image
             </div>
           </div>
-
-          {/* Optional: Still allow URL input for advanced users */}
-          <details style={{ 
-            backgroundColor: '#1f2937',
-            borderRadius: '6px',
-            padding: '12px'
-          }}>
-            <summary style={{ 
-              cursor: 'pointer',
-              fontWeight: '600',
-              color: '#9ca3af',
-              marginBottom: '8px'
-            }}>
-              🔗 Advanced: Add Image by URL
-            </summary>
-            <div style={{ 
-              display: 'flex', 
-              gap: '8px', 
-              alignItems: 'center',
-              marginTop: '8px'
-            }}>
-              <input 
-                className="form-control" 
-                placeholder="Enter image URL (https://...)" 
-                value={newImageUrl} 
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={addImage}
-                disabled={!newImageUrl.trim()}
-              >
-                ➕ Add URL
-              </button>
-            </div>
-          </details>
-
-          {/* Current Images */}
-          {imageList.filter(url => url && url.trim()).length > 0 && (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-              gap: '12px' 
-            }}>
-              {imageList.map((src, originalIndex) => {
-                // Only render non-empty images
-                if (!src || !src.trim()) return null
-                
-                return (
-                  <div key={originalIndex} style={{ 
-                    border: '1px solid #374151', 
-                    borderRadius: '8px', 
-                    overflow: 'hidden', 
-                    backgroundColor: '#1f2937' 
-                  }}>
-                    {/* Image Preview */}
-                    <div style={{ 
-                      height: '150px', 
-                      backgroundColor: '#0f172a',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {src && isValidImageUrl(src) ? (
-                        <img 
-                          src={src} 
-                          alt={`Gallery image ${originalIndex + 1}`} 
-                          style={{ 
-                            maxWidth: '100%', 
-                            maxHeight: '100%', 
-                            objectFit: 'contain' 
-                          }}
-                          onError={(e) => {
-                            console.log('Image failed to load:', src)
-                            setFailedImages(prev => new Set([...prev, src]))
-                            e.target.style.display = 'none'
-                            if (e.target.nextSibling) {
-                              e.target.nextSibling.style.display = 'flex'
-                            }
-                          }}
-                          onLoad={(e) => {
-                            // Image loaded successfully, remove from failed list and hide error message
-                            setFailedImages(prev => {
-                              const newSet = new Set(prev)
-                              newSet.delete(src)
-                              return newSet
-                            })
-                            if (e.target.nextSibling) {
-                              e.target.nextSibling.style.display = 'none'
-                            }
-                          }}
-                        />
-                      ) : null}
-                      <div style={{
-                        display: failedImages.has(src) ? 'flex' : 'none',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#ef4444',
-                        fontSize: '14px',
-                        flexDirection: 'column',
-                        textAlign: 'center',
-                        padding: '10px'
-                      }}>
-                        <div>❌ Failed to Load</div>
-                        <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.8 }}>
-                          {src && src.length > 50 ? src.substring(0, 50) + '...' : src}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Image Controls */}
-                    <div style={{ padding: '12px' }}>
-                      <input 
-                        className="form-control" 
-                        value={src} 
-                        onChange={(e) => updateImageAt(originalIndex, e.target.value)} 
-                        placeholder="Image URL"
-                        style={{ marginBottom: '8px' }}
-                      />
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center' 
-                      }}>
-                        <span style={{ 
-                          fontSize: '12px', 
-                          color: '#9ca3af',
-                          fontWeight: '500'
-                        }}>
-                          Image {originalIndex + 1}
-                        </span>
-                        <button 
-                          type="button" 
-                          className="btn" 
-                          onClick={() => removeImage(originalIndex)}
-                          style={{ 
-                            fontSize: '12px',
-                            padding: '4px 8px',
-                            borderColor: '#dc2626', 
-                            color: '#ef4444' 
-                          }}
-                        >
-                          🗑️ Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }).filter(Boolean)}
-            </div>
-          )}
-
-          {/* Status Indicator for Edit Mode */}
-          {isEdit && (
-            <div style={{ 
-              padding: '12px', 
-              backgroundColor: '#1b2d1b', 
-              border: '1px solid #16a34a',
-              borderRadius: '6px',
-              fontSize: '14px',
-              color: '#86efac'
-            }}>
-              {(() => {
-                const validNewImages = imageList.filter(url => url && url.trim() && isValidImageUrl(url))
-                const validCurrentImages = currentImages.filter(url => url && url.trim() && isValidImageUrl(url))
-                
-                if (validNewImages.length > 0) {
-                  return <>➕ <strong>Will Add:</strong> {validNewImages.length} new image{validNewImages.length === 1 ? '' : 's'} will be added to current images (total: {validCurrentImages.length + validNewImages.length}).</>
-                } else {
-                  return <>✅ <strong>Current Status:</strong> {validCurrentImages.length} image{validCurrentImages.length === 1 ? '' : 's'} will be saved (no new images added).</>
-                }
-              })()}
-            </div>
-          )}
-
-          {/* Help Text */}
+          
+          {/* Save Images Button */}
           <div style={{ 
-            padding: '12px', 
-            backgroundColor: '#1e293b', 
-            borderRadius: '6px',
-            fontSize: '14px',
-            color: '#94a3b8'
+            display: 'flex', 
+            justifyContent: 'center', 
+            marginTop: '12px' 
           }}>
-            💡 <strong>Tip:</strong> {isEdit 
-              ? 'Select images from your computer to expand your gallery. New images will be added to existing ones. Use delete buttons above to remove specific current images.'
-              : 'Select multiple images from your computer to create an interactive gallery on the product page. Customers can click thumbnails to view different angles and details of your product.'
-            }
-            <br />
-            📋 <strong>Supported formats:</strong> JPG, PNG, GIF, WebP • <strong>Max size:</strong> 5MB per image • <strong>Max files:</strong> 5 at once
+            <button 
+              type="button"
+              className="btn btn-primary"
+              onClick={async () => {
+                if (!isEdit) {
+                  alert('Please save the product first before saving images.')
+                  return
+                }
+                
+                try {
+                  setLoading(true)
+                  setError('')
+                  
+                  console.log('💾 Saving images to database...')
+                  console.log('💾 Current images to save:', currentImages)
+                  
+                  // Filter images before saving
+                  const validImages = currentImages.filter((img, idx) => {
+                    const isValid = img && 
+                                   typeof img === 'string' && 
+                                   img.trim() !== '' && 
+                                   img !== 'null' && 
+                                   img !== 'undefined' &&
+                                   !img.includes('data:,') &&
+                                   img.length >= 5
+                    
+                    if (!isValid) {
+                      console.log(`💾 Filtering out invalid image at index ${idx}:`, img)
+                    }
+                    
+                    return isValid
+                  })
+                  
+                  console.log('💾 Valid images to save:', validImages)
+                  
+                  const payload = {
+                    images: validImages,
+                    imagesJson: JSON.stringify(validImages)
+                  }
+                  
+                  const res = await fetch(`/api/products/${initial.id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                  })
+                  
+                  // Check if response is HTML (login page) instead of JSON
+                  const contentType = res.headers.get('content-type')
+                  if (contentType && contentType.includes('text/html')) {
+                    throw new Error('Authentication required. Please log in again.')
+                  }
+                  
+                  const data = await res.json()
+                  if (!res.ok) throw new Error(data.error || 'Failed to save images')
+                  
+                  console.log('✅ Images saved successfully:', data)
+                  alert(`Successfully saved ${validImages.length} image(s) to database!`)
+                  
+                } catch (error) {
+                  console.error('❌ Error saving images:', error)
+                  setError(error.message)
+                  alert('Error saving images: ' + error.message)
+                } finally {
+                  setLoading(false)
+                }
+              }}
+              disabled={loading || currentImages.length === 0}
+              style={{ 
+                padding: '8px 16px',
+                fontSize: '14px'
+              }}
+            >
+              {loading ? '💾 Saving...' : '💾 Save Images to Database'}
+            </button>
           </div>
         </div>
       </fieldset>
 
-      <div>
-        <label className="form-label" htmlFor="condition">Condition</label>
-        <input className="form-control" id="condition" placeholder="e.g. New, Refurbished" {...bind('condition')} />
-      </div>
+      {/* Meta / Specs Section */}
+      <fieldset style={{ 
+        border: '1px solid #253049', 
+        borderRadius: '8px', 
+        padding: '16px', 
+        margin: '16px 0' 
+      }}>
+        <legend style={{ 
+          padding: '0 8px', 
+          fontWeight: '600', 
+          color: '#e5e7eb' 
+        }}>
+          Meta / Specs
+        </legend>
+        <div>
+          <textarea 
+            className="form-control" 
+            rows={4} 
+            placeholder="Product specifications, features, or details..."
+            {...bind('meta')} 
+          />
+        </div>
+      </fieldset>
 
-      <div>
-        <label className="form-label" htmlFor="status">Product Status</label>
-        <select className="form-control" id="status" {...bind('status')}>
-          <option value="available">✅ Available</option>
-          <option value="sold">💰 Sold</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="form-label" htmlFor="meta">Meta / Specs</label>
-        <textarea className="form-control" id="meta" rows={4} placeholder="e.g. 1080p | HDMI | Smart" {...bind('meta')} />
-      </div>
-
+      {/* Error Display */}
       {error && (
         <div style={{ 
           padding: '12px', 
@@ -935,12 +1219,14 @@ export default function AdminProductForm({ initial, section = 'products', backUr
           border: '1px solid #f87171', 
           borderRadius: '6px', 
           color: '#f87171',
-          fontSize: '14px'
+          fontSize: '14px',
+          marginBottom: '16px'
         }}>
           ⚠️ {error}
         </div>
       )}
       
+      {/* Action Buttons */}
       <div style={{ 
         display: 'flex', 
         gap: 16, 

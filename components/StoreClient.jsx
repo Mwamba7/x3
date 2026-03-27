@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCart } from './CartContext'
+import ProductGallery from './ProductGallery'
 
 const CATEGORIES = [
   { key: 'all', label: 'All' },
@@ -25,7 +26,7 @@ export default function StoreClient({ products }) {
   const safeProducts = Array.isArray(products) ? products : []
 
   const formatKsh = (n) => `Ksh ${Number(n).toLocaleString('en-KE')}`
-  const { addItem, removeItem, items, isCartLocked } = useCart()
+  const { addItem, removeItem, items, isCartLocked, lockedCartItems } = useCart()
   
   function buildSrcSet(url) {
     if (!url) return undefined
@@ -59,7 +60,7 @@ export default function StoreClient({ products }) {
   }, [safeProducts, active, query, sort])
 
   return (
-    <section id="collection" className="products-section" style={{ paddingTop: 0, paddingBottom: 3 }}>
+    <section id="collection" className="products-section" style={{ paddingTop: 0, paddingBottom: 0 }}>
       <header className="products-header">
         <h3>Collection</h3>
         <div className="filters" role="tablist" aria-label="Product categories">
@@ -138,43 +139,51 @@ export default function StoreClient({ products }) {
               style={isSold ? { cursor: 'not-allowed', opacity: 0.85 } : undefined}
             >
               <div className="media" style={{ position: 'relative' }}>
-                <img
-                  loading="lazy"
-                  src={p.img}
-                  srcSet={buildSrcSet(p.img)}
-                  alt={p.name}
-                  style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }}
-                />
-                <span className="badge condition">{p.condition}</span>
-                <span className={`badge ${isSold ? 'sold-badge' : ''}`} style={{ position: 'absolute', right: 10, top: 10, background: 'rgba(10,16,26,0.7)', border: '1px solid #2a3342', fontSize: 10, padding: '4px 6px', borderRadius: 999, color: isSold ? '#ef4444' : '#3b82f6' }}>{isSold ? 'Sold' : 'Available'}</span>
-                {showSoldOverlay === p.id && (
-                  <div className="sold-overlay visible">
-                    <span className="emoji" role="img" aria-label="Lock">🔒</span>
-                    Sold
-                  </div>
-                )}
-                {/* Unified Action Popup */}
-                {popupState.id === p.id && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '60%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    background: popupState.action === 'added' ? 'rgba(10, 16, 26, 0.85)' : 
-                                 popupState.action === 'blocked' ? '#ff6b35' : '#dc3545',
-                    color: popupState.action === 'added' ? 'var(--primary)' : 'white',
-                    fontWeight: '600',
-                    fontSize: '11px',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    zIndex: 3,
-                    pointerEvents: 'none',
-                    opacity: 1,
-                    transition: 'opacity 0.3s ease'
-                  }}>
-                    {popupState.action === 'added' ? 'Added!' : 
-                     popupState.action === 'blocked' ? '🔒 blocked!' : 'Removed!'}
-                  </div>
+                {/* Use ProductGallery for multiple images, fallback to single img */}
+                {p.images && p.images.length > 1 ? (
+                  <ProductGallery 
+                    images={p.images} 
+                    name={p.name}
+                    popupState={popupState}
+                    mainImage={p.img}
+                    condition={p.condition}
+                    status={p.status}
+                    isSold={isSold}
+                  />
+                ) : (
+                  <>
+                    <img
+                      loading="lazy"
+                      src={p.img}
+                      srcSet={buildSrcSet(p.img)}
+                      alt={p.name}
+                      style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }}
+                    />
+                    <span className="badge condition">{p.condition}</span>
+                    <span className={`badge ${isSold ? 'sold-badge' : ''}`}>{isSold ? 'Sold' : 'Available'}</span>
+                    {showSoldOverlay === p.id && (
+                      <div className="sold-overlay visible">
+                        <span className="emoji" role="img" aria-label="Lock">🔒</span>
+                        Sold
+                      </div>
+                    )}
+                    {/* Unified Action Popup */}
+                    {popupState.id === p.id && (
+                      <div className="cart-popup" data-action={popupState.action} style={{
+                        position: 'absolute',
+                        top: '60%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 20,
+                        pointerEvents: 'none',
+                        opacity: 1,
+                        transition: 'opacity 0.3s ease'
+                      }}>
+                        {popupState.action === 'added' ? 'Added!' : 
+                         popupState.action === 'blocked' ? '🔒 blocked!' : 'Removed!'}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="info">
@@ -214,6 +223,8 @@ export default function StoreClient({ products }) {
                               productName: p.name
                             }
                           }));
+                          setPopupState({ id: p.id, action: 'blocked' });
+                          setTimeout(() => setPopupState({ id: null, action: null }), 2000);
                           return;
                         }
                         

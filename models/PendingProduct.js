@@ -23,6 +23,10 @@ const PendingProductSchema = new mongoose.Schema({
   images: [{
     type: String // URLs to uploaded images
   }],
+  coverImage: {
+    type: String, // URL of the cover/main image
+    default: null
+  },
   
   // Seller details
   sellerName: {

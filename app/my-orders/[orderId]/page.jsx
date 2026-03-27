@@ -61,8 +61,7 @@ export default function OrderDetailsPage() {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
+      year: 'numeric'
     })
   }
 
@@ -372,27 +371,17 @@ export default function OrderDetailsPage() {
               💰 Payment Summary
             </h3>
             <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Subtotal:</span>
-                <span>Ksh {order.subtotal.toLocaleString('en-KE')}</span>
-              </div>
-              {order.deliveryFee > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Delivery:</span>
-                  <span>Ksh {order.deliveryFee.toLocaleString('en-KE')}</span>
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '1px solid #253049', paddingTop: 6, marginTop: 6 }}>
-                <span>Total:</span>
-                <span>Ksh {order.totalAmount.toLocaleString('en-KE')}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#28a745', marginTop: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#28a745', fontWeight: 600 }}>
                 <span>Deposit Paid:</span>
                 <span>Ksh {order.payment.depositAmount.toLocaleString('en-KE')} ✅</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ffc107', marginTop: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '1px solid #253049', paddingTop: 6, marginTop: 6 }}>
                 <span>Remaining:</span>
                 <span>Ksh {order.payment.remainingAmount.toLocaleString('en-KE')}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--muted)', marginTop: 3 }}>
+                <span>Order Total:</span>
+                <span>Ksh {order.totalAmount.toLocaleString('en-KE')}</span>
               </div>
             </div>
           </div>
