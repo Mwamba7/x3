@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-import connectDB from '../../../lib/mongodb'
-import Order from '../../../models/Order'
-import Cart from '../../../models/Cart'
+import connectDB from '../../../../lib/mongodb'
+import Order from '../../../../models/Order'
+import Cart from '../../../../models/Cart'
 import jwt from 'jsonwebtoken'
 
 // Paystack configuration
