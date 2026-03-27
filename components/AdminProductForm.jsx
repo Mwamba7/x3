@@ -439,7 +439,7 @@ export default function AdminProductForm({ initial, section = 'collection', back
     
     // SAFEGUARD: Prevent moving marketplace/preowned products to other sections
     if (isEdit && initial) {
-      const currentSection = initial.section
+      const currentSection = initial.section || section // Use passed section prop if initial.section doesn't exist
       const targetSection = section
       
       // Check if product is currently in marketplace or preowned
@@ -451,12 +451,24 @@ export default function AdminProductForm({ initial, section = 'collection', back
         }
       }
       
-      // Check if product has marketplace metadata
+      // Check if product is a community product and being edited in wrong section
       if (initial.metadata && 
-          (initial.metadata.source === 'sell-page' || 
-           initial.metadata.submissionType === 'public')) {
-        if (currentSection !== 'marketplace') {
-          setError('Cannot modify marketplace products. Products uploaded through the marketplace page cannot be moved to other sections.')
+          initial.metadata.source === 'sell-page' && 
+          initial.metadata.submissionType === 'public') {
+        // This is a community product, should only be edited in community section
+        if (targetSection !== 'community') {
+          setError('Cannot modify community products in this section. Community products can only be edited in the Community section.')
+          setLoading(false)
+          return
+        }
+      }
+      
+      // Check if product is a marketplace product (if such products exist with different metadata)
+      if (initial.metadata && 
+          initial.metadata.source === 'marketplace') {
+        // This is a marketplace product, should only be edited in marketplace section
+        if (targetSection !== 'marketplace') {
+          setError('Cannot modify marketplace products in this section. Marketplace products can only be edited in the Marketplace section.')
           setLoading(false)
           return
         }

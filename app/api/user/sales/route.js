@@ -79,7 +79,8 @@ export async function POST(request) {
       $or: [
         { 'originalSeller.phone': userPhone },
         { 'metadata.sellerPhone': userPhone }
-      ]
+      ],
+      status: 'sold' // Only fetch sold products
     }).sort({ createdAt: -1 })
     
     const sales = products.map(product => ({

@@ -167,10 +167,10 @@ export default function WithdrawalRequestsClient({ initial }) {
                 }}>
                   <div>
                     <strong style={{ color: '#4ade80', display: 'block', marginBottom: 4 }}>
-                      Ksh {Number(w.withdrawalAmount).toLocaleString('en-KE')}
+                      Ksh {Math.round(Number(w.withdrawalAmount)).toLocaleString('en-KE')}
                     </strong>
                     <span style={{ fontSize: '12px', color: '#dc3545' }}>
-                      Fee: Ksh {Number(w.serviceFee).toLocaleString('en-KE')}
+                      Ksh {Math.round(Number(w.serviceFee)).toLocaleString('en-KE')}
                     </span>
                   </div>
                 </td>

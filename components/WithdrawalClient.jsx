@@ -16,6 +16,16 @@ export default function WithdrawalClient() {
   const [withdrawalStatuses, setWithdrawalStatuses] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notification, setNotification] = useState({ show: false, type: '', message: '' })
+  const [phoneError, setPhoneError] = useState('')
+
+  // Professional notification system
+  const showNotification = (type, message) => {
+    setNotification({ show: true, type, message })
+    setTimeout(() => {
+      setNotification({ show: false, type: '', message: '' })
+    }, 3000)
+  }
 
   useEffect(() => {
     // Get user from session (database-first)
@@ -108,36 +118,52 @@ export default function WithdrawalClient() {
   }
 
   async function handleWithdrawal() {
-    if (!withdrawalForm.name.trim() || !withdrawalForm.phone.trim()) {
-      alert('Please fill in all required fields')
+    console.log('🔍 Withdrawal form validation check:', withdrawalForm)
+    
+    if (!withdrawalForm.name || !withdrawalForm.name.trim()) {
+      console.log('❌ Name validation failed:', withdrawalForm.name)
+      showNotification('error', 'Please fill in your full name')
+      return
+    }
+
+    if (!withdrawalForm.phone || !withdrawalForm.phone.trim()) {
+      console.log('❌ Phone validation failed:', withdrawalForm.phone)
+      showNotification('error', 'Please fill in your phone number')
       return
     }
 
     if (!/^(\+254|0)[17]\d{8}$/.test(withdrawalForm.phone)) {
-      alert('Please enter a valid Kenyan phone number')
+      console.log('❌ Phone format validation failed:', withdrawalForm.phone)
+      setPhoneError('Please enter a valid Kenyan phone number')
       return
     }
 
+    console.log('✅ All validations passed, submitting withdrawal request...')
     setWithdrawalLoading(true)
     
     try {
+      const { withdrawalAmount, serviceFee } = calculateWithdrawalAmount(selectedProduct.price)
+      
       const response = await fetch('/api/withdrawal/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId: selectedProduct._id,
-          name: withdrawalForm.name,
-          phone: withdrawalForm.phone,
-          originalPrice: selectedProduct.price
+          productName: selectedProduct.name,
+          productPrice: selectedProduct.price,
+          sellerName: withdrawalForm.name,
+          sellerPhone: withdrawalForm.phone,
+          withdrawalAmount: withdrawalAmount,
+          serviceFee: serviceFee
         })
       })
       
       const data = await response.json()
       
       if (data.success) {
-        alert('Withdrawal request submitted successfully!')
+        showNotification('success', 'Payment successful sent to admin and is pending!')
         
-        // Update withdrawal status
+        // Update withdrawal status immediately to show pending state
         setWithdrawalStatuses(prev => ({
           ...prev,
           [selectedProduct._id]: {
@@ -149,15 +175,17 @@ export default function WithdrawalClient() {
         
         // Reset form
         setWithdrawalForm({ name: '', phone: '' })
-        setSelectedProduct(null)
+        setPhoneError('') // Clear any phone errors
         
-        // Redirect to my-sales page
-        router.push('/my-sales')
+        // Don't redirect immediately - let user see the pending status
+        // setTimeout(() => {
+        //   router.push('/my-sales')
+        // }, 2000)
       } else {
-        alert(data.error || 'Failed to submit withdrawal request')
+        showNotification('error', data.error || 'Failed to submit withdrawal request')
       }
     } catch (err) {
-      alert('Failed to submit withdrawal request. Please try again.')
+      showNotification('error', 'Failed to submit withdrawal request. Please try again.')
     } finally {
       setWithdrawalLoading(false)
     }
@@ -185,13 +213,11 @@ export default function WithdrawalClient() {
       <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
-        alignItems: 'center', 
-        padding: '40px',
-        color: 'var(--muted)'
+        alignItems: 'center',
+        minHeight: '200px'
       }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
-          <p>Loading your products...</p>
+        <div style={{ fontSize: '16px', color: 'var(--muted)' }}>
+          Loading withdrawal information...
         </div>
       </div>
     )
@@ -213,19 +239,50 @@ export default function WithdrawalClient() {
 
   if (allProducts.length === 0) {
     return (
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '40px',
-        color: 'var(--muted)'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
-        <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600' }}>No Products Available</h3>
-        <p style={{ margin: '0 0 20px', fontSize: '14px' }}>
-          You don't have any sold products available for withdrawal.
-        </p>
-        <Link href="/my-products" className="btn btn-primary">
-          View My Products
-        </Link>
+      <div style={{ position: 'relative' }}>
+        {/* Professional Notification Component */}
+        {notification.show && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000,
+            minWidth: '300px',
+            maxWidth: '400px',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            backgroundColor: notification.type === 'success' ? '#d4edda' : '#f8d7da',
+            border: `1px solid ${notification.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+            color: notification.type === 'success' ? '#155724' : '#721c24',
+            fontSize: '14px',
+            fontWeight: '500',
+            lineHeight: '1.4',
+            animation: 'slideInRight 0.3s ease-out'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '18px' }}>
+                {notification.type === 'success' ? '✅' : '⚠️'}
+              </span>
+              <span>{notification.message}</span>
+            </div>
+          </div>
+        )}
+        
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '40px',
+          color: 'var(--muted)'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
+          <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600' }}>No Products Available</h3>
+          <p style={{ margin: '0 0 20px', fontSize: '14px' }}>
+            You don't have any sold products available for withdrawal.
+          </p>
+          <Link href="/my-products" className="btn btn-primary">
+            View My Products
+          </Link>
+        </div>
       </div>
     )
   }
@@ -238,7 +295,36 @@ export default function WithdrawalClient() {
 
   if (!selectedProduct) {
     return (
-      <div>
+      <div style={{ position: 'relative' }}>
+        {/* Professional Notification Component */}
+        {notification.show && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000,
+            minWidth: '300px',
+            maxWidth: '400px',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            backgroundColor: notification.type === 'success' ? '#d4edda' : '#f8d7da',
+            border: `1px solid ${notification.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+            color: notification.type === 'success' ? '#155724' : '#721c24',
+            fontSize: '14px',
+            fontWeight: '500',
+            lineHeight: '1.4',
+            animation: 'slideInRight 0.3s ease-out'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '18px' }}>
+                {notification.type === 'success' ? '✅' : '⚠️'}
+              </span>
+              <span>{notification.message}</span>
+            </div>
+          </div>
+        )}
+        
         <div style={{ marginBottom: '24px' }}>
           <Link href="/my-products" className="btn" style={{ fontSize: '14px' }}>
             ← Back to My Products
@@ -331,34 +417,109 @@ export default function WithdrawalClient() {
   const { withdrawalAmount, serviceFee } = calculateWithdrawalAmount(selectedProduct.price)
 
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
+      {/* Professional Notification Component */}
+      {notification.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 1000,
+          minWidth: '300px',
+          maxWidth: '400px',
+          padding: '16px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          backgroundColor: notification.type === 'success' ? '#d4edda' : '#f8d7da',
+          border: `1px solid ${notification.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+          color: notification.type === 'success' ? '#155724' : '#721c24',
+          fontSize: '14px',
+          fontWeight: '500',
+          lineHeight: '1.4',
+          animation: 'slideInRight 0.3s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>
+              {notification.type === 'success' ? '✅' : '⚠️'}
+            </span>
+            <span>{notification.message}</span>
+          </div>
+        </div>
+      )}
+      
       <div>
         {/* Status-based content */}
         {hasWithdrawal ? (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-              {status === 'pending' ? '⏳' :
-               status === 'processing' ? '🔄' :
-               status === 'completed' ? '✅' : '❌'}
+          <div style={{ textAlign: 'center', padding: '30px 20px' }}>
+            <div style={{ 
+              fontSize: '64px', 
+              marginBottom: '20px',
+              animation: 'pulse 2s infinite'
+            }}>
+              ⏳
             </div>
             <h3 style={{
-              margin: '0 0 8px',
+              margin: '0 0 12px',
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#28a745'
+            }}>
+              ✅ Payment Successful - Sent to Admin
+            </h3>
+            <h4 style={{
+              margin: '0 0 16px',
               fontSize: '18px',
               fontWeight: '600',
-              color: 'var(--text)'
+              color: '#ffc107'
             }}>
-              {status === 'pending' ? 'Withdrawal Pending' :
-               status === 'processing' ? 'Payment Processing' :
-               status === 'completed' ? 'Payment Completed' : 'Withdrawal Failed'}
-            </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--muted)' }}>
-              {status === 'pending' ? 'Your withdrawal request is being processed.' :
-               status === 'processing' ? 'Payment is being processed and will be sent soon.' :
-               status === 'completed' ? 'Payment has been sent to your account.' : 'There was an issue with your withdrawal.'}
+              ⏳ Pending Processing
+            </h4>
+            <p style={{ 
+              margin: '0 0 24px', 
+              fontSize: '14px', 
+              color: 'var(--muted)',
+              lineHeight: '1.5'
+            }}>
+              Your withdrawal request has been successfully submitted and sent to the admin for processing.<br/>
+              You will receive your payment within 24 hours.
             </p>
-            <Link href="/my-sales" className="btn btn-primary">
-              View Status in My Sales
-            </Link>
+            
+            {/* Payment Details */}
+            <div style={{
+              backgroundColor: 'rgba(40, 167, 69, 0.1)',
+              border: '1px solid #28a745',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '24px',
+              textAlign: 'left'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#28a745' }}>
+                💰 Withdrawal Details:
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text)', lineHeight: '1.4' }}>
+                <div><strong>Product:</strong> {selectedProduct.name}</div>
+                <div><strong>Sale Amount:</strong> Ksh {selectedProduct.price.toLocaleString('en-KE')}</div>
+                <div><strong>Service Fee (15%):</strong> -Ksh {serviceFee.toLocaleString('en-KE')}</div>
+                <div><strong>You'll Receive:</strong> Ksh {withdrawalAmount.toLocaleString('en-KE')}</div>
+                <div><strong>Phone:</strong> {withdrawalForm.phone || 'N/A'}</div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <Link href="/my-sales" className="btn btn-primary">
+                View Status in My Sales
+              </Link>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="btn"
+                style={{
+                  border: '1px solid #2a3342',
+                  backgroundColor: 'transparent'
+                }}
+              >
+                Select Another Product
+              </button>
+            </div>
           </div>
         ) : (
           <div>
@@ -452,10 +613,27 @@ export default function WithdrawalClient() {
                       boxShadow: 'none'
                     }}
                     value={withdrawalForm.phone}
-                    onChange={(e) => setWithdrawalForm(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => {
+                      setWithdrawalForm(prev => ({ ...prev, phone: e.target.value }))
+                      setPhoneError('') // Clear phone error when user starts typing
+                    }}
                     placeholder="2547XXXXXXXX"
                   />
                 </div>
+                {/* Inline Phone Error Message */}
+                {phoneError && (
+                  <div style={{
+                    color: '#dc3545',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>⚠️</span>
+                    <span>{phoneError}</span>
+                  </div>
+                )}
               </div>
             </div>
 

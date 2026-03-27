@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getAdminSession } from '../../../../../lib/adminAuth'
-import connectDB from '../../../../../lib/mongodb'
-import WithdrawalRequest from '../../../../../models/WithdrawalRequest'
+import { getAdminSession } from '../../../../lib/adminAuth'
+import connectDB from '../../../../lib/mongodb'
+import WithdrawalRequest from '../../../../models/WithdrawalRequest'
 
 export async function GET(request) {
   try {

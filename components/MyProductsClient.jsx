@@ -30,21 +30,49 @@ export default function MyProductsClient() {
       setLoading(true)
       setError('')
       
-      // Get current user from session (database-first)
-      const currentUser = await getCurrentUser()
-      
-      if (!currentUser || !currentUser.phone) {
+      // Get current user from auth API (cookie-based authentication)
+      const authResponse = await fetch('/api/auth/me')
+      if (!authResponse.ok) {
         setError('User not authenticated')
         setLoading(false)
         return
       }
       
-      setUserPhone(currentUser.phone)
+      const authData = await authResponse.json()
+      if (!authData.success || !authData.user) {
+        setError('User not authenticated')
+        setLoading(false)
+        return
+      }
       
-      // Fetch sales from database
-      const userSales = await getUserSales(currentUser.phone)
+      const user = authData.user
+      if (!user.phone) {
+        setError('User phone not found')
+        setLoading(false)
+        return
+      }
       
-      setSales(userSales)
+      setUserPhone(user.phone)
+      setUserName(user.name || 'User')
+      
+      // Fetch user products from API
+      const response = await fetch(`/api/my-products?phone=${user.phone}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch products')
+      }
+      
+      const data = await response.json()
+      const userProducts = data.products || []
+      setProducts(userProducts)
+      setAllProducts(userProducts)
+      setFilteredProducts(userProducts)
+      
+      // Check withdrawal statuses for sold products
+      const soldProducts = userProducts.filter(p => p.status === 'sold')
+      if (soldProducts.length > 0) {
+        await checkWithdrawalStatuses(soldProducts)
+      }
+      
       setLoading(false)
       
     } catch (error) {

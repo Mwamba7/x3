@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { verifyAuth } from '../../../lib/auth-middleware'
 import connectDB from '../../../lib/mongodb'
 import Order from '../../../models/Order'
+import Cart from '../../../models/Cart'
 
 // GET user's deposit payment status
 export async function GET(request) {
@@ -15,6 +16,20 @@ export async function GET(request) {
 
     await connectDB()
     const userId = authResult.user.id
+
+    console.log('💳 Checking deposit status for user:', userId)
+
+    // First check if cart is locked in the Cart collection
+    const cart = await Cart.findOne({ userId })
+    const isCartLockedInDB = cart ? cart.isLocked : false
+    
+    console.log('🛒 Cart lock status from database:', {
+      userId,
+      cartFound: !!cart,
+      isLocked: isCartLockedInDB,
+      lockedAt: cart?.lockedAt,
+      itemsCount: cart?.items?.length || 0
+    })
 
     // Check for recent orders with deposit payments (within last 2 hours)
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
@@ -37,43 +52,51 @@ export async function GET(request) {
     // Combine both types of orders
     const allRelevantOrders = [...recentOrders, ...tempOrders]
     
-    if (allRelevantOrders.length === 0) {
+    const hasRecentDepositPayment = allRelevantOrders.length > 0
+    
+    console.log('💰 Deposit payment status:', {
+      userId,
+      hasRecentDepositPayment,
+      orderCount: allRelevantOrders.length,
+      recentOrders: recentOrders.length,
+      tempOrders: tempOrders.length
+    })
+    
+    if (!hasRecentDepositPayment && !isCartLockedInDB) {
       return NextResponse.json({
         success: true,
         hasDepositPayment: false,
         isCartLocked: false,
-        message: 'No active deposit payments found'
+        message: 'No active deposit payments or locked cart found'
       })
     }
 
-    const order = allRelevantOrders[0] // Get the most recent one
-    const hasValidLockedCart = order.source === 'payment_lock' || (order.items && order.items.length > 0)
+    // Get the most recent order if exists
+    const order = allRelevantOrders.length > 0 ? allRelevantOrders[0] : null
+    
+    // Determine final cart lock status
+    // Priority: Cart database lock > Recent deposit payment
+    let finalCartLockStatus = isCartLockedInDB
+    
+    // If cart is not locked in DB but there's a recent deposit payment, check if it should be locked
+    if (!isCartLockedInDB && hasRecentDepositPayment) {
+      const isRecentOrder = order.createdAt > new Date(Date.now() - 30 * 60 * 1000) // Within 30 minutes
+      finalCartLockStatus = isRecentOrder
+    }
 
-    console.log('💳 Deposit status check:', {
-      userId,
-      orderId: order.orderId,
-      depositPaid: order.payment.depositPaid,
-      itemsCount: order.items?.length || 0,
-      hasValidLockedCart,
-      orderItems: order.items
-    })
-
-    // Additional validation: Only lock cart if there are actual items and the order is recent
-    const isRecentOrder = order.createdAt > new Date(Date.now() - 30 * 60 * 1000) // Within 30 minutes
-    const shouldLockCart = hasValidLockedCart && isRecentOrder
-
-    console.log('🔒 Cart lock decision:', {
-      hasValidLockedCart,
-      isRecentOrder,
-      shouldLockCart,
-      orderAge: Date.now() - order.createdAt
+    console.log('🔒 Final cart lock decision:', {
+      cartLockedInDB: isCartLockedInDB,
+      hasRecentDeposit: hasRecentDepositPayment,
+      finalStatus: finalCartLockStatus,
+      cartItems: cart?.items?.length || 0,
+      orderAge: order ? Date.now() - order.createdAt : 'N/A'
     })
 
     return NextResponse.json({
       success: true,
-      hasDepositPayment: true,
-      isCartLocked: shouldLockCart, // Use the more restrictive condition
-      deposit: {
+      hasDepositPayment: hasRecentDepositPayment,
+      isCartLocked: finalCartLockStatus,
+      deposit: order ? {
         id: order._id,
         orderId: order.orderId,
         depositAmount: order.payment.depositAmount,
@@ -81,10 +104,12 @@ export async function GET(request) {
         paymentStatus: 'completed',
         depositStatus: 'paid',
         createdAt: order.createdAt
-      },
+      } : null,
       cart: {
-        isLocked: shouldLockCart,
-        itemsCount: order.items?.length || 0
+        isLocked: finalCartLockStatus,
+        itemsCount: cart?.items?.length || 0,
+        lockedAt: cart?.lockedAt,
+        paymentReference: cart?.paymentReference
       }
     })
 
