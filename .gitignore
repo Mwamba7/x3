@@ -43,3 +43,15 @@ coverage/
 # Prisma local databases (adjust to your setup)
 prisma/*.db*
 prisma/*.sqlite*
+
+# Development scripts and test files (prevent deployment issues)
+scripts/
+test-*.js
+debug-*.html
+*-debug.html
+migrate-*.js
+create-*.js
+remove-*.js
+fix-*.html
+direct-*.js
+simple-*.js

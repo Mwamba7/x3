@@ -416,6 +416,9 @@ export default function AccountPage() {
 
   const handleButtonClick = (buttonId, action) => {
     setClickedButton(buttonId)
+    setTimeout(() => {
+      setClickedButton(null)
+    }, 600)
     if (action) {
       action()
     }
@@ -608,32 +611,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'recent' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>📊</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Recent</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'recent' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
               
               <div className="nav-item-container">
@@ -649,32 +634,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'orders' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>📋</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Orders</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'orders' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
               
               
@@ -691,32 +658,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'products' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>📦</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Products</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'products' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
               
               <div className="nav-item-container">
@@ -732,32 +681,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'sales' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>💰</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Sales</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'sales' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
             </div>
           </div>
@@ -785,32 +716,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'address' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>🏠</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Address</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'address' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
               
               <div className="nav-item-container">
@@ -823,32 +736,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'profile' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>👤</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Profile</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'profile' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
               
               <div className="nav-item-container">
@@ -861,32 +756,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'logout' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>🚪</div>
                   <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Log Out</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'logout' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
               
               <div className="nav-item-container">
@@ -899,32 +776,14 @@ export default function AccountPage() {
                     cursor: 'pointer',
                     padding: '8px',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    transform: clickedButton === 'account' ? 'scale(1.2)' : 'scale(1)'
                   }}
                 >
-                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>🗑️</div>
-                  <div style={{ fontSize: '12px', color: '#dc3545', fontWeight: '500' }}>Account</div>
+                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>⚙️</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: '500' }}>Account</div>
                 </button>
-                
-                {/* Blinking circular container */}
-                {clickedButton === 'account' && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '2px solid #10b981',
-                      pointerEvents: 'none',
-                      animation: 'blink 1s ease-in-out infinite',
-                      zIndex: -1
-                    }}
-                  />
-                )}
               </div>
             </div>
           </div>
