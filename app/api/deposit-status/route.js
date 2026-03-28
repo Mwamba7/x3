@@ -147,7 +147,7 @@ export async function POST(request) {
   }
 }
 
-// DELETE - Clear old deposit status (simplified)
+// DELETE - Clear deposit status and unlock cart
 export async function DELETE(request) {
   try {
     // Verify authentication using custom auth middleware
@@ -157,10 +157,26 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // For now, just return success - old orders naturally expire
+    await connectDB()
+    const userId = authResult.user.id
+
+    console.log('🧹 Clearing deposit status and unlocking cart for user:', userId)
+
+    // Unlock the cart in database
+    const cart = await Cart.findOne({ userId })
+    if (cart) {
+      await cart.unlockCart()
+      console.log('✅ Cart unlocked successfully:', {
+        userId,
+        previousLockStatus: cart.isLocked,
+        itemsCount: cart.items?.length || 0
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Old deposit status cleared successfully'
+      message: 'Deposit status cleared and cart unlocked successfully',
+      cartUnlocked: true
     })
 
   } catch (error) {
