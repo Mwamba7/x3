@@ -30,33 +30,8 @@ export default function MyProductsClient() {
       setLoading(true)
       setError('')
       
-      // Get current user from auth API (cookie-based authentication)
-      const authResponse = await fetch('/api/auth/me')
-      if (!authResponse.ok) {
-        setError('User not authenticated')
-        setLoading(false)
-        return
-      }
-      
-      const authData = await authResponse.json()
-      if (!authData.success || !authData.user) {
-        setError('User not authenticated')
-        setLoading(false)
-        return
-      }
-      
-      const user = authData.user
-      if (!user.phone) {
-        setError('User phone not found')
-        setLoading(false)
-        return
-      }
-      
-      setUserPhone(user.phone)
-      setUserName(user.name || 'User')
-      
-      // Fetch user products from API
-      const response = await fetch(`/api/my-products?phone=${user.phone}`)
+      // Use the same API endpoint as the account page
+      const response = await fetch('/api/user/products')
       if (!response.ok) {
         throw new Error('Failed to fetch products')
       }
@@ -67,11 +42,22 @@ export default function MyProductsClient() {
       setAllProducts(userProducts)
       setFilteredProducts(userProducts)
       
+      // Debug: Log product statuses
+      console.log('🔍 Product statuses:', userProducts.map(p => ({
+        name: p.name,
+        status: p.status,
+        soldToAdmin: p.soldToAdmin,
+        inStock: p.inStock,
+        submissionType: p.submissionType
+      })))
+      
       // Check withdrawal statuses for sold products
       const soldProducts = userProducts.filter(p => p.status === 'sold')
       if (soldProducts.length > 0) {
         await checkWithdrawalStatuses(soldProducts)
       }
+      
+      console.log(`📦 Products loaded: ${userProducts.length} total`)
       
       setLoading(false)
       
@@ -115,6 +101,9 @@ export default function MyProductsClient() {
       return null
     }
     
+    // Handle fallback status - treat as approved
+    const displayStatus = (!status || !['pending', 'approved', 'rejected', 'sold'].includes(status)) ? 'approved' : status
+    
     const styles = {
       pending: { background: '#ffc107', color: '#000' },
       approved: { background: 'transparent', color: '#28a745' },
@@ -124,14 +113,15 @@ export default function MyProductsClient() {
     
     return (
       <span style={{
-        ...styles[status],
-        padding: (status === 'sold' || status === 'approved') ? '0' : '4px 8px',
-        borderRadius: (status === 'sold' || status === 'approved') ? '0' : '4px',
-        fontSize: 12,
+        ...styles[displayStatus],
+        padding: '4px 8px',
+        borderRadius: '4px',
+        fontSize: '10px',
         fontWeight: 'bold',
-        textTransform: 'capitalize',
+        border: product?.soldToAdmin ? '1px solid #dc3545' : 'none',
+        boxShadow: product?.soldToAdmin ? '0 0 8px rgba(220, 53, 69, 0.6)' : 'none'
       }}>
-        {status}
+        {displayStatus === 'sold' && product?.soldToAdmin ? '🏆 SOLD TO ADMIN' : displayStatus.toUpperCase()}
       </span>
     )
   }
@@ -544,9 +534,9 @@ export default function MyProductsClient() {
                     ⏳ Product is under review
                   </p>
                 )}
-                {product.status === 'approved' && product.submissionType !== 'direct_to_admin' && (
+                {product.status === 'approved' && (
                   <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#28a745', fontWeight: 'bold' }}>
-                    ✅ Product approved • Live on Site
+                    ✅ Product approved • {product.soldToAdmin ? 'Sold to Admin' : 'Live on Site'}
                   </p>
                 )}
                 {product.status === 'rejected' && (
@@ -555,17 +545,49 @@ export default function MyProductsClient() {
                   </p>
                 )}
                 {product.status === 'sold' && (
-                  <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#dc3545', fontWeight: 'bold' }}>
-                    {product.soldToAdmin ? '🔴 Sold to Admin' : '💰 Product has been sold'}
+                  <p style={{ margin: '4px 0 0 0', fontSize: 12, color: product.soldToAdmin ? '#dc3545' : '#dc3545', fontWeight: 'bold' }}>
+                    {product.soldToAdmin ? '🏆 Sold to Admin' : '💰 Product has been sold'}
+                  </p>
+                )}
+                {/* Fallback for products with no status or unrecognized status */}
+                {(!product.status || !['pending', 'approved', 'rejected', 'sold'].includes(product.status)) && (
+                  <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#28a745', fontWeight: 'bold' }}>
+                    ✅ Product approved • {product.soldToAdmin ? 'Sold to Admin' : 'Live on Site'}
                   </p>
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                 {getStatusBadge(product.status, product)}
-                {product.status === 'pending' && product.submissionType !== 'direct_to_admin' && (
+                {product.status === 'pending' && (
                   <span style={{ fontSize: 11, color: 'white' }}>Pending Review</span>
                 )}
-                {product.status === 'approved' && product.submissionType !== 'direct_to_admin' && (
+                {product.status === 'approved' && (
+                  <span style={{ fontSize: 11, color: 'white' }}>
+                    <span 
+                      style={{
+                        display: 'inline-block',
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#28a745',
+                        borderRadius: '50%',
+                        marginRight: '6px',
+                        animation: 'blink-dot 1.5s ease-in-out infinite'
+                      }}
+                    />
+                    {product.soldToAdmin ? 'Sold to Admin' : 'Live on Site'}
+                  </span>
+                )}
+                {product.status === 'sold' && !product.soldToAdmin && (
+                  <span style={{ fontSize: 11, color: 'white' }}>Sold Out</span>
+                )}
+                {product.status === 'sold' && product.soldToAdmin && (
+                  <span style={{ fontSize: 11, color: '#dc3545', fontWeight: 'bold' }}>🏆 Admin Sale</span>
+                )}
+                {product.status === 'rejected' && (
+                  <span style={{ fontSize: 11, color: 'white' }}>Rejected</span>
+                )}
+                {/* Fallback for products with no status or unrecognized status */}
+                {(!product.status || !['pending', 'approved', 'rejected', 'sold'].includes(product.status)) && (
                   <span style={{ fontSize: 11, color: 'white' }}>
                     <span 
                       style={{
@@ -580,12 +602,6 @@ export default function MyProductsClient() {
                     />
                     Live on Site
                   </span>
-                )}
-                {product.status === 'sold' && !product.soldToAdmin && (
-                  <span style={{ fontSize: 11, color: 'white' }}>Sold Out</span>
-                )}
-                {product.status === 'rejected' && (
-                  <span style={{ fontSize: 11, color: 'white' }}>Rejected</span>
                 )}
               </div>
             </div>

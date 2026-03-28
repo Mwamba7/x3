@@ -69,12 +69,22 @@ export default function RecentActivityClient() {
     const sixtyDaysAgo = new Date()
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
 
-    const recentOrders = orders.filter(order => 
-      new Date(order.createdAt) >= sixtyDaysAgo
-    )
+    // Add null checks and default to empty arrays
+    const activitiesArray = Array.isArray(activities) ? activities : []
 
-    const recentSales = sales.filter(sale => 
-      new Date(sale.createdAt || sale.saleDate) >= sixtyDaysAgo
+    // Filter activities from last 60 days
+    const recentActivities = activitiesArray.filter(activity => {
+      const activityDate = new Date(activity.createdAt || activity.date || activity.timestamp)
+      return activityDate >= sixtyDaysAgo
+    })
+
+    // Separate orders and sales from activities
+    const recentOrders = recentActivities.filter(activity => 
+      activity.type === 'order' || activity.activityType === 'order'
+    )
+    
+    const recentSales = recentActivities.filter(activity => 
+      activity.type === 'sale' || activity.activityType === 'sale'
     )
 
     return { recentOrders, recentSales }

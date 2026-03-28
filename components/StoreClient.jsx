@@ -61,9 +61,18 @@ export default function StoreClient({ products }) {
 
   return (
     <section id="collection" className="products-section" style={{ paddingTop: 0, paddingBottom: 0 }}>
-      <header className="products-header">
-        <h3>Collection</h3>
-        <div className="filters" role="tablist" aria-label="Product categories">
+      <header className="products-header" style={{ marginBottom: 0 }}>
+        <h3 style={{ margin: '4px 0' }}>Collection</h3>
+        <div className="filters" role="tablist" aria-label="Product categories" style={{ 
+  display: 'flex', 
+  flexWrap: 'nowrap', 
+  gap: '8px', 
+  overflowX: 'auto', 
+  scrollSnapType: 'x mandatory',
+  WebkitOverflowScrolling: 'touch',
+  paddingBottom: '0px',
+  marginBottom: '0px'
+ }}>
           {CATEGORIES.map(cat => (
             <button
               key={cat.key}
@@ -72,6 +81,13 @@ export default function StoreClient({ products }) {
               role="tab"
               aria-selected={active === cat.key}
               onClick={() => setActive(cat.key)}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+                flexShrink: '0'
+              }}
             >
               {cat.label}
             </button>
@@ -193,6 +209,11 @@ export default function StoreClient({ products }) {
                   <button
                     className={`btn btn-small ${isInCart ? 'in-cart-btn' : ''}`}
                     disabled={isSold}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      minHeight: '28px'
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

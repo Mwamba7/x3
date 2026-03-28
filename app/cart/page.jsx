@@ -14,6 +14,8 @@ export default function CartPage() {
   const [isClient, setIsClient] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [showLockMessage, setShowLockMessage] = useState(false)
+  const [cancelClicked, setCancelClicked] = useState(false)
+  const [clearClicked, setClearClicked] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -29,12 +31,20 @@ export default function CartPage() {
   }
 
   const confirmClearCart = () => {
+    setClearClicked(true)
     clear()
-    setShowClearConfirm(false)
+    setTimeout(() => {
+      setShowClearConfirm(false)
+      setClearClicked(false)
+    }, 500)
   }
 
   const cancelClearCart = () => {
-    setShowClearConfirm(false)
+    setCancelClicked(true)
+    setTimeout(() => {
+      setShowClearConfirm(false)
+      setCancelClicked(false)
+    }, 500)
   }
 
   if (!isClient) {
@@ -251,7 +261,13 @@ export default function CartPage() {
               <button 
                 onClick={cancelClearCart}
                 className="btn"
-                style={{ padding: '10px 20px', fontSize: 14, minWidth: '100px' }}
+                style={{ 
+                  padding: '10px 20px', 
+                  fontSize: 14, 
+                  minWidth: '100px',
+                  color: cancelClicked ? '#0066ff' : 'var(--text)',
+                  transition: 'color 0.3s ease'
+                }}
               >
                 Cancel
               </button>
@@ -264,7 +280,8 @@ export default function CartPage() {
                   minWidth: '70px !important',
                   backgroundColor: 'transparent !important',
                   borderColor: 'transparent !important',
-                  color: '#dc2626 !important'
+                  color: clearClicked ? '#ff0000' : '#dc2626',
+                  transition: 'color 0.3s ease'
                 }}
               >
                 Yes, Clear Cart

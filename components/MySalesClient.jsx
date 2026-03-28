@@ -1,15 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser, getUserSales } from '../lib/userSession'
 
 export default function MySalesClient() {
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [userPhone, setUserPhone] = useState('')
   const [refreshing, setRefreshing] = useState(false)
-  const [userName, setUserName] = useState('')
   const [allSales, setAllSales] = useState([])
   const [filteredSales, setFilteredSales] = useState([])
   const [activeFilter, setActiveFilter] = useState('')
@@ -20,22 +17,22 @@ export default function MySalesClient() {
 
   async function fetchUserSales() {
     try {
-      // Get current user from session (database-first)
-      const currentUser = await getCurrentUser()
+      setLoading(true)
+      setError('')
       
-      if (!currentUser || !currentUser.phone) {
-        console.error('User not authenticated')
-        return
+      // Use the same API endpoint as the account page
+      const response = await fetch('/api/user/sales')
+      if (!response.ok) {
+        throw new Error('Failed to fetch sales')
       }
       
-      // Fetch sales from database
-      const userSales = await getUserSales(currentUser.phone)
-      
+      const data = await response.json()
+      const userSales = data.sales || []
       setSales(userSales)
       setAllSales(userSales)
       setFilteredSales(userSales)
-      setUserPhone(currentUser.phone)
-      setUserName(currentUser.name || '')
+      
+      console.log(`💰 Sales loaded: ${userSales.length} total`)
       
     } catch (error) {
       console.error('Error fetching user sales:', error)
@@ -46,11 +43,9 @@ export default function MySalesClient() {
   }
 
   const handleRefresh = async () => {
-    if (!userPhone) return
-    
     setRefreshing(true)
     try {
-      await fetchUserSales(userPhone)
+      await fetchUserSales()
     } finally {
       setRefreshing(false)
     }

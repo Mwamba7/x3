@@ -38,7 +38,7 @@ function buildSrcSet(src, baseQuality = 75) {
 }
 
 export default function SellPageProductsClient({ products = [] }) {
-  const formatKsh = (n) => `Ksh ${Number(n).toLocaleString('en-KE')}`
+  const formatKsh = (n) => `${Number(n).toLocaleString('en-KE')}`
   const { addItem, removeItem, items, isCartLocked } = useCart()
 
   // Process products for consistent display
@@ -132,8 +132,8 @@ export default function SellPageProductsClient({ products = [] }) {
     // Show placeholder section when no products exist
     return (
       <section id="community-marketplace" className="products-section">
-        <header className="products-header">
-          <h3>Community Marketplace</h3>
+        <header className="products-header" style={{ marginBottom: 4 }}>
+          <h3 style={{ margin: '4px 0' }}>Community Marketplace</h3>
           <div className="filters" role="tablist" aria-label="Community product categories">
             {dynamicCategories.map(cat => (
               <button
@@ -179,8 +179,8 @@ export default function SellPageProductsClient({ products = [] }) {
   {/* Community Marketplace - Updated: ${new Date().toISOString()} - Gap: 2px */}
   return (
     <section id="community-marketplace" className="products-section">
-      <header className="products-header" style={{ marginBottom: 0 }}>
-        <h3>Community Marketplace</h3>
+      <header className="products-header" style={{ marginBottom: 4 }}>
+        <h3 style={{ margin: '4px 0' }}>Community Marketplace</h3>
         <div className="filters" role="tablist" aria-label="Community product categories" style={{ paddingBottom: 0 }}>
           {dynamicCategories.map(cat => (
             <button

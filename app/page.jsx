@@ -1,4 +1,3 @@
-import StoreClient from '../components/StoreClient'
 import ReusedClient from '../components/ReusedClient'
 import SellPageProductsClient from '../components/SellPageProductsClient'
 import Link from 'next/link'
@@ -11,54 +10,6 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function Page() {
-  let products = []
-  try {
-    await connectDB()
-    const rows = await Product.find({
-      section: 'collection',
-      category: { $in: ['tv','radio','phone','electronics','accessory','appliances','fridge','cooler'] },
-      status: 'available'
-    }).sort({ createdAt: -1 })
-    
-    products = rows.map(r => ({
-      id: r._id.toString(),
-      name: r.name,
-      category: r.category,
-      price: r.price,
-      img: r.img,
-      images: r.images || [], // Use images array instead of imagesJson
-      meta: r.meta || '',
-      condition: r.condition || '',
-      status: r.status || 'available',
-    }))
-  } catch (e) {
-    console.log('❌ Database connection failed for Collection, using mock data:', e.message)
-    // Fallback mock data for Collection section
-    products = [
-      {
-        id: 'mock1',
-        name: 'Sony 55" 4K Smart TV',
-        category: 'tv',
-        price: 19000,
-        img: 'https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400',
-        images: ['https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400'],
-        meta: 'Smart TV, 4K, HDR',
-        condition: 'good',
-        status: 'available',
-      },
-      {
-        id: 'mock2',
-        name: 'Samsung Sound System',
-        category: 'radio',
-        price: 15000,
-        img: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400',
-        images: ['https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400'],
-        meta: 'Sound System, Bluetooth',
-        condition: 'excellent',
-        status: 'available',
-      }
-    ]
-  }
   // Pre-owned Products (independent via section field)
   let reusedProducts = []
   try {
@@ -143,16 +94,11 @@ export default async function Page() {
     <>
       <section className="hero" aria-label="Featured promotions" style={{ position: 'relative' }}>
         <HeroCartButton />
-        {/* Background: auto-rotating products from All Products + Pre-owned + Community */}
-        <HeroRotator products={[...products, ...reusedProducts, ...communityProducts]} intervalMs={10000} />
+        {/* Background: auto-rotating products from Pre-owned + Community */}
+        <HeroRotator products={[...reusedProducts, ...communityProducts]} intervalMs={10000} />
       </section>
 
-
       <main className="container">
-        <section id="collection">
-          <StoreClient products={products} />
-        </section>
-
         <section id="preowned">
           <ReusedClient products={reusedProducts} />
         </section>

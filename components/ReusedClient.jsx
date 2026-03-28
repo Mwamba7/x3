@@ -22,7 +22,7 @@ function titleCase(s = '') {
 }
 
 export default function ReusedClient({ products = [] }) {
-  const formatKsh = (n) => `Ksh ${Number(n).toLocaleString('en-KE')}`
+  const formatKsh = (n) => `${Number(n).toLocaleString('en-KE')}`
   const { addItem, removeItem, items, isCartLocked } = useCart()
 
   const safeProducts = Array.isArray(products) ? products : []
@@ -104,9 +104,18 @@ export default function ReusedClient({ products = [] }) {
 
   return (
     <section id="preowned-products" className="products-section">
-      <header className="products-header">
-        <h3>Pre-owned Products</h3>
-        <div className="filters" role="tablist" aria-label="Reused product categories">
+      <header className="products-header" style={{ marginBottom: 0 }}>
+        <h3 style={{ margin: '20px 0 4px 0' }}>Pre-owned Products</h3>
+        <div className="filters" role="tablist" aria-label="Reused product categories" style={{ 
+  display: 'flex', 
+  flexWrap: 'nowrap', 
+  gap: '8px', 
+  overflowX: 'auto', 
+  scrollSnapType: 'x mandatory',
+  WebkitOverflowScrolling: 'touch',
+  paddingBottom: '0px',
+  marginBottom: '0px'
+ }}>
           {dynamicCategories.map(cat => (
             <button
               key={cat.key}
@@ -115,6 +124,13 @@ export default function ReusedClient({ products = [] }) {
               role="tab"
               aria-selected={active === cat.key}
               onClick={() => setActive(cat.key)}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+                flexShrink: '0'
+              }}
             >
               {cat.label}
             </button>

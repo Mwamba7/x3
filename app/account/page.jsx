@@ -438,17 +438,14 @@ export default function AccountPage() {
   }
 
   // Show loading until component is mounted and auth is checked
-  const [showLoading, setShowLoading] = useState(true)
+  const [showLoading, setShowLoading] = useState(false)
   
   // Ensure minimum loading time for visibility
   useEffect(() => {
     if (mounted && isAuthenticated && !loading) {
-      const timer = setTimeout(() => {
-        setShowLoading(false)
-      }, 2000) // Show for at least 2 seconds
-      return () => clearTimeout(timer)
+      setShowLoading(false)
     } else {
-      setShowLoading(true)
+      setShowLoading(false)
     }
   }, [mounted, isAuthenticated, loading])
   

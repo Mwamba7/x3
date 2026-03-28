@@ -48,32 +48,90 @@ export async function GET(request) {
     console.log('⏳ Found pending products:', pendingProducts.length)
     console.log('🔍 Pending products details:', pendingProducts.map(p => ({ id: p._id, name: p.name, sellerId: p.sellerId })))
 
-    // Combine and format products
-    const allProducts = [
-      ...approvedProducts.map(p => ({
+    // Combine and format products with deduplication
+    const allProducts = []
+    const seenProducts = new Set()
+    let duplicatesRemoved = 0
+
+    // Add approved products first (these take priority)
+    approvedProducts.forEach(p => {
+      // Use multiple identifiers for robust deduplication
+      const productKey = `${p.name}_${p.category}_${p.price}_${p.createdAt.getTime()}`
+      seenProducts.add(productKey)
+      
+      // Determine submission type from metadata
+      const submissionType = p.metadata?.submissionType || 'Direct to Admin'
+      const source = p.metadata?.source || 'admin-panel'
+      const soldToAdmin = source === 'admin-panel'
+      
+      // Determine correct status
+      let productStatus = p.status || 'approved'
+      
+      // Normalize status values
+      if (productStatus === 'available' || productStatus === 'active' || productStatus === 'live') {
+        productStatus = 'approved'
+      }
+      
+      if (soldToAdmin) {
+        productStatus = 'sold'
+      } else if (!p.inStock || productStatus === 'sold' || productStatus === 'out-of-stock') {
+        productStatus = 'sold'
+      }
+      
+      console.log(`📊 Product ${p.name}: original status="${p.status}", normalized status="${productStatus}", soldToAdmin=${soldToAdmin}, inStock=${p.inStock}`)
+      
+      allProducts.push({
         _id: p._id,
         name: p.name,
         price: p.price,
         category: p.category,
-        status: p.status || 'approved',
+        status: productStatus,
         image: p.image,
         createdAt: p.createdAt,
         source: 'approved',
+        submissionType: submissionType,
+        soldToAdmin: soldToAdmin,
+        inStock: p.inStock,
         saleInfo: p.saleInfo || null,
-        withdrawalRequested: p.saleInfo?.withdrawalRequested || false
-      })),
-      ...pendingProducts.map(p => ({
-        _id: p._id,
-        name: p.name,
-        price: p.price,
-        category: p.category,
-        status: p.status,
-        image: p.images?.[0],
-        createdAt: p.createdAt,
-        source: 'pending',
-        rejectionReason: p.rejectionReason || null
-      }))
-    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        withdrawalRequested: p.saleInfo?.withdrawalRequested || false,
+        metadata: p.metadata || {}
+      })
+    })
+
+    // Add pending products only if they don't duplicate approved products
+    pendingProducts.forEach(p => {
+      // Check if this pending product has a corresponding approved product
+      const isDuplicate = approvedProducts.some(approved => 
+        approved.name === p.name && 
+        approved.category === p.category && 
+        approved.price === p.price
+      )
+      
+      if (!isDuplicate) {
+        const productKey = `${p.name}_${p.category}_${p.price}_${p.createdAt.getTime()}`
+        seenProducts.add(productKey)
+        allProducts.push({
+          _id: p._id,
+          name: p.name,
+          price: p.price,
+          category: p.category,
+          status: p.status,
+          image: p.images?.[0],
+          createdAt: p.createdAt,
+          source: 'pending',
+          submissionType: p.submissionType || 'Direct to Admin',
+          rejectionReason: p.rejectionReason || null
+        })
+      } else {
+        duplicatesRemoved++
+        console.log('🔄 Removing duplicate pending product:', p.name, '(already approved)')
+      }
+    })
+
+    // Sort by creation date (newest first)
+    allProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+    console.log(`📊 Final products: ${allProducts.length} (removed ${duplicatesRemoved} duplicates)`)
 
     return NextResponse.json({
       success: true,

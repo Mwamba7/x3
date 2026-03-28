@@ -10,7 +10,7 @@ export default function BottomNav() {
   const { isAuthenticated } = useAuth()
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [clickedLink, setClickedLink] = useState(null)
+  const [clickedIcon, setClickedIcon] = useState(null)
 
   // Detect mobile device - more aggressive detection
   useEffect(() => {
@@ -143,20 +143,11 @@ export default function BottomNav() {
     return pathname === href
   }
 
-  const handleLinkClick = (href) => {
-    setClickedLink(href)
+  const handleIconClick = (href) => {
+    setClickedIcon(href)
+    // Clear animation after 600ms
+    setTimeout(() => setClickedIcon(null), 600)
   }
-
-  // Clear blinking when pathname changes (section opens)
-  useEffect(() => {
-    if (clickedLink) {
-      // Check if we've navigated to the clicked section
-      if ((clickedLink === '/#collection' && pathname === '/') || 
-          (clickedLink !== '/#collection' && pathname === clickedLink)) {
-        setClickedLink(null)
-      }
-    }
-  }, [pathname, clickedLink])
 
   // Debug logging
   console.log('🎹 BottomNav render - isMobile:', isMobile, 'isKeyboardVisible:', isKeyboardVisible)
@@ -174,20 +165,16 @@ export default function BottomNav() {
           <Link 
             href={l.href} 
             className={`bottom-nav-link ${isActive(l.href) ? 'active' : ''}`}
-            onClick={() => handleLinkClick(l.href)}
+            onClick={() => handleIconClick(l.href)}
           >
-            <span className="nav-icon">{l.icon}</span>
+            <span 
+              className={`nav-icon ${clickedIcon === l.href ? 'icon-animate' : ''} ${l.label === 'Account' ? 'account-icon-blue' : ''}`}
+            >{l.icon}</span>
             <span className="nav-label">{l.label}</span>
           </Link>
-          
-          {/* Hover circular container */}
-          {clickedLink === l.href && (
-            <div className="nav-hover-circle" />
-          )}
         </div>
       ))}
       
-      {/* CSS for hover circular containers */}
       <style jsx>{`
         .nav-item-container {
           position: relative;
@@ -196,29 +183,34 @@ export default function BottomNav() {
           justify-content: center;
         }
         
-        .nav-hover-circle {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          background: rgba(16, 185, 129, 0.2);
-          border: 2px solid #10b981;
-          pointer-events: none;
-          animation: blink 1s ease-in-out infinite;
-          z-index: -1;
+        .nav-icon {
+          display: inline-block;
+          transition: transform 0.2s ease;
         }
         
-        @keyframes blink {
-          0%, 100% {
-            opacity: 0.3;
-            transform: translate(-50%, -50%) scale(1);
+        .nav-icon.account-icon-blue {
+          filter: brightness(0) saturate(100%) invert(35%) sepia(91%) saturate(1590%) hue-rotate(202deg) brightness(101%) contrast(101%);
+        }
+        
+        .nav-icon.icon-animate {
+          animation: iconBounce 0.6s ease-in-out;
+        }
+        
+        @keyframes iconBounce {
+          0% {
+            transform: scale(1) rotate(0deg);
+          }
+          25% {
+            transform: scale(1.3) rotate(-5deg);
           }
           50% {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.05);
+            transform: scale(1.5) rotate(5deg);
+          }
+          75% {
+            transform: scale(1.3) rotate(-2deg);
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
           }
         }
       `}</style>
