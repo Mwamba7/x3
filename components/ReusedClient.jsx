@@ -105,7 +105,7 @@ export default function ReusedClient({ products = [] }) {
   return (
     <section id="preowned-products" className="products-section">
       <header className="products-header" style={{ marginBottom: 0 }}>
-        <h3 style={{ margin: '20px 0 4px 0' }}>Pre-owned Products</h3>
+        <h3 style={{ margin: '0 0 4px 0' }}>Pre-owned Products</h3>
         <div className="filters" role="tablist" aria-label="Reused product categories" style={{ 
   display: 'flex', 
   flexWrap: 'nowrap', 

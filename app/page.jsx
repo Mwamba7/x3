@@ -99,12 +99,12 @@ export default async function Page() {
       </section>
 
       <main className="container">
-        <section id="preowned">
-          <ReusedClient products={reusedProducts} />
-        </section>
-
         <section id="marketplace">
           <SellPageProductsClient products={communityProducts} />
+        </section>
+
+        <section id="preowned">
+          <ReusedClient products={reusedProducts} />
         </section>
       </main>
     </>

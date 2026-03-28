@@ -133,7 +133,7 @@ export default function SellPageProductsClient({ products = [] }) {
     return (
       <section id="community-marketplace" className="products-section">
         <header className="products-header" style={{ marginBottom: 4 }}>
-          <h3 style={{ margin: '4px 0' }}>Community Marketplace</h3>
+          <h3 style={{ margin: '20px 0 4px 0' }}>Community Marketplace</h3>
           <div className="filters" role="tablist" aria-label="Community product categories">
             {dynamicCategories.map(cat => (
               <button
@@ -180,7 +180,7 @@ export default function SellPageProductsClient({ products = [] }) {
   return (
     <section id="community-marketplace" className="products-section">
       <header className="products-header" style={{ marginBottom: 4 }}>
-        <h3 style={{ margin: '4px 0' }}>Community Marketplace</h3>
+        <h3 style={{ margin: '20px 0 4px 0' }}>Community Marketplace</h3>
         <div className="filters" role="tablist" aria-label="Community product categories" style={{ paddingBottom: 0 }}>
           {dynamicCategories.map(cat => (
             <button
