@@ -76,7 +76,7 @@ export default function WithdrawalRequestsClient({ initial }) {
     setProcessing(prev => ({ ...prev, [withdrawalId]: true }))
     
     try {
-      const response = await fetch('/api/admin/withdrawals/update-status', {
+      const response = await fetch('/api/okero/withdrawals/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ withdrawalId, status })

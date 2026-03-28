@@ -1,5 +1,5 @@
 import StoreClient from '../../components/StoreClient'
-import FashionClient from '../../components/FashionClient'
+import ProductDetailClient from '../../components/ProductDetailClient'
 import connectDB from '../../lib/mongodb'
 import Product from '../../models/Product'
 import Link from 'next/link'
@@ -150,7 +150,7 @@ export default async function MarketplacePage() {
                 {fashionProducts.length} items
               </span>
             </div>
-            <FashionClient initial={fashionProducts} />
+            <StoreClient initial={fashionProducts} />
           </section>
         )}
 

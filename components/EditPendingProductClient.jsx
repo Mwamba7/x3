@@ -124,7 +124,7 @@ export default function EditPendingProductClient({ product: initialProduct }) {
         }
       })
 
-      const response = await fetch(`/api/admin/pending/edit/${product._id}`, {
+      const response = await fetch(`/api/okero/pending-edit/${product._id}`, {
         method: 'PUT',
         body: formData
       })

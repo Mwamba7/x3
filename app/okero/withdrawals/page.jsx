@@ -18,7 +18,7 @@ export default function AdminWithdrawalsPage() {
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/admin/withdrawals')
+      const response = await fetch('/api/okero/withdrawals')
       const result = await response.json()
       
       if (result.success) {

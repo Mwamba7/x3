@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import connectDB from '../../../lib/mongodb'
 import Product from '../../../models/Product'
 import mongoose from 'mongoose'
-import FashionProductDetailClient from '../../../components/FashionProductDetailClient'
+import ProductDetailClient from '../../../components/ProductDetailClient'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -59,7 +59,7 @@ export default async function FashionPage({ params }) {
   const status = isSold ? 'Sold' : 'Available'
 
   return (
-    <FashionProductDetailClient 
+    <ProductDetailClient 
       product={prod}
       images={images}
       priceKsh={priceKsh}
